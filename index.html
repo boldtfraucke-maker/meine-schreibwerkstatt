@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meine Schreibwerkstatt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="paw">🐾</span> Meine Schreibwerkstatt</div>
+    <button class="sync-chip" id="syncChip" title="Jetzt synchronisieren">
+      <span class="dot"></span><span class="label" id="syncChipLabel">Nur auf diesem Gerät</span>
+    </button>
+  </header>
+
+  <nav class="sidebar">
+    <button class="nav-item active" data-view="start"><span class="icon">🏠</span> Start</button>
+    <button class="nav-item" data-view="write"><span class="icon">✍️</span> Schreiben</button>
+    <button class="nav-item" data-view="settings"><span class="icon">⚙️</span> Einstellungen</button>
+  </nav>
+
+  <main class="content">
+    <!-- START -->
+    <section id="view-start" class="view active">
+      <h1 class="greeting" id="greetingText">Willkommen</h1>
+      <p class="greeting-sub">Schön, dass du da bist. Hier geht's weiter, wo du aufgehört hast.</p>
+
+      <div class="stat-row">
+        <div class="stat-card"><div class="num" id="statCount">0</div><div class="label">Geschichten</div></div>
+        <div class="stat-card"><div class="num" id="statWords">0</div><div class="label">Wörter</div></div>
+        <div class="stat-card"><div class="num" id="statDrafts">0</div><div class="label">Entwürfe</div></div>
+      </div>
+
+      <div class="continue-card" id="continueCard" hidden></div>
+
+      <div class="search-wrap">
+        <p class="section-label">Geschichte suchen</p>
+        <div class="search-box">
+          <input type="text" id="startSearchInput" class="search-input" placeholder="Titel eingeben …" autocomplete="off">
+          <div class="search-suggestions" id="startSearchSuggestions" hidden></div>
+        </div>
+      </div>
+
+      <p class="section-label" id="recentLabel">Weitere Geschichten</p>
+      <div class="recent-list" id="recentList"></div>
+
+      <div style="margin-top:24px;">
+        <button class="btn btn-primary" id="startNewStoryBtn">✎ Neue Geschichte beginnen</button>
+      </div>
+    </section>
+
+    <!-- SCHREIBEN -->
+    <section id="view-write" class="view">
+      <div class="write-layout">
+        <div class="editor-panel" id="editorPanel">
+          <div class="editor-empty">Wähle auf der Startseite eine Geschichte aus oder beginne dort eine neue.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EINSTELLUNGEN -->
+    <section id="view-settings" class="view">
+      <h1 style="margin-top:0;">Einstellungen</h1>
+
+      <div class="settings-block">
+        <h3>Speicherort</h3>
+        <p>Deine Geschichten liegen zuerst lokal in diesem Browser auf diesem Gerät. Über Google Drive kannst du sie unten manuell mit deinen anderen Geräten abgleichen.</p>
+      </div>
+
+      <div class="settings-block" id="driveSettingsBlock">
+        <h3>☁️ Google Drive-Synchronisation</h3>
+        <p>Deine Geschichten werden dabei in einem privaten, für dich unsichtbaren App-Ordner in deinem Google Drive abgelegt. Du musst dort nie selbst Dateien suchen oder verwalten – tippe einfach auf „Jetzt synchronisieren", wenn du das Gerät wechselst.</p>
+        <div class="settings-field" id="clientIdField">
+          <label for="clientIdInput">Google Client-ID (einmalig einrichten)</label>
+          <input type="text" id="clientIdInput" placeholder="z. B. 1234567890-abc…apps.googleusercontent.com" autocomplete="off">
+        </div>
+        <div class="settings-actions" id="driveActions"></div>
+        <div class="settings-status-line" id="driveStatusLine"></div>
+      </div>
+
+      <div class="settings-block">
+        <h3>Backup</h3>
+        <p>Ein Backup ist unabhängig von der Synchronisation. Erstelle regelmäßig ein Backup, damit deine Geschichten auch bei einem Gerätewechsel oder -defekt sicher sind.</p>
+        <div class="settings-actions">
+          <button class="btn btn-primary" id="backupBtn">💾 Backup erstellen</button>
+          <button class="btn btn-ghost" id="restoreBtnTrigger">⤴ Backup wiederherstellen</button>
+          <input type="file" id="restoreInput" accept="application/json" style="display:none;">
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <h3>Über diese Version</h3>
+        <p>Dies ist Phase 2 von „Meine Schreibwerkstatt": echtes Hosting und Google-Drive-Synchronisation zwischen deinen Geräten. Als Nächstes kommen: Ideenparkplatz und Bücher.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar-mobile">
+    <button class="nav-item active" data-view="start"><span class="icon">🏠</span> Start</button>
+    <button class="nav-item" data-view="write"><span class="icon">✍️</span> Schreiben</button>
+    <button class="nav-item" data-view="settings"><span class="icon">⚙️</span> Mehr</button>
+  </nav>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal-card">
+    <div id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/drive-sync.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

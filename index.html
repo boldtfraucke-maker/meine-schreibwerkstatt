@@ -108,6 +108,23 @@
         <div class="settings-status-line" id="driveStatusLine"></div>
       </div>
 
+      <div class="settings-block" id="aiSettingsBlock">
+        <h3>✨ KI-Vorschläge (Claude)</h3>
+        <p>Die KI liest eine Geschichte auf Wunsch durch und macht vorsichtige Vorschläge zu Rechtschreibung, langen Sätzen und Wiederholungen – mit Begründung. Sie schreibt nie automatisch um; du entscheidest bei jedem Vorschlag per Übernehmen/Ablehnen selbst. Dafür braucht es einmalig einen kleinen, kostenlosen Cloudflare-Worker als sicheren Vermittler (Anleitung in der README).</p>
+        <div class="settings-field">
+          <label for="aiWorkerUrlInput">Worker-Adresse</label>
+          <input type="text" id="aiWorkerUrlInput" placeholder="https://……workers.dev" autocomplete="off">
+        </div>
+        <div class="settings-field">
+          <label for="aiWorkerKeyInput">Worker-Zugriffsschlüssel</label>
+          <input type="text" id="aiWorkerKeyInput" placeholder="selbst ausgedachtes Passwort für den Worker" autocomplete="off">
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-ghost" id="aiSettingsSaveBtn">Speichern</button>
+        </div>
+        <div class="settings-status-line" id="aiStatusLine"></div>
+      </div>
+
       <div class="settings-block">
         <h3>Backup</h3>
         <p>Ein Backup ist unabhängig von der Synchronisation. Erstelle regelmäßig ein Backup, damit deine Geschichten auch bei einem Gerätewechsel oder -defekt sicher sind.</p>
@@ -120,7 +137,7 @@
 
       <div class="settings-block">
         <h3>Über diese Version</h3>
-        <p>Dies ist Phase 3 von „Meine Schreibwerkstatt": Ideenparkplatz sowie Bücher mit Kapiteln und Buch-Statistik. Die Google-Drive-Synchronisation deckt jetzt Geschichten, Ideen und Bücher gemeinsam ab.</p>
+        <p>Dies ist Phase 4 von „Meine Schreibwerkstatt": KI-Vorschläge (Korrektorat, Lektorat, Stil) für einzelne Geschichten. Die Konsistenzprüfung über mehrere Geschichten hinweg ist als Nächstes geplant.</p>
       </div>
     </section>
   </main>
@@ -141,8 +158,9 @@
   </div>
 </div>
 
-<script src="js/storage.js?v=6"></script>
-<script src="js/drive-sync.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/storage.js?v=9"></script>
+<script src="js/drive-sync.js?v=9"></script>
+<script src="js/ai-provider.js?v=9"></script>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>

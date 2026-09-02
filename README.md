@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 2 – echtes Hosting + Google-Drive-Synchronisation.
+**Status:** Phase 4 – KI-Vorschläge (Korrektorat/Lektorat/Stil) für einzelne Geschichten.
 
 ## Lokal testen
 
@@ -53,11 +53,36 @@ Die Geschichten werden dabei in einem privaten App-Ordner im eigenen Google
 Drive abgelegt (Scope `drive.appdata`) – dieser taucht nicht im normalen
 Drive-Ordner auf und muss nie manuell verwaltet werden.
 
+## KI-Vorschläge einrichten (Cloudflare Worker)
+
+Für die KI-Funktionen (Korrektorat, Lektorat, Stil-Analyse) ruft die App die
+Claude-API auf. Der API-Key darf dafür aber niemals im Browser landen (er
+wäre für jeden im Netzwerk-Tab sichtbar und mit der eigenen Rechnung
+verknüpft). Deshalb läuft die Anfrage über einen winzigen, kostenlosen
+Cloudflare Worker, der den Key geheim hält und nur weiterleitet.
+
+1. Einen Anthropic-API-Key besorgen: [console.anthropic.com](https://console.anthropic.com/) → **API Keys** → neuen Key erstellen und kopieren (beginnt mit `sk-ant-...`). Empfehlenswert: dort auch ein monatliches Ausgabenlimit setzen (z. B. 5–10 €) als zusätzliche Absicherung.
+2. Bei [dash.cloudflare.com](https://dash.cloudflare.com/) ein kostenloses Konto anlegen.
+3. Im Dashboard **Workers & Pages → Create → Create Worker** wählen, einen Namen vergeben (z. B. `schreibwerkstatt-ki`) und erstellen.
+4. Im Worker-Editor („Edit code") den kompletten Inhalt von [`cloudflare-worker/worker.js`](cloudflare-worker/worker.js) aus diesem Repo einfügen (vorhandenen Beispielcode ersetzen) und **Deploy** klicken.
+5. Zurück in den Worker-Einstellungen unter **Settings → Variables and Secrets** zwei Secrets anlegen (jeweils als „Secret", nicht als normale Variable):
+   - `ANTHROPIC_API_KEY` – der Key aus Schritt 1.
+   - `WORKER_ACCESS_KEY` – ein selbst ausgedachtes Passwort (schützt den Worker davor, dass Fremde ihn mitbenutzen, falls sie die Adresse erraten).
+6. Die Worker-Adresse (`https://<name>.<konto>.workers.dev`) kopieren.
+7. In der App unter **Einstellungen → ✨ KI-Vorschläge (Claude)** die Worker-Adresse und den selbst ausgedachten `WORKER_ACCESS_KEY` eintragen und speichern.
+
+Danach ist der Button „✨ KI-Vorschläge" im Schreiben-Bereich nutzbar. Jede
+Prüfung kostet ein paar Cent auf dem eigenen Anthropic-Konto (abhängig von
+der Textlänge) – für den gelegentlichen Gebrauch bei Kurzgeschichten sehr
+überschaubar.
+
 ## Architektur
 
 - `js/storage.js` – lokaler Speicher (IndexedDB). Austauschbar.
 - `js/drive-sync.js` – Google-Drive-Anbindung inkl. Konflikterkennung. Austauschbar gegen andere Cloud-Anbieter.
-- `js/app.js` – Oberfläche und Verknüpfung der beiden Module.
+- `js/ai-provider.js` – KI-Anbindung über den Cloudflare Worker. Austauschbar gegen einen anderen KI-Anbieter.
+- `js/app.js` – Oberfläche und Verknüpfung der Module.
+- `cloudflare-worker/worker.js` – Quellcode des Vermittlers zwischen App und Claude-API (siehe oben).
 
 Die Synchronisation deckt Geschichten, Ideen und Bücher gemeinsam ab.
 Konflikte (derselbe Eintrag auf zwei Geräten geändert) werden einzeln

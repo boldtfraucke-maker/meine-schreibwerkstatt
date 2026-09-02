@@ -65,6 +65,13 @@
   function textToHtml(text) {
     return text.split(/\n+/).filter(Boolean).map(line => `<p>${escapeHtml(line)}</p>`).join("");
   }
+  function htmlToPlainText(html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html || "";
+    const blocks = tmp.querySelectorAll("p, h1, h2, h3, li");
+    if (blocks.length === 0) return (tmp.textContent || "").trim();
+    return Array.from(blocks).map(el => el.textContent).join("\n\n").trim();
+  }
 
   function upsertLocal(story) {
     const idx = stories.findIndex(s => s.id === story.id);
@@ -80,7 +87,7 @@
     if (view === "start") renderStart();
     if (view === "ideas") renderIdeas();
     if (view === "books") renderBooks();
-    if (view === "settings") renderDriveSettings();
+    if (view === "settings") { renderDriveSettings(); renderAiSettings(); }
   }
   document.querySelectorAll(".nav-item").forEach(btn => {
     btn.addEventListener("click", () => switchView(btn.dataset.view));
@@ -227,8 +234,12 @@
       <div class="editor-page" id="editorPage" contenteditable="true">${story.content || ""}</div>
       <div class="editor-footer">
         <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span></div>
-        <button class="btn-danger-text" id="deleteStoryBtn">Geschichte löschen</button>
-      </div>`;
+        <div style="display:flex;gap:14px;align-items:center;">
+          <button class="btn btn-ghost" id="aiCheckBtn">✨ KI-Vorschläge</button>
+          <button class="btn-danger-text" id="deleteStoryBtn">Geschichte löschen</button>
+        </div>
+      </div>
+      <div id="aiPanel"></div>`;
 
     const titleInput = document.getElementById("titleInput");
     const statusSelect = document.getElementById("statusSelect");
@@ -365,11 +376,104 @@
       );
     });
 
+    document.getElementById("aiCheckBtn").addEventListener("click", () => runAiCheck(story, editorPage, scheduleSave));
+
     // Neue, leere Geschichte: direkt in den Titel springen
     if (!story.title && !story.content) {
       titleInput.focus();
     }
   }
+
+  // ---------- KI-Vorschläge ----------
+  const AI_TYPE_LABELS = { korrektorat: "Korrektorat", lektorat: "Lektorat", stil: "Stil" };
+
+  async function runAiCheck(story, editorPage, scheduleSave) {
+    const panel = document.getElementById("aiPanel");
+    if (!AIProvider.isConfigured()) {
+      switchView("settings");
+      showAlert("Bitte zuerst unter Einstellungen die Worker-Adresse und den Zugriffsschlüssel für die KI-Vorschläge hinterlegen.");
+      return;
+    }
+    panel.innerHTML = '<div class="ai-panel-status">✨ Wird geprüft …</div>';
+    try {
+      const plainText = htmlToPlainText(editorPage.innerHTML);
+      const suggestions = await AIProvider.analyzeStory(plainText);
+      renderAiSuggestions(panel, editorPage, scheduleSave, suggestions);
+    } catch (err) {
+      console.error("KI-Fehler", err);
+      const msg = err && err.message === "NOT_CONFIGURED"
+        ? "Bitte zuerst unter Einstellungen die KI-Vorschläge einrichten."
+        : "Prüfung fehlgeschlagen: " + (err && err.message ? err.message : String(err));
+      panel.innerHTML = `<div class="ai-panel-status ai-panel-error">${escapeHtml(msg)}</div>`;
+    }
+  }
+
+  function renderAiSuggestions(panel, editorPage, scheduleSave, suggestions) {
+    if (suggestions.length === 0) {
+      panel.innerHTML = '<div class="ai-panel-status">✓ Sieht gut aus – die KI hat gerade keine Vorschläge.</div>';
+      return;
+    }
+    panel.innerHTML = `
+      <p class="section-label" style="margin-top:20px;">✨ KI-Vorschläge</p>
+      <div id="aiSuggestionList" class="ai-suggestion-list"></div>`;
+    const list = panel.querySelector("#aiSuggestionList");
+
+    function checkEmpty() {
+      if (list.children.length === 0) panel.innerHTML = '<div class="ai-panel-status">✓ Alle Vorschläge bearbeitet.</div>';
+    }
+
+    suggestions.forEach((sug) => {
+      const canApply = editorPage.innerHTML.includes(sug.excerpt);
+      const card = document.createElement("div");
+      card.className = "ai-suggestion-card";
+      card.innerHTML = `
+        <div class="ai-suggestion-type">${escapeHtml(AI_TYPE_LABELS[sug.type] || "Vorschlag")}</div>
+        <div class="ai-suggestion-excerpt">„${escapeHtml(sug.excerpt)}"</div>
+        <div class="ai-suggestion-arrow">→ ${escapeHtml(sug.suggestion)}</div>
+        <div class="ai-suggestion-reason"><strong>Warum?</strong> ${escapeHtml(sug.reason)}</div>
+        ${!canApply ? '<div class="ai-suggestion-note">Konnte die Textstelle nicht genau wiederfinden – bitte von Hand anpassen.</div>' : ""}
+        <div class="ai-suggestion-actions">
+          <button class="btn btn-primary ai-apply-btn" ${canApply ? "" : "disabled"}>Übernehmen</button>
+          <button class="btn btn-ghost ai-dismiss-btn">Ablehnen</button>
+        </div>`;
+
+      card.querySelector(".ai-apply-btn").addEventListener("click", () => {
+        const html = editorPage.innerHTML;
+        if (!html.includes(sug.excerpt)) return;
+        // Ersetzungsfunktion statt String, damit "$"-Zeichen im Vorschlag nicht
+        // als Sonderzeichen für String.replace() interpretiert werden.
+        editorPage.innerHTML = html.replace(sug.excerpt, () => escapeHtml(sug.suggestion));
+        scheduleSave();
+        card.remove();
+        checkEmpty();
+      });
+      card.querySelector(".ai-dismiss-btn").addEventListener("click", () => {
+        card.remove();
+        checkEmpty();
+      });
+
+      list.appendChild(card);
+    });
+  }
+
+  function renderAiSettings() {
+    const urlInput = document.getElementById("aiWorkerUrlInput");
+    const keyInput = document.getElementById("aiWorkerKeyInput");
+    const statusLine = document.getElementById("aiStatusLine");
+    if (!urlInput) return;
+    urlInput.value = AIProvider.getWorkerUrl();
+    keyInput.value = AIProvider.getWorkerKey();
+    const configured = AIProvider.isConfigured();
+    statusLine.className = "settings-status-line " + (configured ? "state-ok" : "");
+    statusLine.innerHTML = `<span class="dot"></span><span>${configured ? "Eingerichtet – „✨ KI-Vorschläge“ ist im Schreiben-Bereich verfügbar." : "Noch nicht eingerichtet."}</span>`;
+  }
+
+  document.getElementById("aiSettingsSaveBtn").addEventListener("click", () => {
+    AIProvider.setWorkerUrl(document.getElementById("aiWorkerUrlInput").value);
+    AIProvider.setWorkerKey(document.getElementById("aiWorkerKeyInput").value);
+    renderAiSettings();
+    showAlert("Gespeichert.");
+  });
 
   // ---------- Ideenparkplatz ----------
   function renderIdeas() {
@@ -1256,6 +1360,7 @@
     }
     renderStart();
     renderDriveSettings();
+    renderAiSettings();
     initSyncChip();
   }
   init();

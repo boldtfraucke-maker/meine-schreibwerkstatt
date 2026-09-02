@@ -228,10 +228,10 @@ const DriveSync = (function () {
     localStorage.setItem(LS_LAST_SYNC, new Date().toISOString());
   }
 
-  // Ideen ändern sich nach dem Anlegen nie mehr (keine Bearbeitungsfunktion) -
-  // daher dient createdAt als Vergleichszeitpunkt statt eines updatedAt-Felds.
+  // Ideen aus einer älteren Version haben eventuell noch kein updatedAt -
+  // dann dient createdAt als Rückfalloption.
   function getTimestamp(kind, item) {
-    return kind === "ideas" ? item.createdAt : item.updatedAt;
+    return kind === "ideas" ? (item.updatedAt || item.createdAt) : item.updatedAt;
   }
 
   function itemsEqual(kind, a, b) {

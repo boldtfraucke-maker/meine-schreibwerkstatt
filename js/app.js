@@ -234,6 +234,7 @@
     const statusSelect = document.getElementById("statusSelect");
     const editorPage = document.getElementById("editorPage");
     const saveStatusText = document.getElementById("saveStatusText");
+    document.execCommand("defaultParagraphSeparator", false, "p");
 
     function scheduleSave() {
       saveStatusText.textContent = "Ungespeicherte Änderung …";
@@ -254,28 +255,75 @@
     statusSelect.addEventListener("change", scheduleSave);
     editorPage.addEventListener("input", scheduleSave);
 
+    // contenteditable verliert die Textmarkierung, sobald man auf ein
+    // Toolbar-Dropdown klickt (der Fokus wechselt kurz weg). Deshalb merken
+    // wir uns die letzte gültige Markierung im Editor und stellen sie vor
+    // jedem Formatierungsbefehl wieder her.
+    const headingSelect = document.getElementById("headingSelect");
+    let savedRange = null;
+    function saveSelection() {
+      const sel = window.getSelection();
+      if (sel.rangeCount > 0 && editorPage.contains(sel.anchorNode)) {
+        savedRange = sel.getRangeAt(0).cloneRange();
+      }
+    }
+    function restoreSelection() {
+      if (!savedRange) return;
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+    editorPage.addEventListener("keyup", saveSelection);
+    editorPage.addEventListener("mouseup", saveSelection);
+
+    // Wenn nach einer Überschrift Enter gedrückt wird, "klebt" contenteditable
+    // in manchen Browsern an der Überschriftenformatierung weiter. Deshalb nach
+    // jedem Enter innerhalb einer Überschrift die neue Zeile auf Normaltext
+    // zurücksetzen - so muss die Autorin das nicht manuell nachholen.
+    editorPage.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || e.shiftKey) return;
+      const sel = window.getSelection();
+      if (sel.rangeCount === 0) return;
+      let node = sel.getRangeAt(0).startContainer;
+      if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      const headingEl = node && node.closest ? node.closest("h1, h2, h3") : null;
+      if (!headingEl) return;
+      setTimeout(() => {
+        document.execCommand("formatBlock", false, "P");
+        headingSelect.value = "P";
+        scheduleSave();
+      }, 0);
+    });
+
     panel.querySelectorAll(".tool-btn[data-cmd]").forEach(btn => {
       btn.addEventListener("click", () => {
         editorPage.focus();
+        restoreSelection();
         const cmd = btn.dataset.cmd;
         if (cmd === "image") { document.getElementById("imageInput").click(); return; }
         document.execCommand(cmd, false, null);
+        saveSelection();
         scheduleSave();
       });
     });
 
-    document.getElementById("headingSelect").addEventListener("change", (e) => {
+    headingSelect.addEventListener("change", (e) => {
       editorPage.focus();
+      restoreSelection();
       document.execCommand("formatBlock", false, e.target.value);
+      saveSelection();
       scheduleSave();
     });
     document.getElementById("fontSelect").addEventListener("change", (e) => {
       editorPage.focus();
+      restoreSelection();
       document.execCommand("fontName", false, e.target.value);
+      saveSelection();
       scheduleSave();
     });
     document.getElementById("fontSizeSelect").addEventListener("change", (e) => {
       editorPage.focus();
+      restoreSelection();
       // execCommand kennt nur die Stufen 1-7, keine echten pt-Werte. Deshalb Stufe 7
       // als eindeutige Markierung nutzen und danach durch die echte pt-Größe ersetzen -
       // der gängige Trick, um in contenteditable echte Punktgrößen zu setzen.
@@ -284,6 +332,7 @@
         el.removeAttribute("size");
         el.style.fontSize = e.target.value + "pt";
       });
+      saveSelection();
       scheduleSave();
     });
 
@@ -335,14 +384,39 @@
       const card = document.createElement("div");
       card.className = "idea-card";
       card.innerHTML = `
-        <div>
+        <div style="flex:1;min-width:0;">
           <div class="text">${escapeHtml(idea.text)}</div>
-          <div class="meta">${relativeTime(idea.createdAt)}</div>
+          <div class="meta">${relativeTime(idea.updatedAt || idea.createdAt)}</div>
         </div>
         <div class="idea-actions">
+          <button class="btn btn-ghost edit-idea-btn">✎ Bearbeiten</button>
           <button class="btn btn-ghost make-story-btn">✎ Geschichte daraus machen</button>
           <button class="btn-danger-text delete-idea-btn">Löschen</button>
         </div>`;
+
+      card.querySelector(".edit-idea-btn").addEventListener("click", () => {
+        card.querySelector(".idea-actions").style.display = "none";
+        const textWrap = card.querySelector(".text").parentElement;
+        textWrap.innerHTML = `
+          <textarea class="idea-textarea idea-edit-textarea" rows="2">${escapeHtml(idea.text)}</textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-primary idea-edit-save">Speichern</button>
+            <button class="btn btn-ghost idea-edit-cancel">Abbrechen</button>
+          </div>`;
+        const editTextarea = textWrap.querySelector(".idea-edit-textarea");
+        editTextarea.focus();
+        editTextarea.setSelectionRange(editTextarea.value.length, editTextarea.value.length);
+        textWrap.querySelector(".idea-edit-save").addEventListener("click", async () => {
+          const newText = editTextarea.value.trim();
+          if (!newText) return;
+          idea.text = newText;
+          idea.updatedAt = new Date().toISOString();
+          await IdeaStorage.save(idea);
+          renderIdeas();
+          if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
+        });
+        textWrap.querySelector(".idea-edit-cancel").addEventListener("click", () => renderIdeas());
+      });
 
       card.querySelector(".make-story-btn").addEventListener("click", () => {
         showConfirm(
@@ -387,7 +461,8 @@
     const textarea = document.getElementById("ideaInput");
     const text = textarea.value.trim();
     if (!text) return;
-    const idea = { id: uid(), text, createdAt: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const idea = { id: uid(), text, createdAt: now, updatedAt: now };
     ideas.push(idea);
     await IdeaStorage.save(idea);
     textarea.value = "";
@@ -1005,7 +1080,7 @@
 
         if (c.kind === "edit-edit") {
           const winner = decision === "local" ? c.local : c.remote;
-          if (kind !== "ideas") winner.updatedAt = new Date().toISOString();
+          winner.updatedAt = new Date().toISOString();
           await storageFor(kind).save(winner);
           upsertItem(kind, winner);
           bucket.resolvedIds.push(c.id);
@@ -1134,7 +1209,7 @@
         }
         if (entityKind === "ideas") {
           const snippet = escapeHtml(plainSnippet(item.text || "", 140)) || '<span style="color:var(--ink-faint);">(leer)</span>';
-          return `<div class="conflict-version"><h4>${escapeHtml(label)}</h4><div class="snippet">${snippet}</div><div class="meta">${relativeTime(item.createdAt)}</div></div>`;
+          return `<div class="conflict-version"><h4>${escapeHtml(label)}</h4><div class="snippet">${snippet}</div><div class="meta">${relativeTime(item.updatedAt || item.createdAt)}</div></div>`;
         }
         const snippet = escapeHtml(plainSnippet(item.content, 140)) || '<span style="color:var(--ink-faint);">(leer)</span>';
         return `<div class="conflict-version"><h4>${escapeHtml(label)}</h4><div class="snippet">${snippet}</div><div class="meta">${statusLabel(item.status)} · ${relativeTime(item.updatedAt)}</div></div>`;

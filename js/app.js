@@ -136,47 +136,24 @@
 
     const sorted = [...stories].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     const continueCard = document.getElementById("continueCard");
-    const recentLabel = document.getElementById("recentLabel");
-    const list = document.getElementById("recentList");
-    list.innerHTML = "";
 
     if (sorted.length === 0) {
-      continueCard.hidden = true;
-      continueCard.innerHTML = "";
-      recentLabel.style.display = "none";
-      list.innerHTML = '<div class="empty-hint">Noch keine Geschichte begonnen. Klicke unten auf „Neue Geschichte beginnen", um loszulegen.</div>';
+      continueCard.hidden = false;
+      continueCard.innerHTML = '<div>Noch keine Geschichte begonnen. Nutze die Suche oder starte unten eine neue.</div>';
       return;
     }
 
     const latest = sorted[0];
+    const isDone = latest.status === "fertig" || latest.status === "veroeffentlicht";
     continueCard.hidden = false;
     continueCard.innerHTML = `
       <div>
-        <div class="eyebrow">Weiterschreiben an</div>
+        <div class="eyebrow">${isDone ? "Zuletzt bearbeitet" : "Weiterschreiben an"}</div>
         <div class="title">${escapeHtml(latest.title || "Ohne Titel")}</div>
         <div class="meta">${statusLabel(latest.status)} · ${relativeTime(latest.updatedAt)}</div>
       </div>
-      <button class="btn btn-primary" id="continueBtn">Weiterschreiben →</button>`;
+      <button class="btn btn-primary" id="continueBtn">${isDone ? "Öffnen →" : "Weiterschreiben →"}</button>`;
     document.getElementById("continueBtn").addEventListener("click", () => { switchView("write"); openStory(latest.id); });
-
-    const rest = sorted.slice(1, 5);
-    if (rest.length === 0) {
-      recentLabel.style.display = "none";
-      return;
-    }
-    recentLabel.style.display = "";
-    rest.forEach(s => {
-      const card = document.createElement("div");
-      card.className = "recent-card";
-      card.innerHTML = `
-        <div>
-          <div class="title">${escapeHtml(s.title || "Ohne Titel")}</div>
-          <div class="meta">${statusLabel(s.status)} · ${relativeTime(s.updatedAt)}</div>
-        </div>
-        <div style="color:var(--ink-faint);">›</div>`;
-      card.addEventListener("click", () => { switchView("write"); openStory(s.id); });
-      list.appendChild(card);
-    });
   }
 
   document.getElementById("startNewStoryBtn").addEventListener("click", async () => {
@@ -219,10 +196,27 @@
         </select>
       </div>
       <div class="toolbar">
+        <select class="tool-select" id="headingSelect" title="Textformat">
+          <option value="P">Normaler Text</option>
+          <option value="H1">Überschrift 1</option>
+          <option value="H2">Überschrift 2</option>
+          <option value="H3">Überschrift 3</option>
+        </select>
+        <select class="tool-select" id="fontSelect" title="Schriftart">
+          <option value="Inter, sans-serif">Standard</option>
+          <option value="'Fraunces', serif">Serif</option>
+          <option value="Georgia, serif">Klassisch</option>
+          <option value="'Courier New', monospace">Schreibmaschine</option>
+        </select>
+        <select class="tool-select" id="fontSizeSelect" title="Schriftgröße">
+          <option value="2">Klein</option>
+          <option value="3" selected>Normal</option>
+          <option value="5">Groß</option>
+          <option value="7">Sehr groß</option>
+        </select>
+        <span class="toolbar-divider"></span>
         <button class="tool-btn" data-cmd="bold" title="Fett"><b>F</b></button>
         <button class="tool-btn" data-cmd="italic" title="Kursiv"><i>K</i></button>
-        <button class="tool-btn" data-cmd="h2" title="Überschrift">Überschrift</button>
-        <button class="tool-btn" data-cmd="p" title="Absatz">Absatz</button>
         <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
         <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
         <input type="file" id="imageInput" accept="image/*" style="display:none;">
@@ -261,12 +255,26 @@
       btn.addEventListener("click", () => {
         editorPage.focus();
         const cmd = btn.dataset.cmd;
-        if (cmd === "h2") document.execCommand("formatBlock", false, "H2");
-        else if (cmd === "p") document.execCommand("formatBlock", false, "P");
-        else if (cmd === "image") { document.getElementById("imageInput").click(); return; }
-        else document.execCommand(cmd, false, null);
+        if (cmd === "image") { document.getElementById("imageInput").click(); return; }
+        document.execCommand(cmd, false, null);
         scheduleSave();
       });
+    });
+
+    document.getElementById("headingSelect").addEventListener("change", (e) => {
+      editorPage.focus();
+      document.execCommand("formatBlock", false, e.target.value);
+      scheduleSave();
+    });
+    document.getElementById("fontSelect").addEventListener("change", (e) => {
+      editorPage.focus();
+      document.execCommand("fontName", false, e.target.value);
+      scheduleSave();
+    });
+    document.getElementById("fontSizeSelect").addEventListener("change", (e) => {
+      editorPage.focus();
+      document.execCommand("fontSize", false, e.target.value);
+      scheduleSave();
     });
 
     document.getElementById("imageInput").addEventListener("change", (e) => {
@@ -452,7 +460,10 @@
     const panel = document.getElementById("booksPanel");
     const stats = bookStats(book);
     panel.innerHTML = `
-      <button class="btn btn-ghost" id="backToBooksBtn" style="margin-bottom:16px;">← Alle Bücher</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+        <button class="btn btn-ghost" id="backToBooksBtn">← Alle Bücher</button>
+        <button class="btn btn-primary" id="previewBookBtn">📖 Vorschau ansehen</button>
+      </div>
       <div class="book-detail-top">
         <div class="book-cover-col">
           ${book.cover ? `<img class="cover-thumb" src="${book.cover}" alt="">` : `<div class="cover-placeholder">📖</div>`}
@@ -482,6 +493,7 @@
       </div>`;
 
     document.getElementById("backToBooksBtn").addEventListener("click", () => { activeBookId = null; renderBookList(); });
+    document.getElementById("previewBookBtn").addEventListener("click", () => renderBookPreview(book));
 
     const titleInput = document.getElementById("bookTitleInput");
     const subtitleInput = document.getElementById("bookSubtitleInput");
@@ -649,6 +661,43 @@
 
       container.appendChild(block);
     });
+  }
+
+  function renderBookPreview(book) {
+    const panel = document.getElementById("booksPanel");
+    const chapters = book.chapters || [];
+
+    const chaptersHtml = chapters.map(chapter => {
+      const storyIds = chapter.storyIds || [];
+      const storiesHtml = storyIds.map(id => {
+        const story = stories.find(s => s.id === id);
+        if (!story) return "";
+        return `
+          <div class="preview-story">
+            <h3 class="preview-story-title">${escapeHtml(story.title || "Ohne Titel")}</h3>
+            <div class="preview-story-content">${story.content || ""}</div>
+          </div>`;
+      }).join("");
+      return `
+        <div class="preview-chapter">
+          <h2 class="preview-chapter-title">${escapeHtml(chapter.title || "Ohne Titel")}</h2>
+          ${storiesHtml || '<p class="preview-empty">Dieses Kapitel ist noch leer.</p>'}
+        </div>`;
+    }).join("");
+
+    panel.innerHTML = `
+      <button class="btn btn-ghost" id="backToBookDetailBtn" style="margin-bottom:16px;">← Zurück zur Bearbeitung</button>
+      <div class="book-preview">
+        <div class="preview-titlepage">
+          ${book.cover ? `<img class="preview-cover" src="${book.cover}" alt="">` : ""}
+          <h1 class="preview-title">${escapeHtml(book.title || "Ohne Titel")}</h1>
+          ${book.subtitle ? `<p class="preview-subtitle">${escapeHtml(book.subtitle)}</p>` : ""}
+          ${book.description ? `<p class="preview-description">${escapeHtml(book.description)}</p>` : ""}
+        </div>
+        ${chapters.length === 0 ? '<p class="preview-empty">Noch keine Kapitel angelegt – lege in der Bearbeitung ein Kapitel an und füge Geschichten hinzu.</p>' : chaptersHtml}
+      </div>`;
+
+    document.getElementById("backToBookDetailBtn").addEventListener("click", () => renderBookDetail(book));
   }
 
   function pickStoryModal(excludeIds) {

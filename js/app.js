@@ -19,6 +19,15 @@
     { value: "veroeffentlicht", label: "Veröffentlicht", color: "#5C4A9C" }
   ];
 
+  const FONT_OPTIONS = [
+    { label: "Georgia", stack: "Georgia, 'Times New Roman', serif" },
+    { label: "Times New Roman", stack: "'Times New Roman', Times, serif" },
+    { label: "Garamond", stack: "'EB Garamond', Garamond, serif" },
+    { label: "Merriweather", stack: "'Merriweather', Georgia, serif" },
+    { label: "Verdana", stack: "Verdana, Geneva, sans-serif" }
+  ];
+  const FONT_SIZE_OPTIONS = [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32];
+
   function statusLabel(v) { return (STATUS_OPTIONS.find(s => s.value === v) || STATUS_OPTIONS[0]).label; }
   function statusColor(v) { return (STATUS_OPTIONS.find(s => s.value === v) || STATUS_OPTIONS[0]).color; }
 
@@ -203,16 +212,10 @@
           <option value="H3">Überschrift 3</option>
         </select>
         <select class="tool-select" id="fontSelect" title="Schriftart">
-          <option value="Inter, sans-serif">Standard</option>
-          <option value="'Fraunces', serif">Serif</option>
-          <option value="Georgia, serif">Klassisch</option>
-          <option value="'Courier New', monospace">Schreibmaschine</option>
+          ${FONT_OPTIONS.map(f => `<option value="${escapeAttr(f.stack)}">${f.label}</option>`).join("")}
         </select>
-        <select class="tool-select" id="fontSizeSelect" title="Schriftgröße">
-          <option value="2">Klein</option>
-          <option value="3" selected>Normal</option>
-          <option value="5">Groß</option>
-          <option value="7">Sehr groß</option>
+        <select class="tool-select tool-select-narrow" id="fontSizeSelect" title="Schriftgröße">
+          ${FONT_SIZE_OPTIONS.map(pt => `<option value="${pt}" ${pt === 12 ? "selected" : ""}>${pt} pt</option>`).join("")}
         </select>
         <span class="toolbar-divider"></span>
         <button class="tool-btn" data-cmd="bold" title="Fett"><b>F</b></button>
@@ -273,7 +276,14 @@
     });
     document.getElementById("fontSizeSelect").addEventListener("change", (e) => {
       editorPage.focus();
-      document.execCommand("fontSize", false, e.target.value);
+      // execCommand kennt nur die Stufen 1-7, keine echten pt-Werte. Deshalb Stufe 7
+      // als eindeutige Markierung nutzen und danach durch die echte pt-Größe ersetzen -
+      // der gängige Trick, um in contenteditable echte Punktgrößen zu setzen.
+      document.execCommand("fontSize", false, "7");
+      editorPage.querySelectorAll('font[size="7"]').forEach(el => {
+        el.removeAttribute("size");
+        el.style.fontSize = e.target.value + "pt";
+      });
       scheduleSave();
     });
 

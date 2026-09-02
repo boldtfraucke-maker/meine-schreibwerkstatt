@@ -323,8 +323,10 @@ select.status-select {
   padding: 5px 8px;
   font-size: 0.82rem;
   color: var(--ink-soft);
-  max-width: 150px;
+  max-width: 170px;
+  text-overflow: ellipsis;
 }
+.tool-select-narrow { max-width: 78px; }
 .tool-select:hover { border-color: var(--clay); color: var(--ink); }
 .toolbar-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
 .editor-page {

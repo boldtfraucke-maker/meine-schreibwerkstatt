@@ -59,6 +59,15 @@ Drive-Ordner auf und muss nie manuell verwaltet werden.
 - `js/drive-sync.js` – Google-Drive-Anbindung inkl. Konflikterkennung. Austauschbar gegen andere Cloud-Anbieter.
 - `js/app.js` – Oberfläche und Verknüpfung der beiden Module.
 
-Konflikte (dieselbe Geschichte auf zwei Geräten geändert) werden pro
-Geschichte einzeln angezeigt; die Autorin entscheidet, welche Version bleibt,
-oder verschiebt die Entscheidung auf später.
+Die Synchronisation deckt Geschichten, Ideen und Bücher gemeinsam ab.
+Konflikte (derselbe Eintrag auf zwei Geräten geändert) werden einzeln
+angezeigt; die Autorin entscheidet, welche Version bleibt, oder verschiebt
+die Entscheidung auf später.
+
+## Hinweis für Updates
+
+Die drei Skript-Einbindungen in `index.html` tragen eine Versionsnummer
+(`js/app.js?v=4` usw.), damit Browser nach einem Update nicht versehentlich
+eine alte, zwischengespeicherte Version ausführen. Bei jeder inhaltlichen
+Änderung an `js/*.js` bitte die Zahl `?v=` in allen drei `<script>`-Tags in
+`index.html` um eins erhöhen.

@@ -306,7 +306,7 @@
         "Löschen",
         async () => {
           await Storage.remove(story.id);
-          DriveSync.markDeleted(story.id);
+          DriveSync.markDeleted("stories", story.id);
           stories = stories.filter(s => s.id !== story.id);
           activeStoryId = null;
           renderEditor();
@@ -360,9 +360,11 @@
             stories.push(story);
             await Storage.save(story);
             await IdeaStorage.remove(idea.id);
+            DriveSync.markDeleted("ideas", idea.id);
             ideas = ideas.filter(i => i.id !== idea.id);
             switchView("write");
             openStory(story.id);
+            if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
           }
         );
       });
@@ -370,8 +372,10 @@
       card.querySelector(".delete-idea-btn").addEventListener("click", () => {
         showConfirm("Diese Idee wirklich löschen?", "Löschen", async () => {
           await IdeaStorage.remove(idea.id);
+          DriveSync.markDeleted("ideas", idea.id);
           ideas = ideas.filter(i => i.id !== idea.id);
           renderIdeas();
+          if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
         });
       });
 
@@ -388,6 +392,7 @@
     await IdeaStorage.save(idea);
     textarea.value = "";
     renderIdeas();
+    if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
   });
 
   // ---------- Bücher ----------
@@ -408,12 +413,15 @@
     return ids;
   }
 
+  async function saveBook(book) {
+    book.updatedAt = new Date().toISOString();
+    await BookStorage.save(book);
+    if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
+  }
+
   function scheduleBookSave(book) {
     clearTimeout(bookSaveTimer);
-    bookSaveTimer = setTimeout(async () => {
-      book.updatedAt = new Date().toISOString();
-      await BookStorage.save(book);
-    }, 500);
+    bookSaveTimer = setTimeout(() => { saveBook(book); }, 500);
   }
 
   function renderBooks() {
@@ -524,8 +532,7 @@
       const reader = new FileReader();
       reader.onload = async () => {
         book.cover = reader.result;
-        book.updatedAt = new Date().toISOString();
-        await BookStorage.save(book);
+        await saveBook(book);
         renderBookDetail(book);
       };
       reader.readAsDataURL(file);
@@ -537,8 +544,7 @@
     document.getElementById("addChapterBtn").addEventListener("click", async () => {
       book.chapters = book.chapters || [];
       book.chapters.push({ id: uid(), title: "Kapitel " + (book.chapters.length + 1), storyIds: [] });
-      book.updatedAt = new Date().toISOString();
-      await BookStorage.save(book);
+      await saveBook(book);
       renderBookDetail(book);
     });
 
@@ -548,9 +554,11 @@
         "Löschen",
         async () => {
           await BookStorage.remove(book.id);
+          DriveSync.markDeleted("books", book.id);
           books = books.filter(b => b.id !== book.id);
           activeBookId = null;
           renderBookList();
+          if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
         }
       );
     });
@@ -591,15 +599,13 @@
       block.querySelector(".chapter-up").addEventListener("click", async () => {
         if (chapterIndex === 0) return;
         [book.chapters[chapterIndex - 1], book.chapters[chapterIndex]] = [book.chapters[chapterIndex], book.chapters[chapterIndex - 1]];
-        book.updatedAt = new Date().toISOString();
-        await BookStorage.save(book);
+        await saveBook(book);
         renderBookDetail(book);
       });
       block.querySelector(".chapter-down").addEventListener("click", async () => {
         if (chapterIndex === chapters.length - 1) return;
         [book.chapters[chapterIndex + 1], book.chapters[chapterIndex]] = [book.chapters[chapterIndex], book.chapters[chapterIndex + 1]];
-        book.updatedAt = new Date().toISOString();
-        await BookStorage.save(book);
+        await saveBook(book);
         renderBookDetail(book);
       });
       block.querySelector(".chapter-delete").addEventListener("click", () => {
@@ -608,8 +614,7 @@
           "Löschen",
           async () => {
             book.chapters = book.chapters.filter(c => c.id !== chapter.id);
-            book.updatedAt = new Date().toISOString();
-            await BookStorage.save(book);
+            await saveBook(book);
             renderBookDetail(book);
           }
         );
@@ -636,21 +641,18 @@
           row.querySelector(".story-up").addEventListener("click", async () => {
             if (idx === 0) return;
             [chapter.storyIds[idx - 1], chapter.storyIds[idx]] = [chapter.storyIds[idx], chapter.storyIds[idx - 1]];
-            book.updatedAt = new Date().toISOString();
-            await BookStorage.save(book);
+            await saveBook(book);
             renderBookDetail(book);
           });
           row.querySelector(".story-down").addEventListener("click", async () => {
             if (idx === storyIds.length - 1) return;
             [chapter.storyIds[idx + 1], chapter.storyIds[idx]] = [chapter.storyIds[idx], chapter.storyIds[idx + 1]];
-            book.updatedAt = new Date().toISOString();
-            await BookStorage.save(book);
+            await saveBook(book);
             renderBookDetail(book);
           });
           row.querySelector(".remove-btn").addEventListener("click", async () => {
             chapter.storyIds.splice(idx, 1);
-            book.updatedAt = new Date().toISOString();
-            await BookStorage.save(book);
+            await saveBook(book);
             renderBookDetail(book);
           });
 
@@ -664,8 +666,7 @@
         if (!storyId) return;
         chapter.storyIds = chapter.storyIds || [];
         chapter.storyIds.push(storyId);
-        book.updatedAt = new Date().toISOString();
-        await BookStorage.save(book);
+        await saveBook(book);
         renderBookDetail(book);
       });
 
@@ -931,6 +932,21 @@
     performSync();
   });
 
+  const SYNC_KINDS = ["stories", "ideas", "books"];
+
+  function storageFor(kind) { return kind === "stories" ? Storage : kind === "ideas" ? IdeaStorage : BookStorage; }
+  function localArrayFor(kind) { return kind === "stories" ? stories : kind === "ideas" ? ideas : books; }
+  function upsertItem(kind, item) {
+    if (kind === "stories") upsertLocal(item);
+    else if (kind === "ideas") { const i = ideas.findIndex(x => x.id === item.id); if (i >= 0) ideas[i] = item; else ideas.push(item); }
+    else { const i = books.findIndex(x => x.id === item.id); if (i >= 0) books[i] = item; else books.push(item); }
+  }
+  function removeItem(kind, id) {
+    if (kind === "stories") removeLocal(id);
+    else if (kind === "ideas") ideas = ideas.filter(x => x.id !== id);
+    else books = books.filter(x => x.id !== id);
+  }
+
   async function performSync() {
     if (!navigator.onLine) {
       showAlert("Du bist gerade offline. Sobald wieder Internet da ist, kannst du synchronisieren.");
@@ -942,72 +958,88 @@
         await DriveSync.connect();
       }
       const remoteData = await DriveSync.downloadRemote();
-      const plan = DriveSync.buildSyncPlan(stories, remoteData.stories || []);
 
-      const conflicts = plan.filter(a => a.type === "conflict");
-      const autoActions = plan.filter(a => a.type !== "conflict");
-      const resolvedIds = [];
-      const clearedTombstoneIds = [];
+      const perKind = {};
+      const allConflicts = [];
 
-      for (const action of autoActions) {
-        if (action.type === "upload-local") {
-          resolvedIds.push(action.story.id);
-        } else if (action.type === "adopt-remote") {
-          await Storage.save(action.story);
-          upsertLocal(action.story);
-          resolvedIds.push(action.story.id);
-        } else if (action.type === "delete-local") {
-          await Storage.remove(action.id);
-          removeLocal(action.id);
-          resolvedIds.push(action.id);
-        } else if (action.type === "delete-remote") {
-          clearedTombstoneIds.push(action.id);
-          resolvedIds.push(action.id);
-        } else if (action.type === "clear-tombstone") {
-          clearedTombstoneIds.push(action.id);
-        } else if (action.type === "align-timestamp") {
-          await Storage.save(action.story);
-          upsertLocal(action.story);
-          resolvedIds.push(action.story.id);
+      for (const kind of SYNC_KINDS) {
+        const plan = DriveSync.buildSyncPlan(kind, localArrayFor(kind), remoteData[kind] || []);
+        const autoActions = plan.filter(a => a.type !== "conflict");
+        const conflicts = plan.filter(a => a.type === "conflict").map(c => ({ ...c, entityKind: kind }));
+        const resolvedIds = [];
+        const clearedTombstoneIds = [];
+
+        for (const action of autoActions) {
+          if (action.type === "upload-local") {
+            resolvedIds.push(action.item.id);
+          } else if (action.type === "adopt-remote") {
+            await storageFor(kind).save(action.item);
+            upsertItem(kind, action.item);
+            resolvedIds.push(action.item.id);
+          } else if (action.type === "delete-local") {
+            await storageFor(kind).remove(action.id);
+            removeItem(kind, action.id);
+            resolvedIds.push(action.id);
+          } else if (action.type === "delete-remote") {
+            clearedTombstoneIds.push(action.id);
+            resolvedIds.push(action.id);
+          } else if (action.type === "clear-tombstone") {
+            clearedTombstoneIds.push(action.id);
+          } else if (action.type === "align-timestamp") {
+            await storageFor(kind).save(action.item);
+            upsertItem(kind, action.item);
+            resolvedIds.push(action.item.id);
+          }
         }
+
+        perKind[kind] = { resolvedIds, clearedTombstoneIds };
+        allConflicts.push(...conflicts);
       }
 
-      for (let i = 0; i < conflicts.length; i++) {
-        const c = conflicts[i];
-        const decision = await askConflict(c, i + 1, conflicts.length);
+      for (let i = 0; i < allConflicts.length; i++) {
+        const c = allConflicts[i];
+        const kind = c.entityKind;
+        const bucket = perKind[kind];
+        const decision = await askConflict(c, i + 1, allConflicts.length);
         if (decision === "later") continue;
 
         if (c.kind === "edit-edit") {
           const winner = decision === "local" ? c.local : c.remote;
-          winner.updatedAt = new Date().toISOString();
-          await Storage.save(winner);
-          upsertLocal(winner);
-          resolvedIds.push(c.id);
+          if (kind !== "ideas") winner.updatedAt = new Date().toISOString();
+          await storageFor(kind).save(winner);
+          upsertItem(kind, winner);
+          bucket.resolvedIds.push(c.id);
         } else if (c.kind === "edit-delete") {
           if (decision === "local") {
-            resolvedIds.push(c.id);
+            bucket.resolvedIds.push(c.id);
           } else {
-            await Storage.remove(c.id);
-            removeLocal(c.id);
-            resolvedIds.push(c.id);
+            await storageFor(kind).remove(c.id);
+            removeItem(kind, c.id);
+            bucket.resolvedIds.push(c.id);
           }
         } else if (c.kind === "delete-edit") {
           if (decision === "local") {
-            resolvedIds.push(c.id);
-            clearedTombstoneIds.push(c.id);
+            bucket.resolvedIds.push(c.id);
+            bucket.clearedTombstoneIds.push(c.id);
           } else {
-            await Storage.save(c.remote);
-            upsertLocal(c.remote);
-            resolvedIds.push(c.id);
-            clearedTombstoneIds.push(c.id);
+            await storageFor(kind).save(c.remote);
+            upsertItem(kind, c.remote);
+            bucket.resolvedIds.push(c.id);
+            bucket.clearedTombstoneIds.push(c.id);
           }
         }
       }
 
-      await DriveSync.finishSync(stories, resolvedIds, clearedTombstoneIds);
+      await DriveSync.finishSync({
+        stories: { items: stories, resolvedIds: perKind.stories.resolvedIds, clearedTombstoneIds: perKind.stories.clearedTombstoneIds },
+        ideas: { items: ideas, resolvedIds: perKind.ideas.resolvedIds, clearedTombstoneIds: perKind.ideas.clearedTombstoneIds },
+        books: { items: books, resolvedIds: perKind.books.resolvedIds, clearedTombstoneIds: perKind.books.clearedTombstoneIds }
+      });
 
       renderStart();
       if (activeStoryId) renderEditor();
+      if (document.getElementById("view-ideas").classList.contains("active")) renderIdeas();
+      if (document.getElementById("view-books").classList.contains("active")) renderBooks();
       renderDriveSettings();
       updateSyncChip("ok", "Alles aktuell · " + relativeTime(new Date().toISOString()));
     } catch (err) {
@@ -1062,38 +1094,56 @@
     modalOverlay.hidden = false;
   }
 
+  function conflictItemTitle(entityKind, item) {
+    if (!item) return "";
+    if (entityKind === "ideas") return plainSnippet(item.text || "", 50);
+    return item.title || "Ohne Titel";
+  }
+
+  function conflictTypeLabel(entityKind) {
+    return entityKind === "books" ? "Das Buch" : entityKind === "ideas" ? "Die Idee" : "Die Geschichte";
+  }
+
   function askConflict(conflict, index, total) {
     return new Promise((resolve) => {
-      const { kind, local, remote } = conflict;
-      const titleText = (local && local.title) || (remote && remote.title) || "Ohne Titel";
-      let leftLabel, rightLabel, leftStory, rightStory, leftBtnLabel, rightBtnLabel;
+      const { kind, local, remote, entityKind } = conflict;
+      const titleText = conflictItemTitle(entityKind, local) || conflictItemTitle(entityKind, remote) || "Ohne Titel";
+      let leftLabel, rightLabel, leftItem, rightItem, leftBtnLabel, rightBtnLabel;
 
       if (kind === "edit-edit") {
         leftLabel = "Version auf diesem Gerät"; rightLabel = "Version von einem anderen Gerät";
-        leftStory = local; rightStory = remote;
+        leftItem = local; rightItem = remote;
         leftBtnLabel = "Diese Version behalten"; rightBtnLabel = "Andere Version übernehmen";
       } else if (kind === "edit-delete") {
         leftLabel = "Bearbeitet auf diesem Gerät"; rightLabel = "Auf einem anderen Gerät gelöscht";
-        leftStory = local; rightStory = null;
+        leftItem = local; rightItem = null;
         leftBtnLabel = "Meine Änderung behalten"; rightBtnLabel = "Löschung übernehmen";
       } else {
         leftLabel = "Auf diesem Gerät gelöscht"; rightLabel = "Auf einem anderen Gerät bearbeitet";
-        leftStory = null; rightStory = remote;
+        leftItem = null; rightItem = remote;
         leftBtnLabel = "Löschung übernehmen"; rightBtnLabel = "Andere Version behalten";
       }
 
-      function versionBox(label, story) {
-        if (!story) {
+      function versionBox(label, item) {
+        if (!item) {
           return `<div class="conflict-version"><h4>${escapeHtml(label)}</h4><div class="snippet" style="color:var(--ink-faint);">(gelöscht)</div></div>`;
         }
-        const snippet = escapeHtml(plainSnippet(story.content, 140)) || '<span style="color:var(--ink-faint);">(leer)</span>';
-        return `<div class="conflict-version"><h4>${escapeHtml(label)}</h4><div class="snippet">${snippet}</div><div class="meta">${statusLabel(story.status)} · ${relativeTime(story.updatedAt)}</div></div>`;
+        if (entityKind === "books") {
+          const stats = bookStats(item);
+          return `<div class="conflict-version"><h4>${escapeHtml(label)}</h4><div class="snippet">${escapeHtml(item.title || "Ohne Titel")}${item.subtitle ? " – " + escapeHtml(item.subtitle) : ""}</div><div class="meta">${stats.count} Geschichte(n) · ${relativeTime(item.updatedAt)}</div></div>`;
+        }
+        if (entityKind === "ideas") {
+          const snippet = escapeHtml(plainSnippet(item.text || "", 140)) || '<span style="color:var(--ink-faint);">(leer)</span>';
+          return `<div class="conflict-version"><h4>${escapeHtml(label)}</h4><div class="snippet">${snippet}</div><div class="meta">${relativeTime(item.createdAt)}</div></div>`;
+        }
+        const snippet = escapeHtml(plainSnippet(item.content, 140)) || '<span style="color:var(--ink-faint);">(leer)</span>';
+        return `<div class="conflict-version"><h4>${escapeHtml(label)}</h4><div class="snippet">${snippet}</div><div class="meta">${statusLabel(item.status)} · ${relativeTime(item.updatedAt)}</div></div>`;
       }
 
       modalBody.innerHTML = `
         <div class="conflict-progress">Konflikt ${index} von ${total}</div>
-        <p class="conflict-story">„${escapeHtml(titleText)}" wurde auf zwei Geräten unterschiedlich geändert.</p>
-        <div class="conflict-versions">${versionBox(leftLabel, leftStory)}${versionBox(rightLabel, rightStory)}</div>
+        <p class="conflict-story">${conflictTypeLabel(entityKind)} „${escapeHtml(titleText)}" wurde auf zwei Geräten unterschiedlich geändert.</p>
+        <div class="conflict-versions">${versionBox(leftLabel, leftItem)}${versionBox(rightLabel, rightItem)}</div>
       `;
       modalActions.innerHTML = "";
 

@@ -1,13 +1,15 @@
 // Google-Drive-Synchronisation.
 //
-// Die Geschichten werden als eine JSON-Datei im privaten "App-Ordner" der
-// Nutzerin auf Google Drive abgelegt (Scope drive.appdata). Diesen Ordner
-// sieht die Nutzerin nicht in ihrem normalen Drive – sie muss also nie
-// Dateien oder Ordner selbst verwalten.
+// Geschichten, Ideen und Bücher werden zusammen als eine JSON-Datei im
+// privaten "App-Ordner" der Nutzerin auf Google Drive abgelegt (Scope
+// drive.appdata). Diesen Ordner sieht die Nutzerin nicht in ihrem normalen
+// Drive – sie muss also nie Dateien oder Ordner selbst verwalten.
 //
-// Diese Datei kennt nichts von der Benutzeroberfläche. app.js ruft
-// DriveSync.buildSyncPlan(...) auf, wendet automatische Aktionen an, fragt
-// bei Konflikten die Nutzerin und ruft danach DriveSync.finishSync(...) auf.
+// Diese Datei kennt nichts von der Benutzeroberfläche. app.js ruft für
+// jede der drei Sammlungen DriveSync.buildSyncPlan(kind, ...) auf, wendet
+// automatische Aktionen an, fragt bei Konflikten die Nutzerin und ruft
+// danach einmalig DriveSync.finishSync(...) mit den Ergebnissen aller drei
+// Sammlungen auf.
 const DriveSync = (function () {
   "use strict";
 
@@ -17,8 +19,9 @@ const DriveSync = (function () {
   const LS_CONNECTED = "sw_drive_connected";
   const LS_FILE_ID = "sw_drive_file_id";
   const LS_LAST_SYNC = "sw_drive_last_sync";
-  const LS_META = "sw_drive_sync_meta";       // { storyId: lastSyncedUpdatedAt }
-  const LS_TOMBSTONES = "sw_drive_tombstones"; // { storyId: deletedAtISO }
+  const LS_META = "sw_drive_sync_meta";       // { stories: { id: lastSyncedTimestamp }, ideas: {...}, books: {...} }
+  const LS_TOMBSTONES = "sw_drive_tombstones"; // { stories: { id: deletedAtISO }, ideas: {...}, books: {...} }
+  const KINDS = ["stories", "ideas", "books"];
 
   let tokenClient = null;
   let accessToken = null;
@@ -63,20 +66,36 @@ const DriveSync = (function () {
   }
   function writeJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 
-  function getMeta() { return readJson(LS_META, {}); }
-  function setMeta(meta) { writeJson(LS_META, meta); }
-  function getTombstones() { return readJson(LS_TOMBSTONES, {}); }
-  function setTombstones(t) { writeJson(LS_TOMBSTONES, t); }
+  // Liest Meta/Tombstones und migriert dabei einmalig das alte, flache
+  // Phase-2-Format (nur Geschichten, ohne "stories"-Unterebene).
+  function getMetaAll() {
+    const raw = readJson(LS_META, {});
+    if (!raw.stories && !raw.ideas && !raw.books) {
+      return { stories: raw, ideas: {}, books: {} };
+    }
+    return { stories: raw.stories || {}, ideas: raw.ideas || {}, books: raw.books || {} };
+  }
+  function setMetaAll(meta) { writeJson(LS_META, meta); }
 
-  // Vom Editor beim Löschen einer Geschichte aufgerufen, damit die Löschung
-  // beim nächsten Sync auf das andere Gerät übertragen werden kann.
-  function markDeleted(id) {
-    const t = getTombstones();
-    t[id] = new Date().toISOString();
-    setTombstones(t);
-    const meta = getMeta();
-    delete meta[id];
-    setMeta(meta);
+  function getTombstonesAll() {
+    const raw = readJson(LS_TOMBSTONES, {});
+    if (!raw.stories && !raw.ideas && !raw.books) {
+      return { stories: raw, ideas: {}, books: {} };
+    }
+    return { stories: raw.stories || {}, ideas: raw.ideas || {}, books: raw.books || {} };
+  }
+  function setTombstonesAll(t) { writeJson(LS_TOMBSTONES, t); }
+
+  // Von der Oberfläche beim Löschen einer Geschichte/Idee/eines Buchs
+  // aufgerufen, damit die Löschung beim nächsten Sync auf das andere
+  // Gerät übertragen werden kann. kind: "stories" | "ideas" | "books".
+  function markDeleted(kind, id) {
+    const tAll = getTombstonesAll();
+    tAll[kind][id] = new Date().toISOString();
+    setTombstonesAll(tAll);
+    const metaAll = getMetaAll();
+    delete metaAll[kind][id];
+    setMetaAll(metaAll);
   }
 
   async function ensureTokenClient() {
@@ -167,17 +186,25 @@ const DriveSync = (function () {
 
   async function downloadRemote() {
     const fileId = await findSyncFileId();
-    if (!fileId) return { stories: [] };
+    if (!fileId) return { stories: [], ideas: [], books: [] };
     const res = await driveFetch(
       "https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media",
       { method: "GET" }
     );
-    try { return await res.json(); }
-    catch (e) { return { stories: [] }; }
+    try {
+      const data = await res.json();
+      return { stories: data.stories || [], ideas: data.ideas || [], books: data.books || [] };
+    } catch (e) { return { stories: [], ideas: [], books: [] }; }
   }
 
-  async function uploadSnapshot(stories) {
-    const payload = JSON.stringify({ app: "Meine Schreibwerkstatt", savedAt: new Date().toISOString(), stories });
+  async function uploadSnapshot(data) {
+    const payload = JSON.stringify({
+      app: "Meine Schreibwerkstatt",
+      savedAt: new Date().toISOString(),
+      stories: data.stories || [],
+      ideas: data.ideas || [],
+      books: data.books || []
+    });
     let fileId = await findSyncFileId();
     if (fileId) {
       await driveFetch(
@@ -201,18 +228,31 @@ const DriveSync = (function () {
     localStorage.setItem(LS_LAST_SYNC, new Date().toISOString());
   }
 
-  function storiesEqual(a, b) {
+  // Ideen ändern sich nach dem Anlegen nie mehr (keine Bearbeitungsfunktion) -
+  // daher dient createdAt als Vergleichszeitpunkt statt eines updatedAt-Felds.
+  function getTimestamp(kind, item) {
+    return kind === "ideas" ? item.createdAt : item.updatedAt;
+  }
+
+  function itemsEqual(kind, a, b) {
+    if (kind === "ideas") return a.text === b.text;
+    if (kind === "books") {
+      return a.title === b.title && a.subtitle === b.subtitle && a.description === b.description
+        && a.cover === b.cover
+        && JSON.stringify(a.chapters || []) === JSON.stringify(b.chapters || []);
+    }
     return a.title === b.title && a.content === b.content && a.status === b.status;
   }
 
-  // Vergleicht lokalen und entfernten Stand und liefert eine Liste von
-  // Aktionen. Automatische Aktionen können sofort angewendet werden;
-  // "conflict"-Einträge muss die Nutzerin entscheiden.
-  function buildSyncPlan(localStories, remoteStories) {
-    const meta = getMeta();
-    const tombstones = getTombstones();
-    const localById = new Map(localStories.map(s => [s.id, s]));
-    const remoteById = new Map((remoteStories || []).map(s => [s.id, s]));
+  // Vergleicht lokalen und entfernten Stand einer Sammlung und liefert eine
+  // Liste von Aktionen. Automatische Aktionen können sofort angewendet
+  // werden; "conflict"-Einträge muss die Nutzerin entscheiden.
+  // kind: "stories" | "ideas" | "books".
+  function buildSyncPlan(kind, localItems, remoteItems) {
+    const meta = getMetaAll()[kind];
+    const tombstones = getTombstonesAll()[kind];
+    const localById = new Map(localItems.map(s => [s.id, s]));
+    const remoteById = new Map((remoteItems || []).map(s => [s.id, s]));
     const ids = new Set([...localById.keys(), ...remoteById.keys(), ...Object.keys(tombstones)]);
 
     const actions = [];
@@ -229,8 +269,9 @@ const DriveSync = (function () {
           actions.push({ type: "clear-tombstone", id });
           return;
         }
-        const remoteChangedAfterDeletion = !lastSynced || remote.updatedAt > lastSynced;
-        if (remoteChangedAfterDeletion && remote.updatedAt > deletedLocallyAt) {
+        const remoteTs = getTimestamp(kind, remote);
+        const remoteChangedAfterDeletion = !lastSynced || remoteTs > lastSynced;
+        if (remoteChangedAfterDeletion && remoteTs > deletedLocallyAt) {
           actions.push({ type: "conflict", kind: "delete-edit", id, local: null, remote });
         } else {
           actions.push({ type: "delete-remote", id });
@@ -241,10 +282,10 @@ const DriveSync = (function () {
       if (local && !remote) {
         if (!lastSynced) {
           // Ganz neu, nur lokal vorhanden -> hochladen
-          actions.push({ type: "upload-local", story: local });
+          actions.push({ type: "upload-local", item: local });
         } else {
           // War schon mal synchronisiert, ist jetzt entfernt (anderes Gerät hat gelöscht)
-          const localChanged = local.updatedAt > lastSynced;
+          const localChanged = getTimestamp(kind, local) > lastSynced;
           if (localChanged) {
             actions.push({ type: "conflict", kind: "edit-delete", id, local, remote: null });
           } else {
@@ -255,19 +296,21 @@ const DriveSync = (function () {
       }
 
       if (!local && remote) {
-        actions.push({ type: "adopt-remote", story: remote });
+        actions.push({ type: "adopt-remote", item: remote });
         return;
       }
 
       if (local && remote) {
-        const localChanged = !lastSynced || local.updatedAt > lastSynced;
-        const remoteChanged = !lastSynced || remote.updatedAt > lastSynced;
+        const localTs = getTimestamp(kind, local);
+        const remoteTs = getTimestamp(kind, remote);
+        const localChanged = !lastSynced || localTs > lastSynced;
+        const remoteChanged = !lastSynced || remoteTs > lastSynced;
         if (!localChanged && !remoteChanged) return; // nichts zu tun
-        if (localChanged && !remoteChanged) { actions.push({ type: "upload-local", story: local }); return; }
-        if (!localChanged && remoteChanged) { actions.push({ type: "adopt-remote", story: remote }); return; }
+        if (localChanged && !remoteChanged) { actions.push({ type: "upload-local", item: local }); return; }
+        if (!localChanged && remoteChanged) { actions.push({ type: "adopt-remote", item: remote }); return; }
         // beide geändert
-        if (storiesEqual(local, remote)) {
-          actions.push({ type: "align-timestamp", story: local.updatedAt > remote.updatedAt ? local : remote });
+        if (itemsEqual(kind, local, remote)) {
+          actions.push({ type: "align-timestamp", item: localTs > remoteTs ? local : remote });
         } else {
           actions.push({ type: "conflict", kind: "edit-edit", id, local, remote });
         }
@@ -277,24 +320,35 @@ const DriveSync = (function () {
     return actions;
   }
 
-  // Nach Anwenden aller automatischen Aktionen und Klären aller Konflikte:
-  // finalStories ist der vollständige, endgültige lokale Bestand.
-  // resolvedIds sind die Story-IDs, die diese Runde final abgeglichen wurden
-  // (inkl. "später entscheiden" ausgenommen) – für sie wird der Sync-Zeitstempel gesetzt.
-  async function finishSync(finalStories, resolvedIds, clearedTombstoneIds) {
-    await uploadSnapshot(finalStories);
-    const meta = getMeta();
-    const finalById = new Map(finalStories.map(s => [s.id, s]));
-    resolvedIds.forEach((id) => {
-      const s = finalById.get(id);
-      if (s) meta[id] = s.updatedAt;
-      else delete meta[id];
+  // Nach Anwenden aller automatischen Aktionen und Klären aller Konflikte für
+  // alle drei Sammlungen: ein gemeinsamer Upload plus Aktualisierung von
+  // Sync-Zeitstempeln/Tombstones. perKindData sieht für jedes kind so aus:
+  // { items: [...aktueller lokaler Bestand...], resolvedIds: [...], clearedTombstoneIds: [...] }
+  async function finishSync(perKindData) {
+    await uploadSnapshot({
+      stories: perKindData.stories.items,
+      ideas: perKindData.ideas.items,
+      books: perKindData.books.items
     });
-    setMeta(meta);
 
-    const tombstones = getTombstones();
-    (clearedTombstoneIds || []).forEach((id) => delete tombstones[id]);
-    setTombstones(tombstones);
+    const metaAll = getMetaAll();
+    const tombstonesAll = getTombstonesAll();
+
+    KINDS.forEach((kind) => {
+      const { items, resolvedIds, clearedTombstoneIds } = perKindData[kind];
+      const byId = new Map(items.map(i => [i.id, i]));
+      const meta = metaAll[kind];
+      (resolvedIds || []).forEach((id) => {
+        const item = byId.get(id);
+        if (item) meta[id] = getTimestamp(kind, item);
+        else delete meta[id];
+      });
+      const tombstones = tombstonesAll[kind];
+      (clearedTombstoneIds || []).forEach((id) => delete tombstones[id]);
+    });
+
+    setMetaAll(metaAll);
+    setTombstonesAll(tombstonesAll);
   }
 
   return {

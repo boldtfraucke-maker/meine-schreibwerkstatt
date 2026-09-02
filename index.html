@@ -31,6 +31,8 @@
   <nav class="sidebar">
     <button class="nav-item active" data-view="start"><span class="icon">🏠</span> Start</button>
     <button class="nav-item" data-view="write"><span class="icon">✍️</span> Schreiben</button>
+    <button class="nav-item" data-view="ideas"><span class="icon">💡</span> Ideen</button>
+    <button class="nav-item" data-view="books"><span class="icon">📚</span> Bücher</button>
     <button class="nav-item" data-view="settings"><span class="icon">⚙️</span> Einstellungen</button>
   </nav>
 
@@ -73,6 +75,24 @@
       </div>
     </section>
 
+    <!-- IDEEN -->
+    <section id="view-ideas" class="view">
+      <h1 style="margin-top:0;">Ideenparkplatz</h1>
+      <p class="greeting-sub">Halte hier spontane Gedanken, Sätze oder Beobachtungen fest, ohne dich gleich auf eine Geschichte festzulegen.</p>
+
+      <div class="idea-input-row">
+        <textarea id="ideaInput" class="idea-textarea" placeholder="Kurzer Gedanke, ein Satz, eine Beobachtung beim Spaziergang …" rows="2"></textarea>
+        <button class="btn btn-primary" id="ideaSaveBtn">+ Idee speichern</button>
+      </div>
+
+      <div class="idea-list" id="ideaList"></div>
+    </section>
+
+    <!-- BÜCHER -->
+    <section id="view-books" class="view">
+      <div id="booksPanel"></div>
+    </section>
+
     <!-- EINSTELLUNGEN -->
     <section id="view-settings" class="view">
       <h1 style="margin-top:0;">Einstellungen</h1>
@@ -105,7 +125,7 @@
 
       <div class="settings-block">
         <h3>Über diese Version</h3>
-        <p>Dies ist Phase 2 von „Meine Schreibwerkstatt": echtes Hosting und Google-Drive-Synchronisation zwischen deinen Geräten. Als Nächstes kommen: Ideenparkplatz und Bücher.</p>
+        <p>Dies ist Phase 3 von „Meine Schreibwerkstatt": Ideenparkplatz sowie Bücher mit Kapiteln und Buch-Statistik. Ideen und Bücher liegen aktuell nur lokal auf diesem Gerät – die Google-Drive-Synchronisation deckt bisher nur Geschichten ab.</p>
       </div>
     </section>
   </main>
@@ -113,6 +133,8 @@
   <nav class="tabbar-mobile">
     <button class="nav-item active" data-view="start"><span class="icon">🏠</span> Start</button>
     <button class="nav-item" data-view="write"><span class="icon">✍️</span> Schreiben</button>
+    <button class="nav-item" data-view="ideas"><span class="icon">💡</span> Ideen</button>
+    <button class="nav-item" data-view="books"><span class="icon">📚</span> Bücher</button>
     <button class="nav-item" data-view="settings"><span class="icon">⚙️</span> Mehr</button>
   </nav>
 </div>

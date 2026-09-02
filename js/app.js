@@ -3,8 +3,12 @@
 
   // ---------- State ----------
   let stories = [];
+  let ideas = [];
+  let books = [];
   let activeStoryId = null;
+  let activeBookId = null;
   let autosaveTimer = null;
+  let bookSaveTimer = null;
 
   const STATUS_OPTIONS = [
     { value: "idee", label: "Idee", color: "#A79E8C" },
@@ -49,6 +53,9 @@
     return (str || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
   function escapeAttr(str) { return escapeHtml(str); }
+  function textToHtml(text) {
+    return text.split(/\n+/).filter(Boolean).map(line => `<p>${escapeHtml(line)}</p>`).join("");
+  }
 
   function upsertLocal(story) {
     const idx = stories.findIndex(s => s.id === story.id);
@@ -62,6 +69,8 @@
     document.getElementById("view-" + view).classList.add("active");
     document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.view === view));
     if (view === "start") renderStart();
+    if (view === "ideas") renderIdeas();
+    if (view === "books") renderBooks();
     if (view === "settings") renderDriveSettings();
   }
   document.querySelectorAll(".nav-item").forEach(btn => {
@@ -295,13 +304,411 @@
     }
   }
 
+  // ---------- Ideenparkplatz ----------
+  function renderIdeas() {
+    const list = document.getElementById("ideaList");
+    const sorted = [...ideas].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    list.innerHTML = "";
+    if (sorted.length === 0) {
+      list.innerHTML = '<div class="empty-hint">Noch keine Idee gesammelt. Trage oben einen Gedanken, einen Satz oder eine Beobachtung ein.</div>';
+      return;
+    }
+    sorted.forEach(idea => {
+      const card = document.createElement("div");
+      card.className = "idea-card";
+      card.innerHTML = `
+        <div>
+          <div class="text">${escapeHtml(idea.text)}</div>
+          <div class="meta">${relativeTime(idea.createdAt)}</div>
+        </div>
+        <div class="idea-actions">
+          <button class="btn btn-ghost make-story-btn">✎ Geschichte daraus machen</button>
+          <button class="btn-danger-text delete-idea-btn">Löschen</button>
+        </div>`;
+
+      card.querySelector(".make-story-btn").addEventListener("click", () => {
+        showConfirm(
+          "Aus dieser Idee eine neue Geschichte erstellen? Die Idee wird dabei aus dem Ideenparkplatz entfernt.",
+          "Geschichte erstellen",
+          async () => {
+            const story = {
+              id: uid(),
+              title: "",
+              content: textToHtml(idea.text),
+              status: "idee",
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            stories.push(story);
+            await Storage.save(story);
+            await IdeaStorage.remove(idea.id);
+            ideas = ideas.filter(i => i.id !== idea.id);
+            switchView("write");
+            openStory(story.id);
+          }
+        );
+      });
+
+      card.querySelector(".delete-idea-btn").addEventListener("click", () => {
+        showConfirm("Diese Idee wirklich löschen?", "Löschen", async () => {
+          await IdeaStorage.remove(idea.id);
+          ideas = ideas.filter(i => i.id !== idea.id);
+          renderIdeas();
+        });
+      });
+
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById("ideaSaveBtn").addEventListener("click", async () => {
+    const textarea = document.getElementById("ideaInput");
+    const text = textarea.value.trim();
+    if (!text) return;
+    const idea = { id: uid(), text, createdAt: new Date().toISOString() };
+    ideas.push(idea);
+    await IdeaStorage.save(idea);
+    textarea.value = "";
+    renderIdeas();
+  });
+
+  // ---------- Bücher ----------
+  function bookStats(book) {
+    const ids = new Set();
+    (book.chapters || []).forEach(ch => (ch.storyIds || []).forEach(id => ids.add(id)));
+    const bookStories = stories.filter(s => ids.has(s.id));
+    const words = bookStories.reduce((sum, s) => sum + wordCount(s.content), 0);
+    const pages = words > 0 ? Math.max(1, Math.round(words / 290)) : 0;
+    const doneCount = bookStories.filter(s => s.status === "fertig" || s.status === "veroeffentlicht").length;
+    const percent = bookStories.length ? Math.round((doneCount / bookStories.length) * 100) : 0;
+    return { count: bookStories.length, words, pages, percent };
+  }
+
+  function allUsedStoryIds(book) {
+    const ids = [];
+    (book.chapters || []).forEach(ch => (ch.storyIds || []).forEach(id => ids.push(id)));
+    return ids;
+  }
+
+  function scheduleBookSave(book) {
+    clearTimeout(bookSaveTimer);
+    bookSaveTimer = setTimeout(async () => {
+      book.updatedAt = new Date().toISOString();
+      await BookStorage.save(book);
+    }, 500);
+  }
+
+  function renderBooks() {
+    const book = books.find(b => b.id === activeBookId);
+    if (book) renderBookDetail(book);
+    else { activeBookId = null; renderBookList(); }
+  }
+
+  function renderBookList() {
+    const panel = document.getElementById("booksPanel");
+    const sorted = [...books].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    panel.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+        <div>
+          <h1 style="margin:0 0 4px;">Bücher</h1>
+          <p class="greeting-sub" style="margin:0;">Stelle aus deinen Geschichten ein oder mehrere Bücher zusammen.</p>
+        </div>
+        <button class="btn btn-primary" id="newBookBtn">+ Neues Buch</button>
+      </div>`;
+
+    const wrap = document.createElement("div");
+    if (sorted.length === 0) {
+      wrap.innerHTML = '<div class="empty-hint">Noch kein Buch angelegt. Klicke oben auf „+ Neues Buch", um zu starten.</div>';
+    } else {
+      wrap.className = "book-grid";
+      sorted.forEach(book => {
+        const stats = bookStats(book);
+        const card = document.createElement("div");
+        card.className = "book-card";
+        card.innerHTML = `
+          ${book.cover ? `<img class="cover-thumb" src="${book.cover}" alt="">` : `<div class="cover-placeholder">📖</div>`}
+          <div class="title">${escapeHtml(book.title || "Ohne Titel")}</div>
+          ${book.subtitle ? `<div class="subtitle">${escapeHtml(book.subtitle)}</div>` : ""}
+          <div class="meta">${stats.count} Geschichte(n) · ${stats.words.toLocaleString('de-DE')} Wörter · ${stats.percent}% fertig</div>`;
+        card.addEventListener("click", () => { activeBookId = book.id; renderBookDetail(book); });
+        wrap.appendChild(card);
+      });
+    }
+    panel.appendChild(wrap);
+
+    document.getElementById("newBookBtn").addEventListener("click", async () => {
+      const book = {
+        id: uid(), title: "", subtitle: "", description: "", cover: "", chapters: [],
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      };
+      books.push(book);
+      await BookStorage.save(book);
+      activeBookId = book.id;
+      renderBookDetail(book);
+    });
+  }
+
+  function renderBookDetail(book) {
+    const panel = document.getElementById("booksPanel");
+    const stats = bookStats(book);
+    panel.innerHTML = `
+      <button class="btn btn-ghost" id="backToBooksBtn" style="margin-bottom:16px;">← Alle Bücher</button>
+      <div class="book-detail-top">
+        <div class="book-cover-col">
+          ${book.cover ? `<img class="cover-thumb" src="${book.cover}" alt="">` : `<div class="cover-placeholder">📖</div>`}
+          <button class="btn btn-ghost" id="coverBtn" style="width:100%;">Cover ${book.cover ? "ändern" : "hinzufügen"}</button>
+          <input type="file" id="coverInput" accept="image/*" style="display:none;">
+        </div>
+        <div class="book-fields">
+          <input type="text" class="book-title-input" id="bookTitleInput" placeholder="Buchtitel" value="${escapeAttr(book.title)}">
+          <input type="text" class="book-subtitle-input" id="bookSubtitleInput" placeholder="Untertitel (optional)" value="${escapeAttr(book.subtitle)}">
+          <textarea class="book-description" id="bookDescInput" placeholder="Kurze Beschreibung (optional)">${escapeHtml(book.description || "")}</textarea>
+        </div>
+      </div>
+
+      <div class="book-stat-row">
+        <div class="stat-card"><div class="num">${stats.count}</div><div class="label">Geschichten</div></div>
+        <div class="stat-card"><div class="num">${stats.words.toLocaleString('de-DE')}</div><div class="label">Wörter</div></div>
+        <div class="stat-card"><div class="num">${stats.pages}</div><div class="label">Seiten (geschätzt)</div></div>
+        <div class="stat-card"><div class="num">${stats.percent}%</div><div class="label">fertig</div></div>
+      </div>
+
+      <p class="section-label">Kapitel</p>
+      <div id="chapterList"></div>
+      <button class="btn btn-ghost" id="addChapterBtn">+ Kapitel hinzufügen</button>
+
+      <div style="margin-top:28px;">
+        <button class="btn-danger-text" id="deleteBookBtn">Buch löschen</button>
+      </div>`;
+
+    document.getElementById("backToBooksBtn").addEventListener("click", () => { activeBookId = null; renderBookList(); });
+
+    const titleInput = document.getElementById("bookTitleInput");
+    const subtitleInput = document.getElementById("bookSubtitleInput");
+    const descInput = document.getElementById("bookDescInput");
+    [titleInput, subtitleInput, descInput].forEach(el => {
+      el.addEventListener("input", () => {
+        book.title = titleInput.value;
+        book.subtitle = subtitleInput.value;
+        book.description = descInput.value;
+        scheduleBookSave(book);
+      });
+    });
+
+    document.getElementById("coverBtn").addEventListener("click", () => document.getElementById("coverInput").click());
+    document.getElementById("coverInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        book.cover = reader.result;
+        book.updatedAt = new Date().toISOString();
+        await BookStorage.save(book);
+        renderBookDetail(book);
+      };
+      reader.readAsDataURL(file);
+      e.target.value = "";
+    });
+
+    renderChapters(book);
+
+    document.getElementById("addChapterBtn").addEventListener("click", async () => {
+      book.chapters = book.chapters || [];
+      book.chapters.push({ id: uid(), title: "Kapitel " + (book.chapters.length + 1), storyIds: [] });
+      book.updatedAt = new Date().toISOString();
+      await BookStorage.save(book);
+      renderBookDetail(book);
+    });
+
+    document.getElementById("deleteBookBtn").addEventListener("click", () => {
+      showConfirm(
+        `„${book.title || 'Ohne Titel'}" wirklich löschen? Die enthaltenen Geschichten bleiben erhalten, nur das Buch selbst wird entfernt.`,
+        "Löschen",
+        async () => {
+          await BookStorage.remove(book.id);
+          books = books.filter(b => b.id !== book.id);
+          activeBookId = null;
+          renderBookList();
+        }
+      );
+    });
+  }
+
+  function renderChapters(book) {
+    const container = document.getElementById("chapterList");
+    container.innerHTML = "";
+    const chapters = book.chapters || [];
+
+    if (chapters.length === 0) {
+      container.innerHTML = '<div class="empty-hint" style="margin-bottom:14px;">Noch kein Kapitel angelegt.</div>';
+    }
+
+    chapters.forEach((chapter, chapterIndex) => {
+      const block = document.createElement("div");
+      block.className = "chapter-block";
+      block.innerHTML = `
+        <div class="chapter-header">
+          <input type="text" class="chapter-title-input" value="${escapeAttr(chapter.title)}">
+          <div class="reorder-btns">
+            <button class="chapter-up" title="Kapitel nach oben" ${chapterIndex === 0 ? "disabled" : ""}>↑</button>
+            <button class="chapter-down" title="Kapitel nach unten" ${chapterIndex === chapters.length - 1 ? "disabled" : ""}>↓</button>
+          </div>
+          <button class="btn-danger-text chapter-delete" title="Kapitel löschen">✕</button>
+        </div>
+        <div class="chapter-stories"></div>
+        <div class="chapter-actions">
+          <button class="btn btn-ghost add-story-btn" style="font-size:0.82rem;padding:6px 12px;">+ Geschichte hinzufügen</button>
+        </div>`;
+
+      const titleInput = block.querySelector(".chapter-title-input");
+      titleInput.addEventListener("input", () => {
+        chapter.title = titleInput.value;
+        scheduleBookSave(book);
+      });
+
+      block.querySelector(".chapter-up").addEventListener("click", async () => {
+        if (chapterIndex === 0) return;
+        [book.chapters[chapterIndex - 1], book.chapters[chapterIndex]] = [book.chapters[chapterIndex], book.chapters[chapterIndex - 1]];
+        book.updatedAt = new Date().toISOString();
+        await BookStorage.save(book);
+        renderBookDetail(book);
+      });
+      block.querySelector(".chapter-down").addEventListener("click", async () => {
+        if (chapterIndex === chapters.length - 1) return;
+        [book.chapters[chapterIndex + 1], book.chapters[chapterIndex]] = [book.chapters[chapterIndex], book.chapters[chapterIndex + 1]];
+        book.updatedAt = new Date().toISOString();
+        await BookStorage.save(book);
+        renderBookDetail(book);
+      });
+      block.querySelector(".chapter-delete").addEventListener("click", () => {
+        showConfirm(
+          `Kapitel „${chapter.title || 'Ohne Titel'}" wirklich löschen? Die enthaltenen Geschichten bleiben erhalten, werden aber aus diesem Kapitel entfernt.`,
+          "Löschen",
+          async () => {
+            book.chapters = book.chapters.filter(c => c.id !== chapter.id);
+            book.updatedAt = new Date().toISOString();
+            await BookStorage.save(book);
+            renderBookDetail(book);
+          }
+        );
+      });
+
+      const storiesWrap = block.querySelector(".chapter-stories");
+      const storyIds = chapter.storyIds || [];
+      if (storyIds.length === 0) {
+        storiesWrap.innerHTML = '<div class="chapter-empty">Noch keine Geschichte in diesem Kapitel.</div>';
+      } else {
+        storyIds.forEach((storyId, idx) => {
+          const story = stories.find(s => s.id === storyId);
+          const row = document.createElement("div");
+          row.className = "chapter-story-row";
+          row.innerHTML = `
+            <span class="status-dot" style="background:${story ? statusColor(story.status) : '#A79E8C'}"></span>
+            <span class="title">${escapeHtml(story ? (story.title || "Ohne Titel") : "(Geschichte nicht gefunden)")}</span>
+            <div class="reorder-btns">
+              <button class="story-up" title="Nach oben" ${idx === 0 ? "disabled" : ""}>↑</button>
+              <button class="story-down" title="Nach unten" ${idx === storyIds.length - 1 ? "disabled" : ""}>↓</button>
+            </div>
+            <button class="remove-btn" title="Aus Kapitel entfernen">✕</button>`;
+
+          row.querySelector(".story-up").addEventListener("click", async () => {
+            if (idx === 0) return;
+            [chapter.storyIds[idx - 1], chapter.storyIds[idx]] = [chapter.storyIds[idx], chapter.storyIds[idx - 1]];
+            book.updatedAt = new Date().toISOString();
+            await BookStorage.save(book);
+            renderBookDetail(book);
+          });
+          row.querySelector(".story-down").addEventListener("click", async () => {
+            if (idx === storyIds.length - 1) return;
+            [chapter.storyIds[idx + 1], chapter.storyIds[idx]] = [chapter.storyIds[idx], chapter.storyIds[idx + 1]];
+            book.updatedAt = new Date().toISOString();
+            await BookStorage.save(book);
+            renderBookDetail(book);
+          });
+          row.querySelector(".remove-btn").addEventListener("click", async () => {
+            chapter.storyIds.splice(idx, 1);
+            book.updatedAt = new Date().toISOString();
+            await BookStorage.save(book);
+            renderBookDetail(book);
+          });
+
+          storiesWrap.appendChild(row);
+        });
+      }
+
+      block.querySelector(".add-story-btn").addEventListener("click", async () => {
+        const excludeIds = allUsedStoryIds(book);
+        const storyId = await pickStoryModal(excludeIds);
+        if (!storyId) return;
+        chapter.storyIds = chapter.storyIds || [];
+        chapter.storyIds.push(storyId);
+        book.updatedAt = new Date().toISOString();
+        await BookStorage.save(book);
+        renderBookDetail(book);
+      });
+
+      container.appendChild(block);
+    });
+  }
+
+  function pickStoryModal(excludeIds) {
+    return new Promise((resolve) => {
+      const available = stories.filter(s => !excludeIds.includes(s.id));
+
+      modalBody.innerHTML = `
+        <p style="font-weight:600;margin:0 0 12px;">Geschichte zum Kapitel hinzufügen</p>
+        <input type="text" id="pickerSearch" class="search-input" placeholder="Titel suchen …" autocomplete="off" style="width:100%;margin-bottom:12px;">
+        <div class="story-picker-list" id="pickerList"></div>`;
+      modalActions.innerHTML = "";
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "btn btn-ghost";
+      cancelBtn.textContent = "Abbrechen";
+      cancelBtn.addEventListener("click", () => { closeModal(); resolve(null); });
+      modalActions.append(cancelBtn);
+
+      const listEl = document.getElementById("pickerList");
+      const searchEl = document.getElementById("pickerSearch");
+
+      function renderList(query) {
+        const q = (query || "").trim().toLowerCase();
+        listEl.innerHTML = "";
+        if (available.length === 0) {
+          listEl.innerHTML = '<div class="empty-hint">Alle Geschichten sind bereits in diesem Buch enthalten.</div>';
+          return;
+        }
+        const filtered = available
+          .filter(s => !q || (s.title || "").toLowerCase().includes(q))
+          .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        if (filtered.length === 0) {
+          listEl.innerHTML = '<div class="empty-hint">Keine Geschichte gefunden.</div>';
+          return;
+        }
+        filtered.forEach(s => {
+          const item = document.createElement("div");
+          item.className = "story-item";
+          item.innerHTML = `
+            <div class="title">${escapeHtml(s.title || "Ohne Titel")}</div>
+            <div class="meta"><span class="status-dot" style="background:${statusColor(s.status)}"></span>${statusLabel(s.status)} · ${wordCount(s.content)} Wörter</div>`;
+          item.addEventListener("click", () => { closeModal(); resolve(s.id); });
+          listEl.appendChild(item);
+        });
+      }
+
+      searchEl.addEventListener("input", () => renderList(searchEl.value));
+      renderList("");
+      modalOverlay.hidden = false;
+    });
+  }
+
   // ---------- Settings: Backup ----------
   document.getElementById("backupBtn").addEventListener("click", () => {
     const payload = {
       app: "Meine Schreibwerkstatt",
-      backupVersion: 1,
+      backupVersion: 2,
       createdAt: new Date().toISOString(),
-      stories: stories
+      stories: stories,
+      ideas: ideas,
+      books: books
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -326,19 +733,34 @@
     reader.onload = async () => {
       try {
         const data = JSON.parse(reader.result);
-        const incoming = Array.isArray(data.stories) ? data.stories : [];
-        if (incoming.length === 0) { showAlert("In dieser Datei wurden keine Geschichten gefunden."); return; }
+        const incomingStories = Array.isArray(data.stories) ? data.stories : [];
+        const incomingIdeas = Array.isArray(data.ideas) ? data.ideas : [];
+        const incomingBooks = Array.isArray(data.books) ? data.books : [];
+        const total = incomingStories.length + incomingIdeas.length + incomingBooks.length;
+        if (total === 0) { showAlert("In dieser Datei wurden keine Inhalte gefunden."); return; }
         showConfirm(
-          `${incoming.length} Geschichte(n) aus dem Backup wiederherstellen? Neuere Versionen auf diesem Gerät bleiben erhalten.`,
+          `${incomingStories.length} Geschichte(n), ${incomingIdeas.length} Idee(n) und ${incomingBooks.length} Buch/Bücher aus dem Backup wiederherstellen? Neuere Versionen auf diesem Gerät bleiben erhalten.`,
           "Wiederherstellen",
           async () => {
-            for (const inc of incoming) {
+            for (const inc of incomingStories) {
               const existing = stories.find(s => s.id === inc.id);
               if (!existing || new Date(inc.updatedAt) > new Date(existing.updatedAt)) {
                 await Storage.save(inc);
               }
             }
+            for (const inc of incomingIdeas) {
+              const existing = ideas.find(i => i.id === inc.id);
+              if (!existing) await IdeaStorage.save(inc);
+            }
+            for (const inc of incomingBooks) {
+              const existing = books.find(b => b.id === inc.id);
+              if (!existing || new Date(inc.updatedAt) > new Date(existing.updatedAt)) {
+                await BookStorage.save(inc);
+              }
+            }
             stories = await Storage.getAll();
+            ideas = await IdeaStorage.getAll();
+            books = await BookStorage.getAll();
             renderStart();
             showAlert("Backup wurde wiederhergestellt.");
           }
@@ -642,8 +1064,10 @@
   async function init() {
     try {
       stories = await Storage.getAll();
+      ideas = await IdeaStorage.getAll();
+      books = await BookStorage.getAll();
     } catch (err) {
-      stories = [];
+      stories = []; ideas = []; books = [];
       console.error("Speicher konnte nicht geladen werden", err);
     }
     renderStart();

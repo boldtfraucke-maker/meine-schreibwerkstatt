@@ -236,8 +236,10 @@
         <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span></div>
         <div class="editor-footer-actions">
           <button class="btn btn-ghost" id="copyTextBtn" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
-          <button class="btn btn-ghost" id="aiCheckBtn">✨ KI-Vorschläge</button>
-          <button class="info-btn" id="aiCheckInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+          <div class="btn-with-info">
+            <button class="btn btn-ghost" id="aiCheckBtn">✨ KI-Vorschläge</button>
+            <button class="info-badge" id="aiCheckInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+          </div>
           <button class="btn-danger-text" id="deleteStoryBtn">Geschichte löschen</button>
         </div>
       </div>
@@ -765,8 +767,10 @@
           <p class="greeting-sub" style="margin:0;">Stelle aus deinen Geschichten ein oder mehrere Bücher zusammen.</p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-ghost" id="consistencyCheckBtn">🔍 Konsistenz prüfen</button>
-          <button class="info-btn" id="consistencyInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+          <div class="btn-with-info">
+            <button class="btn btn-ghost" id="consistencyCheckBtn">🔍 Konsistenz prüfen</button>
+            <button class="info-badge" id="consistencyInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+          </div>
           <button class="btn btn-primary" id="newBookBtn">+ Neues Buch</button>
         </div>
       </div>`;

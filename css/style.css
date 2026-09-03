@@ -327,21 +327,26 @@ select.status-select {
   text-overflow: ellipsis;
 }
 .tool-select-narrow { max-width: 78px; }
-.info-btn {
+.btn-with-info { position: relative; display: inline-flex; flex-shrink: 0; }
+.info-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: 1px solid var(--border);
-  background: transparent;
+  background: var(--bg-card);
   color: var(--ink-faint);
-  font-size: 0.82rem;
-  flex-shrink: 0;
+  font-size: 0.7rem;
+  line-height: 1;
   padding: 0;
+  box-shadow: 0 1px 3px var(--shadow);
 }
-.info-btn:hover { border-color: var(--sky); color: var(--sky); }
+.info-badge:hover { border-color: var(--sky); color: var(--sky); }
 .tool-select:hover { border-color: var(--clay); color: var(--ink); }
 .toolbar-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
 .editor-page {

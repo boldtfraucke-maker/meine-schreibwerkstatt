@@ -706,4 +706,16 @@ select.status-select {
   .editor-footer { flex-direction: column; align-items: stretch; }
   .editor-footer-actions { gap: 8px; }
   .editor-footer-actions .btn, .editor-footer-actions .btn-danger-text { font-size: 0.82rem; padding: 8px 10px; }
+
+  /* Startseite: Begrüßung kompakter, "Wörter"-Kachel weg, Reihenfolge
+     Suche/Neue Geschichte vor die Weiterschreiben-Karte gebracht. */
+  .greeting { font-size: 1.3rem; margin-bottom: 2px; }
+  .greeting-sub { font-size: 0.85rem; margin-bottom: 14px; }
+  .stat-row .stat-card:nth-child(2) { display: none; }
+  #view-start.active { display: flex; flex-direction: column; }
+  #view-start .greeting, #view-start .greeting-sub { order: 1; }
+  #view-start .stat-row { order: 2; margin-bottom: 20px; }
+  #view-start .search-wrap { order: 3; margin-bottom: 16px; }
+  #view-start #startNewStoryBtn { order: 4; margin-bottom: 20px; }
+  #view-start .continue-card { order: 5; margin-bottom: 0; }
 }

@@ -124,8 +124,9 @@ die Entscheidung auf später.
 
 ## Hinweis für Updates
 
-Die drei Skript-Einbindungen in `index.html` tragen eine Versionsnummer
-(`js/app.js?v=4` usw.), damit Browser nach einem Update nicht versehentlich
-eine alte, zwischengespeicherte Version ausführen. Bei jeder inhaltlichen
-Änderung an `js/*.js` bitte die Zahl `?v=` in allen drei `<script>`-Tags in
+Die Skript- und Stylesheet-Einbindungen in `index.html` tragen eine
+Versionsnummer (`js/app.js?v=4`, `css/style.css?v=4` usw.), damit Browser
+nach einem Update nicht versehentlich eine alte, zwischengespeicherte
+Version ausführen. Bei jeder inhaltlichen Änderung an `js/*.js` oder
+`css/style.css` bitte die Zahl `?v=` in allen vier betroffenen Tags in
 `index.html` um eins erhöhen.

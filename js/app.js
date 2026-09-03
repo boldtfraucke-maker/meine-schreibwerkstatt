@@ -231,7 +231,7 @@
         <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
         <input type="file" id="imageInput" accept="image/*" style="display:none;">
       </div>
-      <div class="editor-page" id="editorPage" contenteditable="true">${story.content || ""}</div>
+      <div class="editor-page" id="editorPage" contenteditable="true" spellcheck="true" lang="de">${story.content || ""}</div>
       <div class="editor-footer">
         <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span></div>
         <div style="display:flex;gap:14px;align-items:center;">

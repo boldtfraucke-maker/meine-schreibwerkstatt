@@ -11,7 +11,10 @@ const AIProvider = (function () {
 
   const LS_WORKER_URL = "sw_ai_worker_url";
   const LS_WORKER_KEY = "sw_ai_worker_key";
-  const MODEL = "claude-opus-5";
+  // Sonnet statt Opus, "Denktiefe" niedrig: für das Auffinden von Rechtschreib-/
+  // Stilproblemen in einer kurzen Geschichte völlig ausreichend, aber deutlich
+  // günstiger (siehe README, Abschnitt "Kosten im Blick behalten").
+  const MODEL = "claude-sonnet-5";
 
   function getWorkerUrl() { return localStorage.getItem(LS_WORKER_URL) || ""; }
   function setWorkerUrl(url) { localStorage.setItem(LS_WORKER_URL, (url || "").trim()); }
@@ -64,10 +67,16 @@ Sehr wichtige Regeln:
       headers: { "Content-Type": "application/json", "X-Worker-Key": getWorkerKey() },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 4096,
+        max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: "Hier ist die Geschichte:\n\n" + plainText }],
-        output_config: { format: { type: "json_schema", schema: RESPONSE_SCHEMA } }
+        output_config: {
+          format: { type: "json_schema", schema: RESPONSE_SCHEMA },
+          // "low" reicht für diese klar umrissene Aufgabe (Stellen finden,
+          // nicht frei nachdenken) und hält die - mitbezahlten - Denkschritte
+          // der KI kurz.
+          effort: "low"
+        }
       })
     });
 

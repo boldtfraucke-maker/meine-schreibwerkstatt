@@ -71,10 +71,38 @@ Cloudflare Worker, der den Key geheim hält und nur weiterleitet.
 6. Die Worker-Adresse (`https://<name>.<konto>.workers.dev`) kopieren.
 7. In der App unter **Einstellungen → ✨ KI-Vorschläge (Claude)** die Worker-Adresse und den selbst ausgedachten `WORKER_ACCESS_KEY` eintragen und speichern.
 
-Danach ist der Button „✨ KI-Vorschläge" im Schreiben-Bereich nutzbar. Jede
-Prüfung kostet ein paar Cent auf dem eigenen Anthropic-Konto (abhängig von
-der Textlänge) – für den gelegentlichen Gebrauch bei Kurzgeschichten sehr
-überschaubar.
+Danach ist der Button „✨ KI-Vorschläge" im Schreiben-Bereich nutzbar.
+
+### Kosten im Blick behalten
+
+Die App selbst, Hosting, Speicherung und Google-Drive-Sync sind komplett
+kostenlos. Einzig der KI-Vorschläge-Button verursacht laufende Kosten auf dem
+eigenen Anthropic-Konto (nach Textmenge abgerechnet) – und die sind bewusst
+klein gehalten:
+
+- **Modell:** `claude-sonnet-5` statt des teureren `claude-opus-5` – für das
+  Finden von Rechtschreib-/Stilproblemen in einer kurzen Geschichte reicht
+  die Qualität völlig aus, kostet aber nur einen Bruchteil.
+- **Denktiefe „niedrig"** (`output_config.effort: "low"`): passend für eine
+  klar umrissene Aufgabe (Stellen finden, nicht frei nachdenken); spart
+  unnötige, mitbezahlte Zwischenschritte der KI.
+- **Erzwungenes Antwortformat** (`output_config.format`): Die KI *muss* eine
+  kurze, strukturierte Liste zurückgeben (Textstelle/Vorschlag/Begründung) –
+  sie schreibt nie die ganze Geschichte neu zurück. Das hält vor allem die
+  – deutlich teureren – Ausgabe-Token gering.
+- **Kein automatischer Aufruf:** Die KI wird ausschließlich bei einem
+  bewussten Klick auf „✨ KI-Vorschläge" angefragt, nie im Hintergrund oder
+  beim normalen Tippen.
+- **Eingebaute Rechtschreibprüfung des Browsers** (rote Wellenlinien beim
+  Tippen) fängt einfache Tippfehler schon kostenlos ab, bevor überhaupt eine
+  KI-Prüfung nötig ist.
+
+Grobe Hausnummer bei dieser Einstellung: eine Prüfung liegt im Bereich von
+unter einem Cent; selbst bei mehrmals täglicher Nutzung bleibt man im
+niedrigen einstelligen Euro-Bereich pro Monat. Als zusätzliche, harte
+Absicherung unbedingt ein monatliches Ausgabenlimit in der Anthropic Console
+setzen (siehe Schritt 1 oben) – darüber hinaus funktionieren Anfragen
+schlicht nicht mehr, ganz unabhängig vom Code hier.
 
 ## Architektur
 

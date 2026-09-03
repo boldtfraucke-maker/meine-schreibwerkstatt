@@ -235,6 +235,7 @@
       <div class="editor-footer">
         <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span></div>
         <div style="display:flex;gap:14px;align-items:center;">
+          <button class="btn btn-ghost" id="copyTextBtn" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
           <button class="btn btn-ghost" id="aiCheckBtn">✨ KI-Vorschläge</button>
           <button class="btn-danger-text" id="deleteStoryBtn">Geschichte löschen</button>
         </div>
@@ -377,6 +378,20 @@
     });
 
     document.getElementById("aiCheckBtn").addEventListener("click", () => runAiCheck(story, editorPage, scheduleSave));
+
+    document.getElementById("copyTextBtn").addEventListener("click", async (e) => {
+      const plain = htmlToPlainText(editorPage.innerHTML);
+      const text = (titleInput.value ? titleInput.value + "\n\n" : "") + plain;
+      const btn = e.currentTarget;
+      try {
+        await navigator.clipboard.writeText(text);
+        const original = btn.textContent;
+        btn.textContent = "✓ Kopiert";
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      } catch (err) {
+        showAlert("Kopieren hat nicht geklappt. Bitte den Text im Editor von Hand markieren und kopieren.");
+      }
+    });
 
     // Neue, leere Geschichte: direkt in den Titel springen
     if (!story.title && !story.content) {

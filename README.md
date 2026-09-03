@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 4 – KI-Vorschläge (Korrektorat/Lektorat/Stil) für einzelne Geschichten.
+**Status:** Phase 4 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) für einzelne Geschichten sowie eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg.
 
 ## Lokal testen
 
@@ -71,12 +71,17 @@ Cloudflare Worker, der den Key geheim hält und nur weiterleitet.
 6. Die Worker-Adresse (`https://<name>.<konto>.workers.dev`) kopieren.
 7. In der App unter **Einstellungen → ✨ KI-Vorschläge (Claude)** die Worker-Adresse und den selbst ausgedachten `WORKER_ACCESS_KEY` eintragen und speichern.
 
-Danach ist der Button „✨ KI-Vorschläge" im Schreiben-Bereich nutzbar.
+Danach sind der Button „✨ KI-Vorschläge" im Schreiben-Bereich und
+„🔍 Konsistenz prüfen" im Bücher-Bereich nutzbar. Letzterer vergleicht Namen
+und Orte über alle Geschichten hinweg (z. B. „Balu" vs. „Balou") und
+extrahiert dafür pro Geschichte höchstens einmal eine kurze Namensliste per
+KI – der eigentliche Abgleich zwischen den Geschichten läuft danach
+komplett lokal im Browser, ganz ohne weitere KI-Kosten.
 
 ### Kosten im Blick behalten
 
 Die App selbst, Hosting, Speicherung und Google-Drive-Sync sind komplett
-kostenlos. Einzig der KI-Vorschläge-Button verursacht laufende Kosten auf dem
+kostenlos. Nur die beiden KI-Funktionen verursachen laufende Kosten auf dem
 eigenen Anthropic-Konto (nach Textmenge abgerechnet) – und die sind bewusst
 klein gehalten:
 

@@ -490,6 +490,132 @@
     showAlert("Gespeichert.");
   });
 
+  // ---------- Konsistenzprüfung ----------
+  // Zweistufig, um Kosten klein zu halten: Namen/Orte werden pro Geschichte
+  // höchstens einmal von der KI erkannt (Ergebnis lokal zwischengespeichert,
+  // nur bei Änderung der Geschichte neu abgefragt). Der eigentliche Abgleich
+  // zwischen den Geschichten passiert danach komplett lokal, ohne weitere
+  // KI-Kosten.
+  const LS_ENTITY_CACHE = "sw_entity_cache"; // { storyId: { updatedAt, entities: [{name,type}] } }
+
+  function getEntityCache() {
+    try { return JSON.parse(localStorage.getItem(LS_ENTITY_CACHE) || "{}"); }
+    catch (e) { return {}; }
+  }
+  function setEntityCache(cache) { localStorage.setItem(LS_ENTITY_CACHE, JSON.stringify(cache)); }
+
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = [];
+    for (let i = 0; i <= m; i++) { dp.push([i]); }
+    for (let j = 1; j <= n; j++) { dp[0][j] = j; }
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  function findSimilarNamePairs(cache) {
+    const byName = new Map();
+    Object.entries(cache).forEach(([storyId, entry]) => {
+      (entry.entities || []).forEach((e) => {
+        const key = e.type + "::" + e.name;
+        if (!byName.has(key)) byName.set(key, { name: e.name, type: e.type, storyIds: new Set() });
+        byName.get(key).storyIds.add(storyId);
+      });
+    });
+
+    const names = Array.from(byName.values());
+    const pairs = [];
+    for (let i = 0; i < names.length; i++) {
+      for (let j = i + 1; j < names.length; j++) {
+        const a = names[i], b = names[j];
+        if (a.type !== b.type) continue;
+        const aLower = a.name.toLowerCase(), bLower = b.name.toLowerCase();
+        if (aLower === bLower) continue; // identisch (ggf. bis auf Groß-/Kleinschreibung) -> konsistent
+        if (aLower[0] !== bLower[0]) continue; // anderer Anfangsbuchstabe -> vermutlich andere Sache
+        const dist = levenshtein(aLower, bLower);
+        const threshold = Math.max(a.name.length, b.name.length) <= 5 ? 1 : 2;
+        if (dist <= threshold) {
+          pairs.push({
+            type: a.type,
+            nameA: a.name, storyIdsA: Array.from(a.storyIds),
+            nameB: b.name, storyIdsB: Array.from(b.storyIds)
+          });
+        }
+      }
+    }
+    return pairs;
+  }
+
+  function storyTitleById(id) {
+    const s = stories.find((x) => x.id === id);
+    return s ? (s.title || "Ohne Titel") : "gelöschte Geschichte";
+  }
+
+  async function runConsistencyCheck() {
+    const panel = document.getElementById("consistencyPanel");
+    if (!panel) return;
+    if (!AIProvider.isConfigured()) {
+      switchView("settings");
+      showAlert("Bitte zuerst unter Einstellungen die KI-Vorschläge einrichten - die Namens-/Orte-Erkennung nutzt dieselbe Anbindung.");
+      return;
+    }
+    if (stories.length === 0) {
+      panel.innerHTML = '<div class="ai-panel-status">Noch keine Geschichten vorhanden.</div>';
+      return;
+    }
+
+    const cache = getEntityCache();
+    const toExtract = stories.filter((s) => !cache[s.id] || cache[s.id].updatedAt !== s.updatedAt);
+
+    panel.innerHTML = '<div class="ai-panel-status">🔍 Wird geprüft … <span id="consistencyProgress"></span></div>';
+    const progressEl = document.getElementById("consistencyProgress");
+
+    try {
+      for (let i = 0; i < toExtract.length; i++) {
+        if (progressEl) progressEl.textContent = `(neue/geänderte Geschichte ${i + 1} von ${toExtract.length})`;
+        const story = toExtract[i];
+        const entities = await AIProvider.extractEntities(htmlToPlainText(story.content));
+        cache[story.id] = { updatedAt: story.updatedAt, entities };
+        setEntityCache(cache);
+      }
+
+      // Cache um gelöschte Geschichten bereinigen
+      const validIds = new Set(stories.map((s) => s.id));
+      Object.keys(cache).forEach((id) => { if (!validIds.has(id)) delete cache[id]; });
+      setEntityCache(cache);
+
+      renderConsistencyResults(panel, findSimilarNamePairs(cache));
+    } catch (err) {
+      console.error("Konsistenzprüfung-Fehler", err);
+      panel.innerHTML = `<div class="ai-panel-status ai-panel-error">Prüfung fehlgeschlagen: ${escapeHtml(err && err.message ? err.message : String(err))}</div>`;
+    }
+  }
+
+  function renderConsistencyResults(panel, pairs) {
+    if (pairs.length === 0) {
+      panel.innerHTML = '<div class="ai-panel-status">✓ Keine möglichen Unstimmigkeiten bei Namen oder Orten gefunden.</div>';
+      return;
+    }
+    const rows = pairs.map((p) => {
+      const typeLabel = p.type === "ort" ? "Ort" : "Person/Tier";
+      const storiesA = p.storyIdsA.map(storyTitleById).map(escapeHtml).join(", ");
+      const storiesB = p.storyIdsB.map(storyTitleById).map(escapeHtml).join(", ");
+      return `
+        <div class="ai-suggestion-card">
+          <div class="ai-suggestion-type">${escapeHtml(typeLabel)}</div>
+          <div class="ai-suggestion-arrow">„${escapeHtml(p.nameA)}" (${storiesA}) &nbsp;↔&nbsp; „${escapeHtml(p.nameB)}" (${storiesB})</div>
+          <div class="ai-suggestion-reason"><strong>Warum?</strong> Die Schreibweisen sind sich sehr ähnlich - könnte dieselbe ${p.type === "ort" ? "Sache" : "Figur"} sein, nur unterschiedlich geschrieben. Falls ja, lohnt sich eine einheitliche Schreibweise. Du entscheidest, ob und wo du das anpasst.</div>
+        </div>`;
+    }).join("");
+    panel.innerHTML = `<p class="section-label" style="margin-top:8px;">🔍 Mögliche Unstimmigkeiten (${pairs.length})</p><div class="ai-suggestion-list">${rows}</div>`;
+  }
+
   // ---------- Ideenparkplatz ----------
   function renderIdeas() {
     const list = document.getElementById("ideaList");
@@ -633,7 +759,10 @@
           <h1 style="margin:0 0 4px;">Bücher</h1>
           <p class="greeting-sub" style="margin:0;">Stelle aus deinen Geschichten ein oder mehrere Bücher zusammen.</p>
         </div>
-        <button class="btn btn-primary" id="newBookBtn">+ Neues Buch</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" id="consistencyCheckBtn">🔍 Konsistenz prüfen</button>
+          <button class="btn btn-primary" id="newBookBtn">+ Neues Buch</button>
+        </div>
       </div>`;
 
     const wrap = document.createElement("div");
@@ -656,6 +785,11 @@
     }
     panel.appendChild(wrap);
 
+    const consistencyPanel = document.createElement("div");
+    consistencyPanel.id = "consistencyPanel";
+    consistencyPanel.style.marginTop = "24px";
+    panel.appendChild(consistencyPanel);
+
     document.getElementById("newBookBtn").addEventListener("click", async () => {
       const book = {
         id: uid(), title: "", subtitle: "", description: "", cover: "", chapters: [],
@@ -666,6 +800,8 @@
       activeBookId = book.id;
       renderBookDetail(book);
     });
+
+    document.getElementById("consistencyCheckBtn").addEventListener("click", runConsistencyCheck);
   }
 
   function renderBookDetail(book) {

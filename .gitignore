@@ -1,3 +1,10 @@
 .claude/
 .DS_Store
 Thumbs.db
+
+# Persönliche Notizen/Zugangsdaten - dürfen nie ins öffentliche Repo
+API & Client-ID/
+*.odt
+*api*schl*ssel*
+*API*Key*
+*.key

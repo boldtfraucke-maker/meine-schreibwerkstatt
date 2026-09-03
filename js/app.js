@@ -219,10 +219,10 @@
           ${FONT_SIZE_OPTIONS.map(pt => `<option value="${pt}" ${pt === 12 ? "selected" : ""}>${pt} pt</option>`).join("")}
         </select>
         <span class="toolbar-divider"></span>
-        <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
+        <button class="tool-btn" data-cmd="bold" title="Fett"><b>F</b></button>
         <button class="tool-btn" data-cmd="italic" title="Kursiv"><i>K</i></button>
         <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
-        <button class="tool-btn" data-cmd="bold" title="Fett"><b>F</b></button>
+        <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
         <input type="file" id="imageInput" accept="image/*" style="display:none;">
       </div>
       <div class="editor-page" id="editorPage" contenteditable="true" spellcheck="true" lang="de">${story.content || ""}</div>

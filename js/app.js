@@ -237,6 +237,7 @@
         <div style="display:flex;gap:14px;align-items:center;">
           <button class="btn btn-ghost" id="copyTextBtn" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
           <button class="btn btn-ghost" id="aiCheckBtn">✨ KI-Vorschläge</button>
+          <button class="info-btn" id="aiCheckInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
           <button class="btn-danger-text" id="deleteStoryBtn">Geschichte löschen</button>
         </div>
       </div>
@@ -378,6 +379,10 @@
     });
 
     document.getElementById("aiCheckBtn").addEventListener("click", () => runAiCheck(story, editorPage, scheduleSave));
+    document.getElementById("aiCheckInfoBtn").addEventListener("click", () => showAlert(
+      "Liest diese eine Geschichte durch und schlägt Verbesserungen bei Rechtschreibung, langen Sätzen und Wiederholungen vor - mit Begründung, du entscheidest selbst. " +
+      "Kostet eine Kleinigkeit (Bruchteile eines Cents) pro Klick. Am besten einsetzen, wenn eine Geschichte fertig geschrieben ist - nicht nach jedem einzelnen Satz."
+    ));
 
     document.getElementById("copyTextBtn").addEventListener("click", async (e) => {
       const plain = htmlToPlainText(editorPage.innerHTML);
@@ -759,8 +764,9 @@
           <h1 style="margin:0 0 4px;">Bücher</h1>
           <p class="greeting-sub" style="margin:0;">Stelle aus deinen Geschichten ein oder mehrere Bücher zusammen.</p>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
           <button class="btn btn-ghost" id="consistencyCheckBtn">🔍 Konsistenz prüfen</button>
+          <button class="info-btn" id="consistencyInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
           <button class="btn btn-primary" id="newBookBtn">+ Neues Buch</button>
         </div>
       </div>`;
@@ -802,6 +808,11 @@
     });
 
     document.getElementById("consistencyCheckBtn").addEventListener("click", runConsistencyCheck);
+    document.getElementById("consistencyInfoBtn").addEventListener("click", () => showAlert(
+      "Vergleicht Namen und Orte über alle deine Geschichten hinweg, z. B. ob ein Hund immer gleich geschrieben wird („Balu“ vs. „Balou“). " +
+      "Neue oder seit dem letzten Mal geänderte Geschichten kosten beim Prüfen eine Kleinigkeit; unveränderte Geschichten werden beim nächsten Mal wiederverwendet und kosten dann nichts mehr. " +
+      "Am besten hin und wieder nutzen, z. B. bevor du ein Buch zusammenstellst - nicht nach jeder einzelnen Geschichte."
+    ));
   }
 
   function renderBookDetail(book) {

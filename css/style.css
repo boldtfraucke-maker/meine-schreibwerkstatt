@@ -327,6 +327,21 @@ select.status-select {
   text-overflow: ellipsis;
 }
 .tool-select-narrow { max-width: 78px; }
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+  flex-shrink: 0;
+  padding: 0;
+}
+.info-btn:hover { border-color: var(--sky); color: var(--sky); }
 .tool-select:hover { border-color: var(--clay); color: var(--ink); }
 .toolbar-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
 .editor-page {

@@ -234,7 +234,7 @@
       <div class="editor-page" id="editorPage" contenteditable="true" spellcheck="true" lang="de">${story.content || ""}</div>
       <div class="editor-footer">
         <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span></div>
-        <div style="display:flex;gap:14px;align-items:center;">
+        <div class="editor-footer-actions">
           <button class="btn btn-ghost" id="copyTextBtn" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
           <button class="btn btn-ghost" id="aiCheckBtn">✨ KI-Vorschläge</button>
           <button class="info-btn" id="aiCheckInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>

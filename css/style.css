@@ -701,7 +701,8 @@ select.status-select {
   .book-cover-col { flex: 0 0 110px; }
   .book-cover-col .cover-thumb, .book-cover-col .cover-placeholder { width: 110px; }
   .idea-card { flex-direction: column; }
-  .idea-card .idea-actions { flex-direction: row; }
+  .idea-card .idea-actions { flex-direction: column; align-items: stretch; }
+  .idea-card .idea-actions .btn, .idea-card .idea-actions .btn-danger-text { width: 100%; text-align: center; }
   .editor-footer { flex-direction: column; align-items: stretch; }
   .editor-footer-actions { gap: 8px; }
   .editor-footer-actions .btn, .editor-footer-actions .btn-danger-text { font-size: 0.82rem; padding: 8px 10px; }

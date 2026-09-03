@@ -212,12 +212,6 @@
         </select>
       </div>
       <div class="toolbar">
-        <select class="tool-select" id="headingSelect" title="Textformat">
-          <option value="P">Normaler Text</option>
-          <option value="H1">Überschrift 1</option>
-          <option value="H2">Überschrift 2</option>
-          <option value="H3">Überschrift 3</option>
-        </select>
         <select class="tool-select" id="fontSelect" title="Schriftart">
           ${FONT_OPTIONS.map(f => `<option value="${escapeAttr(f.stack)}">${f.label}</option>`).join("")}
         </select>
@@ -274,7 +268,6 @@
     // Toolbar-Dropdown klickt (der Fokus wechselt kurz weg). Deshalb merken
     // wir uns die letzte gültige Markierung im Editor und stellen sie vor
     // jedem Formatierungsbefehl wieder her.
-    const headingSelect = document.getElementById("headingSelect");
     let savedRange = null;
     function saveSelection() {
       const sel = window.getSelection();
@@ -291,25 +284,6 @@
     editorPage.addEventListener("keyup", saveSelection);
     editorPage.addEventListener("mouseup", saveSelection);
 
-    // Wenn nach einer Überschrift Enter gedrückt wird, "klebt" contenteditable
-    // in manchen Browsern an der Überschriftenformatierung weiter. Deshalb nach
-    // jedem Enter innerhalb einer Überschrift die neue Zeile auf Normaltext
-    // zurücksetzen - so muss die Autorin das nicht manuell nachholen.
-    editorPage.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter" || e.shiftKey) return;
-      const sel = window.getSelection();
-      if (sel.rangeCount === 0) return;
-      let node = sel.getRangeAt(0).startContainer;
-      if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-      const headingEl = node && node.closest ? node.closest("h1, h2, h3") : null;
-      if (!headingEl) return;
-      setTimeout(() => {
-        document.execCommand("formatBlock", false, "P");
-        headingSelect.value = "P";
-        scheduleSave();
-      }, 0);
-    });
-
     panel.querySelectorAll(".tool-btn[data-cmd]").forEach(btn => {
       btn.addEventListener("click", () => {
         editorPage.focus();
@@ -322,13 +296,6 @@
       });
     });
 
-    headingSelect.addEventListener("change", (e) => {
-      editorPage.focus();
-      restoreSelection();
-      document.execCommand("formatBlock", false, e.target.value);
-      saveSelection();
-      scheduleSave();
-    });
     document.getElementById("fontSelect").addEventListener("change", (e) => {
       editorPage.focus();
       restoreSelection();

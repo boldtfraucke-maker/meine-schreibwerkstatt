@@ -207,17 +207,19 @@
     panel.innerHTML = `
       <div class="editor-top">
         <input type="text" class="title-input" id="titleInput" placeholder="Titel der Geschichte" autocomplete="off" autocapitalize="sentences" value="${escapeAttr(story.title)}">
-        <select class="status-select" id="statusSelect">
-          ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === story.status ? "selected" : ""}>${o.label}</option>`).join("")}
-        </select>
-      </div>
-      <div class="editor-actions-top">
-        <button class="btn btn-outline" id="copyTextBtnTop" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
-        <div class="btn-with-info">
-          <button class="btn btn-outline" id="aiCheckBtnTop">✨ KI-Vorschläge</button>
-          <button class="info-badge" id="aiCheckInfoBtnTop" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+        <div class="editor-top-row">
+          <select class="status-select" id="statusSelect">
+            ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === story.status ? "selected" : ""}>${o.label}</option>`).join("")}
+          </select>
+          <div class="editor-actions-top">
+            <button class="btn btn-outline" id="copyTextBtnTop" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
+            <div class="btn-with-info">
+              <button class="btn btn-outline" id="aiCheckBtnTop">✨ KI-Vorschläge</button>
+              <button class="info-badge" id="aiCheckInfoBtnTop" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+            </div>
+            <button class="btn btn-danger" id="deleteStoryBtnTop">Löschen</button>
+          </div>
         </div>
-        <button class="btn btn-danger" id="deleteStoryBtnTop">Löschen</button>
       </div>
       <div class="toolbar">
         <div class="toolbar-group toolbar-group-font">
@@ -623,15 +625,17 @@
     }
     sorted.forEach(idea => {
       const card = document.createElement("div");
-      card.className = "idea-card";
+      card.className = "idea-item";
       card.innerHTML = `
-        <div class="idea-text-wrap">
-          <div class="text">${escapeHtml(idea.text)}</div>
-          <div class="meta">${relativeTime(idea.updatedAt || idea.createdAt)}</div>
+        <div class="idea-card">
+          <div class="idea-text-wrap">
+            <div class="text">${escapeHtml(idea.text)}</div>
+            <div class="meta">${relativeTime(idea.updatedAt || idea.createdAt)}</div>
+          </div>
         </div>
         <div class="idea-actions">
           <button class="btn btn-outline edit-idea-btn">✎ Bearbeiten</button>
-          <button class="btn btn-outline make-story-btn">✎ Geschichte daraus machen</button>
+          <button class="btn btn-outline make-story-btn">✎ Geschichte machen</button>
           <button class="btn btn-danger delete-idea-btn">Löschen</button>
         </div>`;
 

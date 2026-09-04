@@ -289,14 +289,13 @@ main.content {
 
 .editor-panel { display: flex; flex-direction: column; min-height: 0; }
 .editor-empty { color: var(--ink-soft); padding: 40px; text-align: center; }
-.editor-top { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-.editor-top-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.editor-top { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 10px; }
 .title-input {
   font-family: 'Fraunces', serif;
   font-size: 1.5rem;
   font-weight: 600;
   border: none;
-  border-bottom: 1px solid transparent;
+  border-bottom: 1px solid var(--border);
   background: transparent;
   outline: none;
   flex: 1 1 100%;
@@ -389,7 +388,7 @@ select.status-select {
 /* Text kopieren/KI-Vorschläge/Löschen stehen auf dem Desktop oben (bessere
    Erreichbarkeit ohne runterzuscrollen); auf dem Handy wandern sie in den
    Footer (siehe mobile Media Query weiter unten). */
-.editor-actions-top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.editor-actions-top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-left: auto; }
 
 /* ---------- Ideenparkplatz ---------- */
 .idea-input-row {

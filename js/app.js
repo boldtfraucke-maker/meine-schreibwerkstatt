@@ -207,19 +207,9 @@
     panel.innerHTML = `
       <div class="editor-top">
         <input type="text" class="title-input" id="titleInput" placeholder="Titel der Geschichte" autocomplete="off" autocapitalize="sentences" value="${escapeAttr(story.title)}">
-        <div class="editor-top-row">
-          <select class="status-select" id="statusSelect">
-            ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === story.status ? "selected" : ""}>${o.label}</option>`).join("")}
-          </select>
-          <div class="editor-actions-top">
-            <button class="btn btn-outline" id="copyTextBtnTop" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
-            <div class="btn-with-info">
-              <button class="btn btn-outline" id="aiCheckBtnTop">✨ KI-Vorschläge</button>
-              <button class="info-badge" id="aiCheckInfoBtnTop" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
-            </div>
-            <button class="btn btn-danger" id="deleteStoryBtnTop">Löschen</button>
-          </div>
-        </div>
+        <select class="status-select" id="statusSelect">
+          ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === story.status ? "selected" : ""}>${o.label}</option>`).join("")}
+        </select>
       </div>
       <div class="toolbar">
         <div class="toolbar-group toolbar-group-font">
@@ -237,6 +227,14 @@
           <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
           <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
           <input type="file" id="imageInput" accept="image/*" style="display:none;">
+        </div>
+        <div class="editor-actions-top">
+          <button class="btn btn-outline" id="copyTextBtnTop" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
+          <div class="btn-with-info">
+            <button class="btn btn-outline" id="aiCheckBtnTop">✨ KI-Vorschläge</button>
+            <button class="info-badge" id="aiCheckInfoBtnTop" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+          </div>
+          <button class="btn btn-danger" id="deleteStoryBtnTop">Löschen</button>
         </div>
       </div>
       <div class="editor-page" id="editorPage" contenteditable="true" spellcheck="true" lang="de">${story.content || ""}</div>

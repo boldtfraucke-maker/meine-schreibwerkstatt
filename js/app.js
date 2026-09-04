@@ -212,18 +212,22 @@
         </select>
       </div>
       <div class="toolbar">
-        <select class="tool-select" id="fontSelect" title="Schriftart">
-          ${FONT_OPTIONS.map(f => `<option value="${escapeAttr(f.stack)}">${f.label}</option>`).join("")}
-        </select>
-        <select class="tool-select tool-select-narrow" id="fontSizeSelect" title="Schriftgröße">
-          ${FONT_SIZE_OPTIONS.map(pt => `<option value="${pt}" ${pt === 12 ? "selected" : ""}>${pt} pt</option>`).join("")}
-        </select>
-        <span class="toolbar-divider"></span>
-        <button class="tool-btn" data-cmd="bold" title="Fett"><b>F</b></button>
-        <button class="tool-btn" data-cmd="italic" title="Kursiv"><i>K</i></button>
-        <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
-        <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
-        <input type="file" id="imageInput" accept="image/*" style="display:none;">
+        <div class="toolbar-group toolbar-group-font">
+          <select class="tool-select" id="fontSelect" title="Schriftart">
+            ${FONT_OPTIONS.map(f => `<option value="${escapeAttr(f.stack)}">${f.label}</option>`).join("")}
+          </select>
+          <select class="tool-select tool-select-narrow" id="fontSizeSelect" title="Schriftgröße">
+            ${FONT_SIZE_OPTIONS.map(pt => `<option value="${pt}" ${pt === 12 ? "selected" : ""}>${pt} pt</option>`).join("")}
+          </select>
+        </div>
+        <div class="toolbar-group toolbar-group-format">
+          <span class="toolbar-divider"></span>
+          <button class="tool-btn" data-cmd="bold" title="Fett"><b>F</b></button>
+          <button class="tool-btn" data-cmd="italic" title="Kursiv"><i>K</i></button>
+          <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
+          <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
+          <input type="file" id="imageInput" accept="image/*" style="display:none;">
+        </div>
       </div>
       <div class="editor-page" id="editorPage" contenteditable="true" spellcheck="true" lang="de">${story.content || ""}</div>
       <div class="editor-footer">

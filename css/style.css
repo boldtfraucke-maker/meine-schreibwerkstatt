@@ -307,6 +307,7 @@ select.status-select {
   font-size: 0.82rem;
 }
 .toolbar { display: flex; gap: 4px; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
+.toolbar-group { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .tool-btn {
   background: transparent;
   border: 1px solid transparent;
@@ -706,6 +707,12 @@ select.status-select {
   .editor-footer { flex-direction: column; align-items: stretch; }
   .editor-footer-actions { gap: 8px; }
   .editor-footer-actions .btn, .editor-footer-actions .btn-danger-text { font-size: 0.82rem; padding: 8px 10px; }
+
+  /* Editor-Toolbar: Formatierungs-Buttons (F/K/Liste/Bild) sollen immer
+     geschlossen in einer eigenen Zeile unter Schriftart/pt beginnen, statt
+     mittendrin umzubrechen. */
+  .toolbar-group-format { flex-basis: 100%; }
+  .toolbar-group-format .toolbar-divider { display: none; }
 
   /* Startseite: Begrüßung kompakter, "Wörter"-Kachel weg, Reihenfolge
      Suche/Neue Geschichte vor die Weiterschreiben-Karte gebracht. */

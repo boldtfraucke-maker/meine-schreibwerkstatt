@@ -208,6 +208,17 @@ main.content {
 .btn-primary:hover { background: var(--pine-dark); }
 .btn-ghost { background: transparent; border-color: var(--border); color: var(--ink); }
 .btn-ghost:hover { border-color: var(--ink-faint); }
+/* Einheitlicher grün umrandeter Stil für sekundäre Aktionen (Bearbeiten,
+   Geschichte daraus machen, Kapitel/Geschichte hinzufügen, Text kopieren,
+   KI-Vorschläge, Konsistenz prüfen, ...) - unterscheidet sich bewusst von
+   den voll ausgefüllten .btn-primary-Buttons, damit die eine wirkliche
+   Hauptaktion pro Ansicht optisch führend bleibt. */
+.btn-outline { background: transparent; border-color: var(--pine); color: var(--pine); }
+.btn-outline:hover { background: var(--pine); color: #fff; }
+/* Rot umrandeter Stil für alle prominenten Löschen-Aktionen - eigene Optik
+   bewusst beibehalten, damit eine löschende Aktion erkennbar bleibt. */
+.btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: #fff; }
 .btn-danger-text { background: transparent; border: none; color: var(--danger); font-size: 0.85rem; padding: 6px 4px; }
 
 /* ---------- Schreiben ---------- */
@@ -372,8 +383,12 @@ select.status-select {
 .editor-page p { margin: 0 0 0.9em; }
 .editor-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 0.8rem; color: var(--ink-faint); }
 .save-status { display: flex; align-items: center; gap: 6px; }
-.editor-footer-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.editor-footer-actions { display: none; gap: 14px; align-items: center; flex-wrap: wrap; }
 .save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pine); }
+/* Text kopieren/KI-Vorschläge/Löschen stehen auf dem Desktop oben (bessere
+   Erreichbarkeit ohne runterzuscrollen); auf dem Handy wandern sie in den
+   Footer (siehe mobile Media Query weiter unten). */
+.editor-actions-top { display: flex; gap: 14px; align-items: center; margin: 2px 0 12px; flex-wrap: wrap; }
 
 /* ---------- Ideenparkplatz ---------- */
 .idea-input-row {
@@ -404,15 +419,14 @@ select.status-select {
   border-radius: 12px;
   padding: 14px 18px;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
+  flex-direction: column;
+  gap: 12px;
 }
 .idea-card .text { white-space: pre-wrap; line-height: 1.5; }
 .idea-card .idea-edit-textarea { width: 100%; box-sizing: border-box; }
 .idea-card .meta { font-size: 0.76rem; color: var(--ink-faint); margin-top: 6px; }
-.idea-card .idea-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-.idea-card .idea-actions .btn { font-size: 0.8rem; padding: 7px 12px; white-space: nowrap; }
+.idea-card .idea-actions { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; }
+.idea-card .idea-actions .btn, .idea-card .idea-actions .btn-danger { font-size: 0.8rem; padding: 7px 12px; white-space: nowrap; }
 
 /* ---------- Bücher ---------- */
 .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
@@ -701,12 +715,10 @@ select.status-select {
   .conflict-versions { flex-direction: column; }
   .book-cover-col { flex: 0 0 110px; }
   .book-cover-col .cover-thumb, .book-cover-col .cover-placeholder { width: 110px; }
-  .idea-card { flex-direction: column; }
-  .idea-card .idea-actions { flex-direction: column; align-items: stretch; }
-  .idea-card .idea-actions .btn, .idea-card .idea-actions .btn-danger-text { width: 100%; text-align: center; }
   .editor-footer { flex-direction: column; align-items: stretch; }
-  .editor-footer-actions { gap: 8px; }
-  .editor-footer-actions .btn, .editor-footer-actions .btn-danger-text { font-size: 0.82rem; padding: 8px 10px; }
+  .editor-footer-actions { display: flex; gap: 8px; }
+  .editor-footer-actions .btn, .editor-footer-actions .btn-danger { font-size: 0.82rem; padding: 8px 10px; }
+  .editor-actions-top { display: none; }
 
   /* Editor-Toolbar: Formatierungs-Buttons (F/K/Liste/Bild) sollen immer
      geschlossen in einer eigenen Zeile unter Schriftart/pt beginnen, statt

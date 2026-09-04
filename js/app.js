@@ -211,6 +211,14 @@
           ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === story.status ? "selected" : ""}>${o.label}</option>`).join("")}
         </select>
       </div>
+      <div class="editor-actions-top">
+        <button class="btn btn-outline" id="copyTextBtnTop" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
+        <div class="btn-with-info">
+          <button class="btn btn-outline" id="aiCheckBtnTop">✨ KI-Vorschläge</button>
+          <button class="info-badge" id="aiCheckInfoBtnTop" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+        </div>
+        <button class="btn btn-danger" id="deleteStoryBtnTop">Löschen</button>
+      </div>
       <div class="toolbar">
         <div class="toolbar-group toolbar-group-font">
           <select class="tool-select" id="fontSelect" title="Schriftart">
@@ -233,12 +241,12 @@
       <div class="editor-footer">
         <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span></div>
         <div class="editor-footer-actions">
-          <button class="btn btn-ghost" id="copyTextBtn" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
+          <button class="btn btn-outline" id="copyTextBtn" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
           <div class="btn-with-info">
-            <button class="btn btn-ghost" id="aiCheckBtn">✨ KI-Vorschläge</button>
+            <button class="btn btn-outline" id="aiCheckBtn">✨ KI-Vorschläge</button>
             <button class="info-badge" id="aiCheckInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
           </div>
-          <button class="btn-danger-text" id="deleteStoryBtn">Geschichte löschen</button>
+          <button class="btn btn-danger" id="deleteStoryBtn">Löschen</button>
         </div>
       </div>
       <div id="aiPanel"></div>`;
@@ -335,7 +343,17 @@
       e.target.value = "";
     });
 
-    document.getElementById("deleteStoryBtn").addEventListener("click", () => {
+    // Diese drei Aktionen gibt es doppelt im Markup (einmal oben für den
+    // Desktop, einmal im Footer für unterwegs/Handy - siehe CSS). Beide
+    // Varianten bekommen dieselbe Funktion zugewiesen.
+    function wireBoth(ids, handler) {
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("click", handler);
+      });
+    }
+
+    wireBoth(["deleteStoryBtn", "deleteStoryBtnTop"], () => {
       showConfirm(
         `„${story.title || 'Ohne Titel'}" wirklich löschen? Das kann nicht rückgängig gemacht werden.`,
         "Löschen",
@@ -351,13 +369,13 @@
       );
     });
 
-    document.getElementById("aiCheckBtn").addEventListener("click", () => runAiCheck(story, editorPage, scheduleSave));
-    document.getElementById("aiCheckInfoBtn").addEventListener("click", () => showAlert(
+    wireBoth(["aiCheckBtn", "aiCheckBtnTop"], () => runAiCheck(story, editorPage, scheduleSave));
+    wireBoth(["aiCheckInfoBtn", "aiCheckInfoBtnTop"], () => showAlert(
       "Liest diese eine Geschichte durch und schlägt Verbesserungen bei Rechtschreibung, langen Sätzen und Wiederholungen vor - mit Begründung, du entscheidest selbst. " +
       "Kostet eine Kleinigkeit (Bruchteile eines Cents) pro Klick. Am besten einsetzen, wenn eine Geschichte fertig geschrieben ist - nicht nach jedem einzelnen Satz."
     ));
 
-    document.getElementById("copyTextBtn").addEventListener("click", async (e) => {
+    wireBoth(["copyTextBtn", "copyTextBtnTop"], async (e) => {
       const plain = htmlToPlainText(editorPage.innerHTML);
       const text = (titleInput.value ? titleInput.value + "\n\n" : "") + plain;
       const btn = e.currentTarget;
@@ -607,14 +625,14 @@
       const card = document.createElement("div");
       card.className = "idea-card";
       card.innerHTML = `
-        <div style="flex:1;min-width:0;">
+        <div class="idea-text-wrap">
           <div class="text">${escapeHtml(idea.text)}</div>
           <div class="meta">${relativeTime(idea.updatedAt || idea.createdAt)}</div>
         </div>
         <div class="idea-actions">
-          <button class="btn btn-ghost edit-idea-btn">✎ Bearbeiten</button>
-          <button class="btn btn-ghost make-story-btn">✎ Geschichte daraus machen</button>
-          <button class="btn-danger-text delete-idea-btn">Löschen</button>
+          <button class="btn btn-outline edit-idea-btn">✎ Bearbeiten</button>
+          <button class="btn btn-outline make-story-btn">✎ Geschichte daraus machen</button>
+          <button class="btn btn-danger delete-idea-btn">Löschen</button>
         </div>`;
 
       card.querySelector(".edit-idea-btn").addEventListener("click", () => {
@@ -739,7 +757,7 @@
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
           <div class="btn-with-info">
-            <button class="btn btn-ghost" id="consistencyCheckBtn">🔍 Konsistenz prüfen</button>
+            <button class="btn btn-outline" id="consistencyCheckBtn">🔍 Konsistenz prüfen</button>
             <button class="info-badge" id="consistencyInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
           </div>
           <button class="btn btn-primary" id="newBookBtn">+ Neues Buch</button>
@@ -820,10 +838,10 @@
 
       <p class="section-label">Kapitel</p>
       <div id="chapterList"></div>
-      <button class="btn btn-ghost" id="addChapterBtn">+ Kapitel hinzufügen</button>
+      <button class="btn btn-outline" id="addChapterBtn">+ Kapitel hinzufügen</button>
 
       <div style="margin-top:28px;">
-        <button class="btn-danger-text" id="deleteBookBtn">Buch löschen</button>
+        <button class="btn btn-danger" id="deleteBookBtn">Löschen</button>
       </div>`;
 
     document.getElementById("backToBooksBtn").addEventListener("click", () => { activeBookId = null; renderBookList(); });
@@ -903,7 +921,7 @@
         </div>
         <div class="chapter-stories"></div>
         <div class="chapter-actions">
-          <button class="btn btn-ghost add-story-btn" style="font-size:0.82rem;padding:6px 12px;">+ Geschichte hinzufügen</button>
+          <button class="btn btn-outline add-story-btn" style="font-size:0.82rem;padding:6px 12px;">+ Geschichte hinzufügen</button>
         </div>`;
 
       const titleInput = block.querySelector(".chapter-title-input");

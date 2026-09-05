@@ -392,7 +392,8 @@ select.status-select {
   padding: 0;
 }
 .margin-marker:hover { box-shadow: 0 0 0 2px var(--ink-faint); }
-.margin-marker.cat-ai { background: var(--clay); }
+.margin-marker.cat-korrektorat { background: var(--ink-faint); }
+.margin-marker.cat-lektorat { background: var(--warn); }
 .margin-marker.cat-makro { background: var(--pine); }
 .margin-marker.cat-szene { background: var(--clay); }
 .margin-marker.cat-mikro { background: var(--sky); }
@@ -655,6 +656,19 @@ select.status-select {
 }
 .ai-suggestion-excerpt { font-size: 0.92rem; color: var(--ink-soft); font-style: italic; margin-bottom: 4px; }
 .ai-suggestion-arrow { font-size: 0.95rem; margin-bottom: 8px; }
+.ai-suggestion-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.ai-suggestion-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.95rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.ai-suggestion-option:has(input:checked) { border-color: var(--pine); background: var(--pine-tint); }
+.ai-suggestion-option input { margin-top: 3px; flex-shrink: 0; }
 .ai-suggestion-reason { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; margin-bottom: 10px; }
 .ai-suggestion-note { font-size: 0.8rem; color: var(--warn); margin-bottom: 10px; }
 .ai-suggestion-actions { display: flex; gap: 8px; flex-wrap: wrap; }

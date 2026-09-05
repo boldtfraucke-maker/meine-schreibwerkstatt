@@ -68,7 +68,8 @@ Sehr wichtige Regeln:
 - Du veränderst niemals den persönlichen Schreibstil der Autorin und drängst sie nicht in einen einheitlichen "KI-Stil".
 - Ist der Text schon gut, gib eine leere Liste zurück - erfinde keine Probleme, nur um etwas zu liefern.
 - Jeder Vorschlag braucht eine kurze, konkrete Begründung, die die Autorin nachvollziehen kann.
-- "excerpt" muss zeichengenau und wörtlich aus dem Originaltext kopiert sein (kein Umformulieren, keine ergänzten Anführungszeichen), damit die Stelle im Text wiedergefunden werden kann. Halte "excerpt" so kurz wie möglich (meist ein paar Wörter bis ein Satz).`;
+- "excerpt" muss zeichengenau und wörtlich aus dem Originaltext kopiert sein (kein Umformulieren, keine ergänzten Anführungszeichen), damit die Stelle im Text wiedergefunden werden kann. Halte "excerpt" so kurz wie möglich (meist ein paar Wörter bis ein Satz).
+- "suggestions" ist eine Liste mit 1 bis 3 Formulierungs-Alternativen für diese Stelle. Bei einer eindeutigen Korrektur (Rechtschreibung, Tippfehler) reicht eine einzige. Bei Lektorat/Stil, wo es einen echten gestalterischen Spielraum gibt (z. B. wie man einen verschachtelten Satz auflöst), gib 2-3 wirklich unterschiedliche, eigenständige Alternativen - nicht nur 3, weil es sein könnte, sondern nur wenn es echte sinnvolle Varianten gibt.`;
 
   const ANALYZE_SCHEMA = {
     type: "object",
@@ -80,10 +81,10 @@ Sehr wichtige Regeln:
           properties: {
             type: { type: "string", enum: ["korrektorat", "lektorat", "stil"] },
             excerpt: { type: "string" },
-            suggestion: { type: "string" },
+            suggestions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 3 },
             reason: { type: "string" }
           },
-          required: ["type", "excerpt", "suggestion", "reason"],
+          required: ["type", "excerpt", "suggestions", "reason"],
           additionalProperties: false
         }
       }
@@ -101,7 +102,10 @@ Sehr wichtige Regeln:
       2048
     );
     const suggestions = Array.isArray(parsed && parsed.suggestions) ? parsed.suggestions : [];
-    return suggestions.filter(s => s && typeof s.excerpt === "string" && s.excerpt.trim());
+    return suggestions
+      .filter(s => s && typeof s.excerpt === "string" && s.excerpt.trim() && Array.isArray(s.suggestions) && s.suggestions.length)
+      .map(s => ({ ...s, suggestions: s.suggestions.filter(x => typeof x === "string" && x.trim()) }))
+      .filter(s => s.suggestions.length);
   }
 
   // ---------- Namen/Orte-Erkennung (für die Konsistenzprüfung) ----------

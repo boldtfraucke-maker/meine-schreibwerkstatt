@@ -273,18 +273,15 @@
       if (item.kind === "ai") {
         const sug = item.data;
         const canApply = !!findExcerptRange(editorPage, sug.excerpt);
-        pop.innerHTML = `
-          <div class="ai-suggestion-type">${escapeHtml(AI_TYPE_LABELS[sug.type] || "Vorschlag")}</div>
-          <div class="ai-suggestion-excerpt">„${escapeHtml(sug.excerpt)}"</div>
-          <div class="ai-suggestion-arrow">→ ${escapeHtml(sug.suggestion)}</div>
-          <div class="ai-suggestion-reason"><strong>Warum?</strong> ${escapeHtml(sug.reason)}</div>
+        pop.innerHTML = aiSuggestionBodyHtml(sug, "ai-opt-" + uid()) + `
           ${!canApply ? '<div class="ai-suggestion-note">Konnte die Textstelle nicht genau wiederfinden – bitte von Hand anpassen.</div>' : ""}
           <div class="ai-suggestion-actions">
             <button class="btn btn-primary pop-apply-btn" ${canApply ? "" : "disabled"}>Übernehmen</button>
             <button class="btn btn-ghost pop-dismiss-btn">Ablehnen</button>
           </div>`;
         pop.querySelector(".pop-apply-btn").addEventListener("click", async () => {
-          if (!replaceExcerptText(editorPage, sug.excerpt, sug.suggestion)) return;
+          const chosen = getSelectedSuggestion(pop, sug);
+          if (!replaceExcerptText(editorPage, sug.excerpt, chosen)) return;
           sug.done = true;
           await Storage.save(story);
           scheduleSave();
@@ -323,7 +320,7 @@
 
     const items = [];
     (story.aiCheck ? story.aiCheck.suggestions : []).forEach((sug) => {
-      if (!sug.done) items.push({ kind: "ai", data: sug, excerpt: sug.excerpt, cat: "ai" });
+      if (!sug.done) items.push({ kind: "ai", data: sug, excerpt: sug.excerpt, cat: sug.type || "korrektorat" });
     });
     (story.structureCheck ? story.structureCheck.findings : []).forEach((f) => {
       if (!f.done && f.excerpt) items.push({ kind: "structure", data: f, excerpt: f.excerpt, cat: f.cat });
@@ -758,6 +755,32 @@
   // ---------- KI-Vorschläge ----------
   const AI_TYPE_LABELS = { korrektorat: "Korrektorat", lektorat: "Lektorat", stil: "Stil" };
 
+  // Baut den gemeinsamen Inhalt einer Vorschlags-Karte - wiederverwendet von
+  // der Listen-Ansicht (Handy) und dem Marker-Popover (PC/Tablet), damit
+  // beide immer gleich funktionieren. Bei nur einer Formulierung reicht ein
+  // einfacher Pfeil, bei mehreren echten Alternativen gibt's Radiobuttons
+  // zur Auswahl, welche übernommen werden soll.
+  function aiSuggestionBodyHtml(sug, radioName) {
+    const options = sug.suggestions.length > 1
+      ? `<div class="ai-suggestion-options">${sug.suggestions.map((s, i) => `
+          <label class="ai-suggestion-option">
+            <input type="radio" name="${escapeAttr(radioName)}" value="${i}" ${i === 0 ? "checked" : ""}>
+            <span>${escapeHtml(s)}</span>
+          </label>`).join("")}</div>`
+      : `<div class="ai-suggestion-arrow">→ ${escapeHtml(sug.suggestions[0])}</div>`;
+    return `
+      <div class="ai-suggestion-type">${escapeHtml(AI_TYPE_LABELS[sug.type] || "Vorschlag")}</div>
+      <div class="ai-suggestion-excerpt">„${escapeHtml(sug.excerpt)}"</div>
+      ${options}
+      <div class="ai-suggestion-reason"><strong>Warum?</strong> ${escapeHtml(sug.reason)}</div>`;
+  }
+
+  function getSelectedSuggestion(container, sug) {
+    if (sug.suggestions.length === 1) return sug.suggestions[0];
+    const checked = container.querySelector('input[type="radio"]:checked');
+    return checked ? sug.suggestions[Number(checked.value)] : sug.suggestions[0];
+  }
+
   async function runAiCheck(story, editorPage, scheduleSave) {
     const panel = document.getElementById("aiPanel");
     if (!AIProvider.isConfigured()) {
@@ -798,9 +821,12 @@
       panel.innerHTML = '<div class="ai-panel-status">✓ Sieht gut aus – die KI hat gerade keine Vorschläge.</div>';
       return;
     }
-    // Am PC/Tablet-quer bekommt jeder Vorschlag stattdessen einen Marker im
-    // Rand neben dem Text - die Liste hier bliebe sonst doppelt.
-    if (desktop) {
+    // Am PC/Tablet-quer bekommt jeder auffindbare Vorschlag stattdessen einen
+    // Marker im Rand neben dem Text - nur Vorschläge, deren Textstelle nicht
+    // mehr gefunden wird, bleiben hier in der Liste, statt spurlos zu
+    // verschwinden.
+    const listItems = desktop ? open.filter(s => !findExcerptRange(editorPage, s.excerpt)) : open;
+    if (listItems.length === 0) {
       panel.innerHTML = '<div class="ai-panel-status">Siehe die farbigen Marker rechts neben dem Text →</div>';
       return;
     }
@@ -812,18 +838,18 @@
     const list = panel.querySelector("#aiSuggestionList");
 
     function checkEmpty() {
-      if (list.children.length === 0) panel.innerHTML = '<div class="ai-panel-status">✓ Alle Vorschläge bearbeitet.</div>';
+      if (list.children.length === 0) {
+        panel.innerHTML = desktop
+          ? '<div class="ai-panel-status">Siehe die farbigen Marker rechts neben dem Text →</div>'
+          : '<div class="ai-panel-status">✓ Alle Vorschläge bearbeitet.</div>';
+      }
     }
 
-    open.forEach((sug) => {
+    listItems.forEach((sug) => {
       const canApply = !!findExcerptRange(editorPage, sug.excerpt);
       const card = document.createElement("div");
       card.className = "ai-suggestion-card";
-      card.innerHTML = `
-        <div class="ai-suggestion-type">${escapeHtml(AI_TYPE_LABELS[sug.type] || "Vorschlag")}</div>
-        <div class="ai-suggestion-excerpt">„${escapeHtml(sug.excerpt)}"</div>
-        <div class="ai-suggestion-arrow">→ ${escapeHtml(sug.suggestion)}</div>
-        <div class="ai-suggestion-reason"><strong>Warum?</strong> ${escapeHtml(sug.reason)}</div>
+      card.innerHTML = aiSuggestionBodyHtml(sug, "ai-opt-" + uid()) + `
         ${!canApply ? '<div class="ai-suggestion-note">Konnte die Textstelle nicht genau wiederfinden – bitte von Hand anpassen.</div>' : ""}
         <div class="ai-suggestion-actions">
           <button class="btn btn-ghost ai-locate-btn" ${canApply ? "" : "disabled"}>→ Zur Stelle springen</button>
@@ -836,7 +862,8 @@
         if (range) scrollAndFlashRange(range);
       });
       card.querySelector(".ai-apply-btn").addEventListener("click", async () => {
-        if (!replaceExcerptText(editorPage, sug.excerpt, sug.suggestion)) return;
+        const chosen = getSelectedSuggestion(card, sug);
+        if (!replaceExcerptText(editorPage, sug.excerpt, chosen)) return;
         sug.done = true;
         await Storage.save(story);
         scheduleSave();

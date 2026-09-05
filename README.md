@@ -75,6 +75,12 @@ Danach sind der Button „✨ KI-Vorschläge" und „📖 Aufbau prüfen" im
 Schreiben-Bereich sowie „🔍 Konsistenz prüfen" und „✨ Kapitel-Titel
 vorschlagen" im Bücher-Bereich nutzbar.
 
+Bei „✨ KI-Vorschläge" liefert die KI zu jeder Stelle 1 bis 3 Formulierungs-
+Alternativen (nicht immer 3 - nur wenn es echten gestalterischen Spielraum
+gibt, sonst nur eine). Gibt es mehrere, wählt man per Radiobutton, welche
+übernommen werden soll. Korrektorat/Lektorat/Stil haben dabei jeweils eine
+eigene Randmarker-Farbe.
+
 „Konsistenz prüfen" vergleicht Namen und Orte über alle Geschichten hinweg
 (z. B. „Balu" vs. „Balou") und extrahiert dafür pro Geschichte höchstens
 einmal eine kurze Namensliste per KI – der eigentliche Abgleich zwischen den

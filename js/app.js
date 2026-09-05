@@ -166,6 +166,28 @@
     }
   }
 
+  // Zeigt an einem Button (bzw. dessen Desktop-/Handy-Zwillingen) ein kleines
+  // Zahlen-Abzeichen mit der Anzahl offener Punkte, damit man beim Öffnen
+  // einer Geschichte sofort sieht, ob noch etwas absteht - ohne scrollen
+  // oder neu prüfen zu müssen.
+  function setCountBadge(ids, count) {
+    ids.forEach((id) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      let badge = btn.querySelector(".count-badge");
+      if (count > 0) {
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "count-badge";
+          btn.appendChild(badge);
+        }
+        badge.textContent = String(count);
+      } else if (badge) {
+        badge.remove();
+      }
+    });
+  }
+
   function upsertLocal(story) {
     const idx = stories.findIndex(s => s.id === story.id);
     if (idx >= 0) stories[idx] = story; else stories.push(story);
@@ -512,15 +534,16 @@
     wireBoth(["aiCheckBtn", "aiCheckBtnTop"], () => runAiCheck(story, editorPage, scheduleSave));
     wireBoth(["aiCheckInfoBtn", "aiCheckInfoBtnTop"], () => showAlert(
       "Liest diese eine Geschichte durch und schlägt Verbesserungen bei Rechtschreibung, langen Sätzen und Wiederholungen vor - mit Begründung, du entscheidest selbst. " +
-      "Kostet eine Kleinigkeit (Bruchteile eines Cents) pro Klick. Am besten einsetzen, wenn eine Geschichte fertig geschrieben ist - nicht nach jedem einzelnen Satz."
+      "Offene Vorschläge bleiben an der Geschichte gespeichert, bis du sie einzeln übernimmst oder ablehnst. Kostet eine Kleinigkeit (Bruchteile eines Cents) pro Klick, am besten einsetzen, wenn eine Geschichte fertig geschrieben ist - nicht nach jedem einzelnen Satz."
     ));
+    renderAiSuggestions(document.getElementById("aiPanel"), story, editorPage, scheduleSave);
 
     wireBoth(["structureCheckBtn", "structureCheckBtnTop"], () => runStructureCheck(story, editorPage));
     wireBoth(["structureInfoBtn", "structureInfoBtnTop"], () => showAlert(
       "Schaut sich die ganze Geschichte im Zusammenhang an (nicht einzelne Sätze), in der Reihenfolge, wie es Lektorate auch tun - vom Großen ins Detail: Aufbau & Spannungsbogen, ob der Schluss zum Weiterlesen einlädt, das Erzähltempo, und Show-don't-tell. " +
       "Reine Einschätzung zum Nachdenken, nichts wird automatisch verändert. Die Anmerkungen bleiben an der Geschichte gespeichert, bis du sie einzeln als erledigt markierst. Kostet eine Kleinigkeit pro Klick, am besten bei einer fertigen Geschichte nutzen."
     ));
-    renderStructureResults(document.getElementById("structurePanel"), story);
+    renderStructureResults(document.getElementById("structurePanel"), story, editorPage);
 
     wireBoth(["copyTextBtn", "copyTextBtnTop"], async (e) => {
       const plain = htmlToPlainText(editorPage.innerHTML);
@@ -556,7 +579,12 @@
     try {
       const plainText = htmlToPlainText(editorPage.innerHTML);
       const suggestions = await AIProvider.analyzeStory(plainText);
-      renderAiSuggestions(panel, editorPage, scheduleSave, suggestions);
+      story.aiCheck = {
+        checkedAt: new Date().toISOString(),
+        suggestions: suggestions.map(s => ({ ...s, done: false }))
+      };
+      await Storage.save(story);
+      renderAiSuggestions(panel, story, editorPage, scheduleSave);
     } catch (err) {
       console.error("KI-Fehler", err);
       const msg = err && err.message === "NOT_CONFIGURED"
@@ -566,13 +594,23 @@
     }
   }
 
-  function renderAiSuggestions(panel, editorPage, scheduleSave, suggestions) {
-    if (suggestions.length === 0) {
+  // Bleibt wie "Aufbau & Wirkung" an der Geschichte gespeichert - beim
+  // erneuten Öffnen erscheinen offene Vorschläge automatisch wieder, statt
+  // nach jedem Verlassen der Seite zu verschwinden.
+  function renderAiSuggestions(panel, story, editorPage, scheduleSave) {
+    const check = story.aiCheck;
+    const open = check ? check.suggestions.filter(s => !s.done) : [];
+    setCountBadge(["aiCheckBtn", "aiCheckBtnTop"], open.length);
+    if (!check) { panel.innerHTML = ""; return; }
+
+    if (open.length === 0) {
       panel.innerHTML = '<div class="ai-panel-status">✓ Sieht gut aus – die KI hat gerade keine Vorschläge.</div>';
       return;
     }
+    const stale = new Date(story.updatedAt) > new Date(check.checkedAt);
     panel.innerHTML = `
       <p class="section-label" style="margin-top:20px;">✨ KI-Vorschläge</p>
+      ${stale ? '<div class="ai-suggestion-note" style="margin-bottom:10px;">Die Geschichte wurde seit dieser Prüfung verändert - manche Textstellen werden dadurch eventuell nicht mehr gefunden.</div>' : ""}
       <div id="aiSuggestionList" class="ai-suggestion-list"></div>`;
     const list = panel.querySelector("#aiSuggestionList");
 
@@ -580,7 +618,7 @@
       if (list.children.length === 0) panel.innerHTML = '<div class="ai-panel-status">✓ Alle Vorschläge bearbeitet.</div>';
     }
 
-    suggestions.forEach((sug) => {
+    open.forEach((sug) => {
       const canApply = !!findExcerptRange(editorPage, sug.excerpt);
       const card = document.createElement("div");
       card.className = "ai-suggestion-card";
@@ -600,19 +638,25 @@
         const range = findExcerptRange(editorPage, sug.excerpt);
         if (range) scrollAndFlashRange(range);
       });
-      card.querySelector(".ai-apply-btn").addEventListener("click", () => {
+      card.querySelector(".ai-apply-btn").addEventListener("click", async () => {
         const range = findExcerptRange(editorPage, sug.excerpt);
         if (!range) return;
         range.deleteContents();
         range.insertNode(document.createTextNode(sug.suggestion));
         editorPage.normalize();
+        sug.done = true;
+        await Storage.save(story);
         scheduleSave();
         card.remove();
         checkEmpty();
+        setCountBadge(["aiCheckBtn", "aiCheckBtnTop"], check.suggestions.filter(s => !s.done).length);
       });
-      card.querySelector(".ai-dismiss-btn").addEventListener("click", () => {
+      card.querySelector(".ai-dismiss-btn").addEventListener("click", async () => {
+        sug.done = true;
+        await Storage.save(story);
         card.remove();
         checkEmpty();
+        setCountBadge(["aiCheckBtn", "aiCheckBtnTop"], check.suggestions.filter(s => !s.done).length);
       });
 
       list.appendChild(card);
@@ -644,11 +688,14 @@
       const plainText = htmlToPlainText(editorPage.innerHTML);
       const result = await AIProvider.analyzeStructure(plainText);
       const findings = STRUCTURE_FIELDS
-        .map(f => ({ key: f.key, label: f.label, cat: f.cat, text: (result && result[f.key] || "").trim(), done: false }))
+        .map(f => {
+          const r = result && result[f.key];
+          return { key: f.key, label: f.label, cat: f.cat, text: ((r && r.text) || "").trim(), excerpt: ((r && r.excerpt) || "").trim(), done: false };
+        })
         .filter(f => f.text);
       story.structureCheck = { checkedAt: new Date().toISOString(), findings };
       await Storage.save(story);
-      renderStructureResults(panel, story);
+      renderStructureResults(panel, story, editorPage);
     } catch (err) {
       console.error("Aufbau-Prüfung-Fehler", err);
       const msg = err && err.message === "NOT_CONFIGURED"
@@ -661,9 +708,10 @@
   // Der letzte Aufbau-Check bleibt an der Geschichte selbst gespeichert (nicht
   // im Ideenparkplatz) - beim erneuten Öffnen sieht man wieder, was zuletzt
   // gefunden wurde, bis man einen Punkt einzeln als erledigt markiert.
-  function renderStructureResults(panel, story) {
+  function renderStructureResults(panel, story, editorPage) {
     const check = story.structureCheck;
     const open = check ? check.findings.filter(f => !f.done) : [];
+    setCountBadge(["structureCheckBtn", "structureCheckBtnTop"], open.length);
 
     if (!check) { panel.innerHTML = ""; return; }
     if (open.length === 0) {
@@ -683,6 +731,7 @@
     }
 
     open.forEach((f) => {
+      const canLocate = !!(f.excerpt && editorPage && findExcerptRange(editorPage, f.excerpt));
       const card = document.createElement("div");
       card.className = "ai-suggestion-card";
       card.dataset.cat = f.cat;
@@ -690,13 +739,21 @@
         <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
         <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
         <div class="ai-suggestion-actions">
+          ${canLocate ? '<button class="btn btn-ghost locate-btn">→ Zur Stelle springen</button>' : ""}
           <button class="btn btn-ghost done-btn">✓ Erledigt</button>
         </div>`;
+      if (canLocate) {
+        card.querySelector(".locate-btn").addEventListener("click", () => {
+          const range = findExcerptRange(editorPage, f.excerpt);
+          if (range) scrollAndFlashRange(range);
+        });
+      }
       card.querySelector(".done-btn").addEventListener("click", async () => {
         f.done = true;
         await Storage.save(story);
         card.remove();
         checkEmpty();
+        setCountBadge(["structureCheckBtn", "structureCheckBtnTop"], check.findings.filter(x => !x.done).length);
       });
       list.appendChild(card);
     });

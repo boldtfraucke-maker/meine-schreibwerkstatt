@@ -89,9 +89,15 @@ einzelner Textstellen-Vorschläge eine kurze Gesamteinschätzung entlang der
 Lektorats-Reihenfolge vom Großen ins Detail: Aufbau & Spannungsbogen,
 Einladung zum Weiterlesen, Erzähltempo und Show-don't-tell – und falls
 sinnvoll einen Hinweis, wo ein Schnitt in zwei Teile in Frage käme. Reine
-Einschätzung zum Nachdenken, es wird nichts automatisch verändert. Die
-Anmerkungen bleiben an der jeweiligen Geschichte gespeichert (nicht im
-Ideenparkplatz) und lassen sich einzeln als erledigt markieren.
+Einschätzung zum Nachdenken, es wird nichts automatisch verändert.
+
+Offene Punkte aus beiden Funktionen (KI-Vorschläge und Aufbau & Wirkung)
+bleiben an der jeweiligen Geschichte gespeichert (nicht im Ideenparkplatz)
+und erscheinen beim erneuten Öffnen automatisch wieder, bis man sie
+einzeln übernimmt/ablehnt bzw. als erledigt markiert. Ein kleines
+Zahlen-Abzeichen am jeweiligen Button zeigt auf einen Blick, wie viele
+Punkte noch offen sind. Zu jedem Fund, der sich einer bestimmten
+Textstelle zuordnen lässt, gibt es außerdem „→ Zur Stelle springen".
 
 ### Kosten im Blick behalten
 

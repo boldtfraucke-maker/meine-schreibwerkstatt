@@ -213,30 +213,47 @@ Du bekommst den vollständigen Text einer Geschichte. Gib eine kurze, ermutigend
 - einladungZumWeiterlesen (Szenen-Dynamik): Lädt der Schluss zum Weiterlesen/Wiederkommen ein - ein Gedanke, der nachhallt, eine offene Frage, ein Gefühl, das nachwirkt? Oder wirkt er zu abrupt abgeschnitten? (Kein Cliffhanger-Zwang - ein sanfter, stimmiger Abschluss ist bei diesem Genre oft genau richtig, das ist kein Mangel.)
 - erzaehltempo (Mikro-Ebene/Pacing): Passt das Erzähltempo zur jeweiligen Szene - kurze, knappe Sätze in bewegten/aufgeregten Momenten, ruhigere, ausführlichere Sätze in stillen Momenten?
 - showDontTell (Stil-Ebene): Werden Gefühle nur benannt ("Sie hatte Angst") statt durch Handlung/Körperreaktion spürbar gemacht ("Ihre Pfoten zitterten")?
-- kapitelTrennung: Nur befüllen, wenn die Geschichte lang/vielschichtig genug ist, dass ein Schnitt in zwei eigenständige Teile sinnvoll wäre - mit kurzer Begründung und einem Hinweis, an welcher Stelle (grob beschrieben, keine wörtliche Textstelle nötig).
+- kapitelTrennung: Nur befüllen, wenn die Geschichte lang/vielschichtig genug ist, dass ein Schnitt in zwei eigenständige Teile sinnvoll wäre - mit kurzer Begründung.
+
+Zu jeder Ebene gibst du zusätzlich "excerpt" mit: eine kurze, zeichengenau wörtlich aus der Geschichte kopierte Textstelle, auf die sich dein Kommentar konkret bezieht (kein Umformulieren, keine ergänzten Anführungszeichen) - damit die Stelle im Text wiedergefunden werden kann. Bezieht sich dein Kommentar auf die Geschichte als Ganzes statt auf eine bestimmte Stelle (z. B. allgemeines Tempo-Feedback), lass "excerpt" leer.
 
 Wichtig:
 - Sei konkret und nachvollziehbar, keine leeren Floskeln.
-- Erfinde keine Probleme nur um etwas zu liefern - funktioniert eine Ebene schon gut, gib dort einen leeren Text zurück.
+- Erfinde keine Probleme nur um etwas zu liefern - funktioniert eine Ebene schon gut, gib dort "text" und "excerpt" leer zurück.
 - Dränge die Autorin nie in einen fremden Stil oder ein fremdes Genre (z. B. Spannung/Action-Schreibweise) - bewerte innerhalb ihres eigenen, ruhigen Tons.
 - Bleib wertschätzend, das ist eine Hobby-Autorin, kein Uni-Seminar.
 - Du schreibst nichts um, du gibst nur Einschätzungen.`;
 
+  const STRUCTURE_FINDING_SCHEMA = {
+    type: "object",
+    properties: {
+      text: { type: "string" },
+      excerpt: { type: "string" }
+    },
+    required: ["text", "excerpt"],
+    additionalProperties: false
+  };
+
   const STRUCTURE_SCHEMA = {
     type: "object",
     properties: {
-      aufbauSpannungsbogen: { type: "string" },
-      einladungZumWeiterlesen: { type: "string" },
-      erzaehltempo: { type: "string" },
-      showDontTell: { type: "string" },
-      kapitelTrennung: { type: "string" }
+      aufbauSpannungsbogen: STRUCTURE_FINDING_SCHEMA,
+      einladungZumWeiterlesen: STRUCTURE_FINDING_SCHEMA,
+      erzaehltempo: STRUCTURE_FINDING_SCHEMA,
+      showDontTell: STRUCTURE_FINDING_SCHEMA,
+      kapitelTrennung: STRUCTURE_FINDING_SCHEMA
     },
     required: ["aufbauSpannungsbogen", "einladungZumWeiterlesen", "erzaehltempo", "showDontTell", "kapitelTrennung"],
     additionalProperties: false
   };
 
+  function emptyFinding() { return { text: "", excerpt: "" }; }
+
   async function analyzeStructure(plainText) {
-    const empty = { aufbauSpannungsbogen: "", einladungZumWeiterlesen: "", erzaehltempo: "", showDontTell: "", kapitelTrennung: "" };
+    const empty = {
+      aufbauSpannungsbogen: emptyFinding(), einladungZumWeiterlesen: emptyFinding(),
+      erzaehltempo: emptyFinding(), showDontTell: emptyFinding(), kapitelTrennung: emptyFinding()
+    };
     if (!plainText || !plainText.trim()) return empty;
     const parsed = await callClaude(
       STRUCTURE_SYSTEM_PROMPT,
@@ -244,12 +261,16 @@ Wichtig:
       STRUCTURE_SCHEMA,
       1536
     );
+    function pick(key) {
+      const f = parsed && parsed[key];
+      return { text: (f && f.text) || "", excerpt: (f && f.excerpt) || "" };
+    }
     return {
-      aufbauSpannungsbogen: (parsed && parsed.aufbauSpannungsbogen) || "",
-      einladungZumWeiterlesen: (parsed && parsed.einladungZumWeiterlesen) || "",
-      erzaehltempo: (parsed && parsed.erzaehltempo) || "",
-      showDontTell: (parsed && parsed.showDontTell) || "",
-      kapitelTrennung: (parsed && parsed.kapitelTrennung) || ""
+      aufbauSpannungsbogen: pick("aufbauSpannungsbogen"),
+      einladungZumWeiterlesen: pick("einladungZumWeiterlesen"),
+      erzaehltempo: pick("erzaehltempo"),
+      showDontTell: pick("showDontTell"),
+      kapitelTrennung: pick("kapitelTrennung")
     };
   }
 

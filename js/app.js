@@ -362,37 +362,53 @@
     editorPage.addEventListener("mouseup", saveSelection);
 
     panel.querySelectorAll(".tool-btn[data-cmd]").forEach(btn => {
+      // mousedown statt nur click, mit preventDefault: verhindert, dass der
+      // Button dem Editor überhaupt erst den Fokus (und damit die Textmarkierung)
+      // wegnimmt. Dadurch ist beim Klick immer noch die richtige Stelle markiert -
+      // vorher musste man oft ein zweites Mal klicken, damit es "einrastet".
+      btn.addEventListener("mousedown", (e) => e.preventDefault());
       btn.addEventListener("click", () => {
-        editorPage.focus();
-        restoreSelection();
         const cmd = btn.dataset.cmd;
         if (cmd === "image") { document.getElementById("imageInput").click(); return; }
         document.execCommand(cmd, false, null);
-        saveSelection();
         scheduleSave();
       });
     });
 
+    // Bei den Dropdowns (Schriftart/-größe) lässt sich der Fokuswechsel nicht
+    // verhindern (das native Dropdown-Menü braucht ihn) - die Markierung wird
+    // deshalb vorher gerettet und der eigentliche Befehl minimal verzögert
+    // (setTimeout 0) ausgeführt, nachdem der Browser den Fokuswechsel selbst
+    // abgeschlossen hat. Ohne diese Verzögerung hat der Browser die
+    // Markierung manchmal im selben Moment schon wieder verworfen.
     document.getElementById("fontSelect").addEventListener("change", (e) => {
-      editorPage.focus();
+      const value = e.target.value;
       restoreSelection();
-      document.execCommand("fontName", false, e.target.value);
-      saveSelection();
-      scheduleSave();
+      editorPage.focus();
+      setTimeout(() => {
+        restoreSelection();
+        document.execCommand("fontName", false, value);
+        saveSelection();
+        scheduleSave();
+      }, 0);
     });
     document.getElementById("fontSizeSelect").addEventListener("change", (e) => {
-      editorPage.focus();
+      const value = e.target.value;
       restoreSelection();
-      // execCommand kennt nur die Stufen 1-7, keine echten pt-Werte. Deshalb Stufe 7
-      // als eindeutige Markierung nutzen und danach durch die echte pt-Größe ersetzen -
-      // der gängige Trick, um in contenteditable echte Punktgrößen zu setzen.
-      document.execCommand("fontSize", false, "7");
-      editorPage.querySelectorAll('font[size="7"]').forEach(el => {
-        el.removeAttribute("size");
-        el.style.fontSize = e.target.value + "pt";
-      });
-      saveSelection();
-      scheduleSave();
+      editorPage.focus();
+      setTimeout(() => {
+        restoreSelection();
+        // execCommand kennt nur die Stufen 1-7, keine echten pt-Werte. Deshalb Stufe 7
+        // als eindeutige Markierung nutzen und danach durch die echte pt-Größe ersetzen -
+        // der gängige Trick, um in contenteditable echte Punktgrößen zu setzen.
+        document.execCommand("fontSize", false, "7");
+        editorPage.querySelectorAll('font[size="7"]').forEach(el => {
+          el.removeAttribute("size");
+          el.style.fontSize = value + "pt";
+        });
+        saveSelection();
+        scheduleSave();
+      }, 0);
     });
 
     document.getElementById("imageInput").addEventListener("change", (e) => {

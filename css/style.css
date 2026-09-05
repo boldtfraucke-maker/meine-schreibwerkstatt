@@ -375,8 +375,45 @@ select.status-select {
 .info-badge:hover { border-color: var(--sky); color: var(--sky); }
 .tool-select:hover { border-color: var(--clay); color: var(--ink); }
 .toolbar-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+.editor-with-margin { display: flex; align-items: stretch; gap: 8px; flex: 1; min-height: 0; }
+.margin-gutter { position: relative; width: 32px; flex: 0 0 32px; display: none; }
+@media (min-width: 821px) {
+  .margin-gutter { display: block; }
+}
+.margin-marker {
+  position: absolute;
+  right: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 0 0 1px var(--border);
+  padding: 0;
+}
+.margin-marker:hover { box-shadow: 0 0 0 2px var(--ink-faint); }
+.margin-marker.cat-ai { background: var(--clay); }
+.margin-marker.cat-makro { background: var(--pine); }
+.margin-marker.cat-szene { background: var(--clay); }
+.margin-marker.cat-mikro { background: var(--sky); }
+.margin-marker.cat-stil { background: var(--danger); }
+
+.marker-popover {
+  position: fixed;
+  z-index: 60;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 28px rgba(27, 25, 18, 0.18);
+}
+.marker-popover[hidden] { display: none; }
+
 .editor-page {
   flex: 1;
+  min-width: 0;
   background: var(--bg-editor);
   border: 1px solid var(--border);
   border-left: 3px solid var(--clay);

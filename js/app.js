@@ -9,6 +9,7 @@
   let activeBookId = null;
   let autosaveTimer = null;
   let bookSaveTimer = null;
+  let suggestionResizeHandler = null;
 
   const STATUS_OPTIONS = [
     { value: "idee", label: "Idee", color: "#A79E8C" },
@@ -88,15 +89,29 @@
       fullText += node.nodeValue;
     }
 
-    function locate(offset) {
-      for (let i = nodes.length - 1; i >= 0; i--) {
-        if (offset >= nodes[i].start) return { node: nodes[i].node, offset: offset - nodes[i].start };
+    // forEnd: true für den Ende-Punkt eines Bereichs - bevorzugt dann das
+    // Ende des vorherigen Textknotens statt den Anfang des nächsten, wenn der
+    // Offset exakt auf eine Knotengrenze fällt (z. B. Absatzende). Ohne das
+    // würde der Bereich manchmal fälschlich in den nächsten Absatz
+    // hineinreichen, was insertNode()/deleteContents() den neuen Text
+    // versehentlich außerhalb des ursprünglichen <p> einfügen lässt.
+    function locate(offset, forEnd) {
+      for (let i = 0; i < nodes.length; i++) {
+        const start = nodes[i].start;
+        const len = nodes[i].node.nodeValue.length;
+        const end = start + len;
+        if (offset < end) return { node: nodes[i].node, offset: offset - start };
+        if (offset === end && forEnd) return { node: nodes[i].node, offset: len };
+      }
+      if (nodes.length > 0) {
+        const last = nodes[nodes.length - 1];
+        return { node: last.node, offset: last.node.nodeValue.length };
       }
       return null;
     }
     function buildRange(start, end) {
-      const startLoc = locate(start);
-      const endLoc = locate(end);
+      const startLoc = locate(start, false);
+      const endLoc = locate(end, true);
       if (!startLoc || !endLoc) return null;
       const range = document.createRange();
       range.setStart(startLoc.node, startLoc.offset);
@@ -138,6 +153,26 @@
     const lastNormIdx = cIdx + cwExcerpt.length - 1;
     const endOrig = (lastNormIdx + 1 < mapFull.length) ? mapFull[lastNormIdx + 1] : fullText.length;
     return buildRange(startOrig, endOrig);
+  }
+
+  // Ersetzt eine gefundene Textstelle durch neuen Text. Liegt die Stelle
+  // komplett in einem einzelnen Textknoten (der Normalfall), wird der Text
+  // dort direkt zugeschnitten - sicherer als deleteContents()+insertNode(),
+  // das den neuen Text bei einer Stelle genau am Ende eines Absatzes
+  // manchmal außerhalb des <p> statt darin einfügt.
+  function replaceExcerptText(editorPage, excerpt, newText) {
+    const range = findExcerptRange(editorPage, excerpt);
+    if (!range) return false;
+    if (range.startContainer === range.endContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
+      const node = range.startContainer;
+      const text = node.textContent;
+      node.textContent = text.slice(0, range.startOffset) + newText + text.slice(range.endOffset);
+    } else {
+      range.deleteContents();
+      range.insertNode(document.createTextNode(newText));
+    }
+    editorPage.normalize();
+    return true;
   }
 
   // Scrollt eine Fundstelle in die Mitte des Bildschirms und lässt sie kurz
@@ -186,6 +221,146 @@
         badge.remove();
       }
     });
+  }
+
+  // ---------- Rand-Marker (Desktop/Tablet quer) ----------
+  // Am PC/Tablet gibt es genug Platz, um Vorschläge und Aufbau-Befunde als
+  // kleine farbige Marker direkt neben der betroffenen Textstelle
+  // anzuzeigen, statt in einer Liste weit unter dem Editor - Klick öffnet
+  // ein kleines Feld mit der Einzelheit, ohne den Text-Kontext zu verlieren.
+  // Auf dem Handy (kein Platz für einen Rand) bleibt es bei der Liste.
+  let markerPopoverEl = null;
+  let markerOutsideClickHandler = null;
+
+  function closeMarkerPopover() {
+    if (markerPopoverEl) markerPopoverEl.hidden = true;
+    if (markerOutsideClickHandler) {
+      document.removeEventListener("mousedown", markerOutsideClickHandler);
+      markerOutsideClickHandler = null;
+    }
+  }
+
+  function openMarkerPopover(markerEl, buildContent) {
+    if (!markerPopoverEl) {
+      markerPopoverEl = document.createElement("div");
+      markerPopoverEl.className = "marker-popover";
+      markerPopoverEl.hidden = true;
+      document.body.appendChild(markerPopoverEl);
+    }
+    const pop = markerPopoverEl;
+    pop.innerHTML = "";
+    buildContent(pop);
+    pop.hidden = false;
+
+    const markerRect = markerEl.getBoundingClientRect();
+    const popRect = pop.getBoundingClientRect();
+    let left = markerRect.left - popRect.width - 12;
+    if (left < 8) left = markerRect.right + 12;
+    if (left + popRect.width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - popRect.width - 8);
+    let top = markerRect.top;
+    if (top + popRect.height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - popRect.height - 8);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+
+    markerOutsideClickHandler = (e) => {
+      if (!pop.contains(e.target) && e.target !== markerEl) closeMarkerPopover();
+    };
+    setTimeout(() => document.addEventListener("mousedown", markerOutsideClickHandler), 0);
+  }
+
+  function showMarkerCard(item, markerEl, story, editorPage, scheduleSave, onResolved) {
+    openMarkerPopover(markerEl, (pop) => {
+      if (item.kind === "ai") {
+        const sug = item.data;
+        const canApply = !!findExcerptRange(editorPage, sug.excerpt);
+        pop.innerHTML = `
+          <div class="ai-suggestion-type">${escapeHtml(AI_TYPE_LABELS[sug.type] || "Vorschlag")}</div>
+          <div class="ai-suggestion-excerpt">„${escapeHtml(sug.excerpt)}"</div>
+          <div class="ai-suggestion-arrow">→ ${escapeHtml(sug.suggestion)}</div>
+          <div class="ai-suggestion-reason"><strong>Warum?</strong> ${escapeHtml(sug.reason)}</div>
+          ${!canApply ? '<div class="ai-suggestion-note">Konnte die Textstelle nicht genau wiederfinden – bitte von Hand anpassen.</div>' : ""}
+          <div class="ai-suggestion-actions">
+            <button class="btn btn-primary pop-apply-btn" ${canApply ? "" : "disabled"}>Übernehmen</button>
+            <button class="btn btn-ghost pop-dismiss-btn">Ablehnen</button>
+          </div>`;
+        pop.querySelector(".pop-apply-btn").addEventListener("click", async () => {
+          if (!replaceExcerptText(editorPage, sug.excerpt, sug.suggestion)) return;
+          sug.done = true;
+          await Storage.save(story);
+          scheduleSave();
+          closeMarkerPopover();
+          onResolved();
+        });
+        pop.querySelector(".pop-dismiss-btn").addEventListener("click", async () => {
+          sug.done = true;
+          await Storage.save(story);
+          closeMarkerPopover();
+          onResolved();
+        });
+      } else {
+        const f = item.data;
+        pop.innerHTML = `
+          <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
+          <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
+          <div class="ai-suggestion-actions">
+            <button class="btn btn-ghost pop-done-btn">✓ Erledigt</button>
+          </div>`;
+        pop.querySelector(".pop-done-btn").addEventListener("click", async () => {
+          f.done = true;
+          await Storage.save(story);
+          closeMarkerPopover();
+          onResolved();
+        });
+      }
+    });
+  }
+
+  function renderMarkerGutter(story, editorPage, scheduleSave, onResolved) {
+    const gutter = document.getElementById("marginGutter");
+    if (!gutter) return;
+    gutter.innerHTML = "";
+    closeMarkerPopover();
+
+    const items = [];
+    (story.aiCheck ? story.aiCheck.suggestions : []).forEach((sug) => {
+      if (!sug.done) items.push({ kind: "ai", data: sug, excerpt: sug.excerpt, cat: "ai" });
+    });
+    (story.structureCheck ? story.structureCheck.findings : []).forEach((f) => {
+      if (!f.done && f.excerpt) items.push({ kind: "structure", data: f, excerpt: f.excerpt, cat: f.cat });
+    });
+
+    const gutterRect = gutter.getBoundingClientRect();
+    items.forEach((item) => {
+      const range = findExcerptRange(editorPage, item.excerpt);
+      if (!range) return;
+      const rect = range.getBoundingClientRect();
+      const marker = document.createElement("button");
+      marker.type = "button";
+      marker.className = "margin-marker cat-" + item.cat;
+      marker.style.top = Math.max(0, rect.top - gutterRect.top) + "px";
+      marker.title = item.kind === "ai" ? (AI_TYPE_LABELS[item.data.type] || "Vorschlag") : item.data.label;
+      marker.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showMarkerCard(item, marker, story, editorPage, scheduleSave, onResolved);
+      });
+      gutter.appendChild(marker);
+    });
+  }
+
+  // Ein Einstiegspunkt für beide Funktionen zusammen: entscheidet je nach
+  // Bildschirmbreite, ob Marker (PC/Tablet quer) oder die Liste (Handy)
+  // gezeigt werden, und hält beides synchron nach jeder Änderung.
+  function refreshSuggestionUI(story, editorPage, scheduleSave) {
+    const desktop = window.matchMedia("(min-width: 821px)").matches;
+    renderAiSuggestions(document.getElementById("aiPanel"), story, editorPage, scheduleSave, { desktop });
+    renderStructureResults(document.getElementById("structurePanel"), story, editorPage, { desktop });
+    if (desktop) {
+      renderMarkerGutter(story, editorPage, scheduleSave, () => refreshSuggestionUI(story, editorPage, scheduleSave));
+    } else {
+      const gutter = document.getElementById("marginGutter");
+      if (gutter) gutter.innerHTML = "";
+      closeMarkerPopover();
+    }
   }
 
   function upsertLocal(story) {
@@ -313,6 +488,11 @@
   }
 
   function renderEditor() {
+    if (suggestionResizeHandler) {
+      window.removeEventListener("resize", suggestionResizeHandler);
+      suggestionResizeHandler = null;
+    }
+    closeMarkerPopover();
     const panel = document.getElementById("editorPanel");
     const story = stories.find(s => s.id === activeStoryId);
     if (!story) {
@@ -356,7 +536,10 @@
           <button class="btn btn-danger" id="deleteStoryBtnTop">Löschen</button>
         </div>
       </div>
-      <div class="editor-page" id="editorPage" contenteditable="true" spellcheck="true" lang="de">${story.content || ""}</div>
+      <div class="editor-with-margin">
+        <div class="editor-page" id="editorPage" contenteditable="true" spellcheck="true" lang="de">${story.content || ""}</div>
+        <div class="margin-gutter" id="marginGutter"></div>
+      </div>
       <div class="editor-footer">
         <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span></div>
         <div class="editor-footer-actions">
@@ -534,16 +717,23 @@
     wireBoth(["aiCheckBtn", "aiCheckBtnTop"], () => runAiCheck(story, editorPage, scheduleSave));
     wireBoth(["aiCheckInfoBtn", "aiCheckInfoBtnTop"], () => showAlert(
       "Liest diese eine Geschichte durch und schlägt Verbesserungen bei Rechtschreibung, langen Sätzen und Wiederholungen vor - mit Begründung, du entscheidest selbst. " +
-      "Offene Vorschläge bleiben an der Geschichte gespeichert, bis du sie einzeln übernimmst oder ablehnst. Kostet eine Kleinigkeit (Bruchteile eines Cents) pro Klick, am besten einsetzen, wenn eine Geschichte fertig geschrieben ist - nicht nach jedem einzelnen Satz."
+      "Offene Vorschläge bleiben an der Geschichte gespeichert, bis du sie einzeln übernimmst oder ablehnst. Am PC/Tablet quer erscheinen sie als farbige Marker direkt neben der Textstelle, auf dem Handy als Liste. Kostet eine Kleinigkeit (Bruchteile eines Cents) pro Klick, am besten einsetzen, wenn eine Geschichte fertig geschrieben ist - nicht nach jedem einzelnen Satz."
     ));
-    renderAiSuggestions(document.getElementById("aiPanel"), story, editorPage, scheduleSave);
 
-    wireBoth(["structureCheckBtn", "structureCheckBtnTop"], () => runStructureCheck(story, editorPage));
+    wireBoth(["structureCheckBtn", "structureCheckBtnTop"], () => runStructureCheck(story, editorPage, scheduleSave));
     wireBoth(["structureInfoBtn", "structureInfoBtnTop"], () => showAlert(
       "Schaut sich die ganze Geschichte im Zusammenhang an (nicht einzelne Sätze), in der Reihenfolge, wie es Lektorate auch tun - vom Großen ins Detail: Aufbau & Spannungsbogen, ob der Schluss zum Weiterlesen einlädt, das Erzähltempo, und Show-don't-tell. " +
       "Reine Einschätzung zum Nachdenken, nichts wird automatisch verändert. Die Anmerkungen bleiben an der Geschichte gespeichert, bis du sie einzeln als erledigt markierst. Kostet eine Kleinigkeit pro Klick, am besten bei einer fertigen Geschichte nutzen."
     ));
-    renderStructureResults(document.getElementById("structurePanel"), story, editorPage);
+    refreshSuggestionUI(story, editorPage, scheduleSave);
+    {
+      let resizeDebounce = null;
+      suggestionResizeHandler = () => {
+        clearTimeout(resizeDebounce);
+        resizeDebounce = setTimeout(() => refreshSuggestionUI(story, editorPage, scheduleSave), 150);
+      };
+      window.addEventListener("resize", suggestionResizeHandler);
+    }
 
     wireBoth(["copyTextBtn", "copyTextBtnTop"], async (e) => {
       const plain = htmlToPlainText(editorPage.innerHTML);
@@ -584,7 +774,7 @@
         suggestions: suggestions.map(s => ({ ...s, done: false }))
       };
       await Storage.save(story);
-      renderAiSuggestions(panel, story, editorPage, scheduleSave);
+      refreshSuggestionUI(story, editorPage, scheduleSave);
     } catch (err) {
       console.error("KI-Fehler", err);
       const msg = err && err.message === "NOT_CONFIGURED"
@@ -597,7 +787,8 @@
   // Bleibt wie "Aufbau & Wirkung" an der Geschichte gespeichert - beim
   // erneuten Öffnen erscheinen offene Vorschläge automatisch wieder, statt
   // nach jedem Verlassen der Seite zu verschwinden.
-  function renderAiSuggestions(panel, story, editorPage, scheduleSave) {
+  function renderAiSuggestions(panel, story, editorPage, scheduleSave, opts) {
+    const desktop = !!(opts && opts.desktop);
     const check = story.aiCheck;
     const open = check ? check.suggestions.filter(s => !s.done) : [];
     setCountBadge(["aiCheckBtn", "aiCheckBtnTop"], open.length);
@@ -605,6 +796,12 @@
 
     if (open.length === 0) {
       panel.innerHTML = '<div class="ai-panel-status">✓ Sieht gut aus – die KI hat gerade keine Vorschläge.</div>';
+      return;
+    }
+    // Am PC/Tablet-quer bekommt jeder Vorschlag stattdessen einen Marker im
+    // Rand neben dem Text - die Liste hier bliebe sonst doppelt.
+    if (desktop) {
+      panel.innerHTML = '<div class="ai-panel-status">Siehe die farbigen Marker rechts neben dem Text →</div>';
       return;
     }
     const stale = new Date(story.updatedAt) > new Date(check.checkedAt);
@@ -639,11 +836,7 @@
         if (range) scrollAndFlashRange(range);
       });
       card.querySelector(".ai-apply-btn").addEventListener("click", async () => {
-        const range = findExcerptRange(editorPage, sug.excerpt);
-        if (!range) return;
-        range.deleteContents();
-        range.insertNode(document.createTextNode(sug.suggestion));
-        editorPage.normalize();
+        if (!replaceExcerptText(editorPage, sug.excerpt, sug.suggestion)) return;
         sug.done = true;
         await Storage.save(story);
         scheduleSave();
@@ -676,7 +869,7 @@
     { key: "kapitelTrennung", label: "Mögliche Kapitel-Trennung", cat: "makro" }
   ];
 
-  async function runStructureCheck(story, editorPage) {
+  async function runStructureCheck(story, editorPage, scheduleSave) {
     const panel = document.getElementById("structurePanel");
     if (!AIProvider.isConfigured()) {
       switchView("settings");
@@ -695,7 +888,7 @@
         .filter(f => f.text);
       story.structureCheck = { checkedAt: new Date().toISOString(), findings };
       await Storage.save(story);
-      renderStructureResults(panel, story, editorPage);
+      refreshSuggestionUI(story, editorPage, scheduleSave);
     } catch (err) {
       console.error("Aufbau-Prüfung-Fehler", err);
       const msg = err && err.message === "NOT_CONFIGURED"
@@ -708,14 +901,25 @@
   // Der letzte Aufbau-Check bleibt an der Geschichte selbst gespeichert (nicht
   // im Ideenparkplatz) - beim erneuten Öffnen sieht man wieder, was zuletzt
   // gefunden wurde, bis man einen Punkt einzeln als erledigt markiert.
-  function renderStructureResults(panel, story, editorPage) {
+  function renderStructureResults(panel, story, editorPage, opts) {
+    const desktop = !!(opts && opts.desktop);
     const check = story.structureCheck;
-    const open = check ? check.findings.filter(f => !f.done) : [];
-    setCountBadge(["structureCheckBtn", "structureCheckBtnTop"], open.length);
+    const allOpen = check ? check.findings.filter(f => !f.done) : [];
+    setCountBadge(["structureCheckBtn", "structureCheckBtnTop"], allOpen.length);
 
     if (!check) { panel.innerHTML = ""; return; }
-    if (open.length === 0) {
+    if (allOpen.length === 0) {
       panel.innerHTML = '<div class="ai-panel-status">✓ Wirkt schon rund – keine besonderen Anmerkungen.</div>';
+      return;
+    }
+    // Am PC/Tablet-quer bekommen Funde mit Textstelle stattdessen einen
+    // Marker im Rand - hier bleiben nur die, die sich auf keine bestimmte
+    // Stelle festlegen lassen (z. B. allgemeines Tempo-Feedback).
+    const open = desktop ? allOpen.filter(f => !f.excerpt) : allOpen;
+    if (open.length === 0) {
+      panel.innerHTML = desktop
+        ? '<div class="ai-panel-status">Siehe die farbigen Marker rechts neben dem Text →</div>'
+        : '<div class="ai-panel-status">✓ Alle Anmerkungen bearbeitet.</div>';
       return;
     }
 

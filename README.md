@@ -96,8 +96,17 @@ bleiben an der jeweiligen Geschichte gespeichert (nicht im Ideenparkplatz)
 und erscheinen beim erneuten Öffnen automatisch wieder, bis man sie
 einzeln übernimmt/ablehnt bzw. als erledigt markiert. Ein kleines
 Zahlen-Abzeichen am jeweiligen Button zeigt auf einen Blick, wie viele
-Punkte noch offen sind. Zu jedem Fund, der sich einer bestimmten
-Textstelle zuordnen lässt, gibt es außerdem „→ Zur Stelle springen".
+Punkte noch offen sind.
+
+Am PC oder Tablet im Querformat (ab 821px Breite) erscheint jeder Fund,
+der sich einer bestimmten Textstelle zuordnen lässt, als kleiner farbiger
+Marker direkt im Rand neben dem Text (Klick öffnet ein Feld mit
+Übernehmen/Ablehnen bzw. Erledigt, ohne den Text-Kontext zu verlassen).
+Auf dem Handy oder im Hochformat (kein Platz für einen Rand) erscheinen
+dieselben Funde stattdessen als Liste unter dem Text, inklusive
+„→ Zur Stelle springen". Allgemeine Anmerkungen ohne konkrete Textstelle
+(z. B. übergreifendes Tempo-Feedback) bleiben immer in der Liste, auch am
+PC.
 
 ### Kosten im Blick behalten
 

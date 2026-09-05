@@ -197,51 +197,58 @@ Wichtige Regeln:
     return suggestions.filter(s => s && typeof s.chapterId === "string" && typeof s.title === "string" && s.title.trim());
   }
 
-  // ---------- Aufbau & Wirkung (Spannungsbogen, Emotion, Beschreibungen) ----------
+  // ---------- Aufbau & Wirkung (professionelle Lektorats-Reihenfolge) ----------
   // Anders als "analyzeStory": schaut sich die ganze Geschichte als Zusammenhang
   // an statt einzelne Textstellen. Braucht deshalb den vollen Text (wie
   // analyzeStory auch schon), ist also nicht teurer als die bestehende Prüfung.
-  const STRUCTURE_SYSTEM_PROMPT = `Du bist eine einfühlsame Schreib-Mentorin für eine Hobby-Autorin, die Kurzgeschichten aus dem Alltag mit Hunden schreibt, oft aus der Perspektive der Hunde.
+  // Folgt bewusst der Lektorats-Reihenfolge vom Großen ins Detail (Makro ->
+  // Szenen-Dynamik -> Mikro -> Stil), aber mit Kriterien, die zum tatsächlichen
+  // Genre der Autorin passen (ruhige Tagebuch-Geschichten, kein Thriller) -
+  // z. B. "lädt der Schluss zum Weiterlesen ein" statt "Cliffhanger".
+  const STRUCTURE_SYSTEM_PROMPT = `Du bist eine einfühlsame Schreib-Mentorin für eine Hobby-Autorin, die Kurzgeschichten aus dem Alltag mit Hunden schreibt, oft aus der Perspektive der Hunde - ruhige, warme Tagebuch-Geschichten, kein Thriller und kein Krimi.
 
-Du bekommst den vollständigen Text einer Geschichte. Gib eine kurze, ermutigende Gesamteinschätzung zum großen Zusammenhang - kein Feintuning einzelner Sätze (das übernimmt eine andere Funktion), sondern:
+Du bekommst den vollständigen Text einer Geschichte. Gib eine kurze, ermutigende Gesamteinschätzung entlang von vier Ebenen, vom großen Ganzen ins Detail - kein Feintuning einzelner Sätze bei Rechtschreibung/Grammatik (das übernimmt eine andere Funktion):
 
-- spannungsbogen: Baut sich über die Geschichte hinweg Spannung auf? Gibt es einen erkennbaren Höhepunkt? Zieht sich ein Teil, oder wirkt das Ende zu abrupt?
-- emotionaleWirkung: Wie gut kommt die emotionale Seite der Geschichte beim Lesen an?
-- beschreibungen: Sind Personen, Orte und Gegenstände lebendig genug beschrieben, um sie sich vorzustellen?
+- aufbauSpannungsbogen (Makro-Ebene): Sitzen die wichtigen Punkte an der richtigen Stelle - eine kurze Ausgangslage, ein auslösendes Ereignis, ein Wendepunkt oder Höhepunkt, ein stimmiger Abschluss? Wirkt der Aufbau in sich rund?
+- einladungZumWeiterlesen (Szenen-Dynamik): Lädt der Schluss zum Weiterlesen/Wiederkommen ein - ein Gedanke, der nachhallt, eine offene Frage, ein Gefühl, das nachwirkt? Oder wirkt er zu abrupt abgeschnitten? (Kein Cliffhanger-Zwang - ein sanfter, stimmiger Abschluss ist bei diesem Genre oft genau richtig, das ist kein Mangel.)
+- erzaehltempo (Mikro-Ebene/Pacing): Passt das Erzähltempo zur jeweiligen Szene - kurze, knappe Sätze in bewegten/aufgeregten Momenten, ruhigere, ausführlichere Sätze in stillen Momenten?
+- showDontTell (Stil-Ebene): Werden Gefühle nur benannt ("Sie hatte Angst") statt durch Handlung/Körperreaktion spürbar gemacht ("Ihre Pfoten zitterten")?
 - kapitelTrennung: Nur befüllen, wenn die Geschichte lang/vielschichtig genug ist, dass ein Schnitt in zwei eigenständige Teile sinnvoll wäre - mit kurzer Begründung und einem Hinweis, an welcher Stelle (grob beschrieben, keine wörtliche Textstelle nötig).
 
 Wichtig:
 - Sei konkret und nachvollziehbar, keine leeren Floskeln.
-- Erfinde keine Probleme nur um etwas zu liefern - funktioniert ein Aspekt schon gut, gib dort einen leeren Text zurück.
+- Erfinde keine Probleme nur um etwas zu liefern - funktioniert eine Ebene schon gut, gib dort einen leeren Text zurück.
+- Dränge die Autorin nie in einen fremden Stil oder ein fremdes Genre (z. B. Spannung/Action-Schreibweise) - bewerte innerhalb ihres eigenen, ruhigen Tons.
 - Bleib wertschätzend, das ist eine Hobby-Autorin, kein Uni-Seminar.
 - Du schreibst nichts um, du gibst nur Einschätzungen.`;
 
   const STRUCTURE_SCHEMA = {
     type: "object",
     properties: {
-      spannungsbogen: { type: "string" },
-      emotionaleWirkung: { type: "string" },
-      beschreibungen: { type: "string" },
+      aufbauSpannungsbogen: { type: "string" },
+      einladungZumWeiterlesen: { type: "string" },
+      erzaehltempo: { type: "string" },
+      showDontTell: { type: "string" },
       kapitelTrennung: { type: "string" }
     },
-    required: ["spannungsbogen", "emotionaleWirkung", "beschreibungen", "kapitelTrennung"],
+    required: ["aufbauSpannungsbogen", "einladungZumWeiterlesen", "erzaehltempo", "showDontTell", "kapitelTrennung"],
     additionalProperties: false
   };
 
   async function analyzeStructure(plainText) {
-    if (!plainText || !plainText.trim()) {
-      return { spannungsbogen: "", emotionaleWirkung: "", beschreibungen: "", kapitelTrennung: "" };
-    }
+    const empty = { aufbauSpannungsbogen: "", einladungZumWeiterlesen: "", erzaehltempo: "", showDontTell: "", kapitelTrennung: "" };
+    if (!plainText || !plainText.trim()) return empty;
     const parsed = await callClaude(
       STRUCTURE_SYSTEM_PROMPT,
       "Hier ist die Geschichte:\n\n" + plainText,
       STRUCTURE_SCHEMA,
-      1024
+      1536
     );
     return {
-      spannungsbogen: (parsed && parsed.spannungsbogen) || "",
-      emotionaleWirkung: (parsed && parsed.emotionaleWirkung) || "",
-      beschreibungen: (parsed && parsed.beschreibungen) || "",
+      aufbauSpannungsbogen: (parsed && parsed.aufbauSpannungsbogen) || "",
+      einladungZumWeiterlesen: (parsed && parsed.einladungZumWeiterlesen) || "",
+      erzaehltempo: (parsed && parsed.erzaehltempo) || "",
+      showDontTell: (parsed && parsed.showDontTell) || "",
       kapitelTrennung: (parsed && parsed.kapitelTrennung) || ""
     };
   }

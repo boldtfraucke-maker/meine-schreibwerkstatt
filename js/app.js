@@ -386,8 +386,8 @@
 
     wireBoth(["structureCheckBtn", "structureCheckBtnTop"], () => runStructureCheck(story, editorPage));
     wireBoth(["structureInfoBtn", "structureInfoBtnTop"], () => showAlert(
-      "Schaut sich die ganze Geschichte im Zusammenhang an (nicht einzelne Sätze): Spannungsbogen, emotionale Wirkung, Lebendigkeit der Beschreibungen - und falls sinnvoll, ob ein Schnitt in zwei Teile Sinn ergeben würde. " +
-      "Reine Einschätzung zum Nachdenken, nichts wird automatisch verändert. Kostet eine Kleinigkeit pro Klick, am besten bei einer fertigen Geschichte nutzen."
+      "Schaut sich die ganze Geschichte im Zusammenhang an (nicht einzelne Sätze), in der Reihenfolge, wie es Lektorate auch tun - vom Großen ins Detail: Aufbau & Spannungsbogen, ob der Schluss zum Weiterlesen einlädt, das Erzähltempo, und Show-don't-tell. " +
+      "Reine Einschätzung zum Nachdenken, nichts wird automatisch verändert - du kannst jeden Punkt auch direkt als Idee für später speichern. Kostet eine Kleinigkeit pro Klick, am besten bei einer fertigen Geschichte nutzen."
     ));
 
     wireBoth(["copyTextBtn", "copyTextBtnTop"], async (e) => {
@@ -482,13 +482,18 @@
     });
   }
 
-  // ---------- Aufbau & Wirkung (Spannungsbogen, Emotion, Beschreibungen) ----------
-  const STRUCTURE_FIELD_LABELS = {
-    spannungsbogen: "Spannungsbogen",
-    emotionaleWirkung: "Emotionale Wirkung",
-    beschreibungen: "Beschreibungen",
-    kapitelTrennung: "Mögliche Kapitel-Trennung"
-  };
+  // ---------- Aufbau & Wirkung (professionelle Lektorats-Reihenfolge) ----------
+  // Vom Großen ins Detail: Makro (Aufbau) -> Szenen-Dynamik -> Mikro (Tempo) ->
+  // Stil (Show/Tell). Jede Ebene bekommt eine eigene Farbe (siehe CSS
+  // .ai-suggestion-card[data-cat]), angelehnt an die Farbidee für Highlights,
+  // hier als Liste statt als Markierungen direkt im Text.
+  const STRUCTURE_FIELDS = [
+    { key: "aufbauSpannungsbogen", label: "Aufbau & Spannungsbogen (Makro)", cat: "makro" },
+    { key: "einladungZumWeiterlesen", label: "Einladung zum Weiterlesen (Szene)", cat: "szene" },
+    { key: "erzaehltempo", label: "Erzähltempo (Mikro)", cat: "mikro" },
+    { key: "showDontTell", label: "Show, don't tell (Stil)", cat: "stil" },
+    { key: "kapitelTrennung", label: "Mögliche Kapitel-Trennung", cat: "makro" }
+  ];
 
   async function runStructureCheck(story, editorPage) {
     const panel = document.getElementById("structurePanel");
@@ -501,7 +506,7 @@
     try {
       const plainText = htmlToPlainText(editorPage.innerHTML);
       const result = await AIProvider.analyzeStructure(plainText);
-      renderStructureResults(panel, result);
+      renderStructureResults(panel, story, result);
     } catch (err) {
       console.error("Aufbau-Prüfung-Fehler", err);
       const msg = err && err.message === "NOT_CONFIGURED"
@@ -511,9 +516,23 @@
     }
   }
 
-  function renderStructureResults(panel, result) {
-    const entries = Object.keys(STRUCTURE_FIELD_LABELS)
-      .map(key => ({ key, label: STRUCTURE_FIELD_LABELS[key], text: (result && result[key] || "").trim() }))
+  async function saveStructureFindingAsIdea(story, label, text) {
+    const now = new Date().toISOString();
+    const idea = {
+      id: uid(),
+      text: `${story.title || "Ohne Titel"} – ${label}: ${text}`,
+      createdAt: now,
+      updatedAt: now
+    };
+    ideas.push(idea);
+    await IdeaStorage.save(idea);
+    renderIdeas();
+    if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
+  }
+
+  function renderStructureResults(panel, story, result) {
+    const entries = STRUCTURE_FIELDS
+      .map(f => ({ ...f, text: (result && result[f.key] || "").trim() }))
       .filter(e => e.text);
 
     if (entries.length === 0) {
@@ -521,12 +540,29 @@
       return;
     }
 
-    const rows = entries.map(e => `
-      <div class="ai-suggestion-card">
+    panel.innerHTML = `
+      <p class="section-label" style="margin-top:20px;">📖 Aufbau & Wirkung</p>
+      <div id="structureList" class="ai-suggestion-list"></div>`;
+    const list = panel.querySelector("#structureList");
+
+    entries.forEach((e) => {
+      const card = document.createElement("div");
+      card.className = "ai-suggestion-card";
+      card.dataset.cat = e.cat;
+      card.innerHTML = `
         <div class="ai-suggestion-type">${escapeHtml(e.label)}</div>
         <div class="ai-suggestion-reason">${escapeHtml(e.text)}</div>
-      </div>`).join("");
-    panel.innerHTML = `<p class="section-label" style="margin-top:20px;">📖 Aufbau & Wirkung</p><div class="ai-suggestion-list">${rows}</div>`;
+        <div class="ai-suggestion-actions">
+          <button class="btn btn-ghost save-idea-btn">→ Als Idee speichern</button>
+        </div>`;
+      card.querySelector(".save-idea-btn").addEventListener("click", async (ev) => {
+        const btn = ev.currentTarget;
+        btn.disabled = true;
+        await saveStructureFindingAsIdea(story, e.label, e.text);
+        btn.textContent = "✓ Gespeichert";
+      });
+      list.appendChild(card);
+    });
   }
 
   function renderAiSettings() {

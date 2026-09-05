@@ -583,6 +583,14 @@ select.status-select {
   border-radius: 10px;
   padding: 14px 16px;
 }
+.ai-suggestion-card[data-cat="makro"] { border-left-color: var(--pine); }
+.ai-suggestion-card[data-cat="makro"] .ai-suggestion-type { color: var(--pine); }
+.ai-suggestion-card[data-cat="szene"] { border-left-color: var(--clay); }
+.ai-suggestion-card[data-cat="szene"] .ai-suggestion-type { color: var(--clay); }
+.ai-suggestion-card[data-cat="mikro"] { border-left-color: var(--sky); }
+.ai-suggestion-card[data-cat="mikro"] .ai-suggestion-type { color: var(--sky); }
+.ai-suggestion-card[data-cat="stil"] { border-left-color: var(--danger); }
+.ai-suggestion-card[data-cat="stil"] .ai-suggestion-type { color: var(--danger); }
 .ai-suggestion-type {
   display: inline-block;
   font-size: 0.72rem;

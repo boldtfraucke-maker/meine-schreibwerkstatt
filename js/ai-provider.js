@@ -148,5 +148,57 @@ Wichtig:
     return entities.filter(e => e && typeof e.name === "string" && e.name.trim());
   }
 
-  return { getWorkerUrl, setWorkerUrl, getWorkerKey, setWorkerKey, isConfigured, analyzeStory, extractEntities };
+  // ---------- Kapitel-Titel-Vorschläge (Buch-Assistent) ----------
+  // Bekommt pro Kapitel nur Titel + kurze Ausschnitte der enthaltenen
+  // Geschichten (keine vollen Texte) - reicht für Titel-Vorschläge und hält
+  // die Anfrage klein und günstig.
+  const CHAPTER_TITLES_SYSTEM_PROMPT = `Du hilfst einer Hobby-Autorin dabei, für die Kapitel ihres Buches passende, stimmungsvolle Titel zu finden. Sie schreibt Kurzgeschichten aus dem Alltag mit Hunden, oft aus der Perspektive der Hunde.
+
+Du bekommst pro Kapitel den aktuellen Titel sowie Titel und kurze Ausschnitte der darin enthaltenen Geschichten.
+
+Deine Aufgabe: Schlage für jedes Kapitel einen Titel vor, der zur Stimmung und zum Inhalt der enthaltenen Geschichten passt - lebendig und persönlich statt neutral (z. B. eher „Kurs unterbrochen" als „Kapitel 3"), ganz im Ton der jeweiligen Geschichten.
+
+Wichtige Regeln:
+- Nur vorschlagen, wenn ein anderer Titel wirklich eine Verbesserung gegenüber dem aktuellen wäre. Passt der aktuelle Titel schon gut, lass das Kapitel einfach weg.
+- Der Titel-Stil soll sich an den tatsächlichen Geschichten orientieren, nicht an einem vorgegebenen Thema (z. B. nicht immer nautisch, außer die Geschichten legen das nahe).
+- Kurz und einprägsam, kein ganzer Satz.
+- Jeder Vorschlag braucht eine kurze, nachvollziehbare Begründung.`;
+
+  const CHAPTER_TITLES_SCHEMA = {
+    type: "object",
+    properties: {
+      suggestions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            chapterId: { type: "string" },
+            title: { type: "string" },
+            reason: { type: "string" }
+          },
+          required: ["chapterId", "title", "reason"],
+          additionalProperties: false
+        }
+      }
+    },
+    required: ["suggestions"],
+    additionalProperties: false
+  };
+
+  async function suggestChapterTitles(chapters) {
+    if (!Array.isArray(chapters) || chapters.length === 0) return [];
+    const parsed = await callClaude(
+      CHAPTER_TITLES_SYSTEM_PROMPT,
+      "Hier sind die Kapitel:\n\n" + JSON.stringify(chapters),
+      CHAPTER_TITLES_SCHEMA,
+      1024
+    );
+    const suggestions = Array.isArray(parsed && parsed.suggestions) ? parsed.suggestions : [];
+    return suggestions.filter(s => s && typeof s.chapterId === "string" && typeof s.title === "string" && s.title.trim());
+  }
+
+  return {
+    getWorkerUrl, setWorkerUrl, getWorkerKey, setWorkerKey, isConfigured,
+    analyzeStory, extractEntities, suggestChapterTitles
+  };
 })();

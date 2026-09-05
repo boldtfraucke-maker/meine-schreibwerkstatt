@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 4 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) für einzelne Geschichten sowie eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt.
 
 ## Lokal testen
 
@@ -71,12 +71,17 @@ Cloudflare Worker, der den Key geheim hält und nur weiterleitet.
 6. Die Worker-Adresse (`https://<name>.<konto>.workers.dev`) kopieren.
 7. In der App unter **Einstellungen → ✨ KI-Vorschläge (Claude)** die Worker-Adresse und den selbst ausgedachten `WORKER_ACCESS_KEY` eintragen und speichern.
 
-Danach sind der Button „✨ KI-Vorschläge" im Schreiben-Bereich und
-„🔍 Konsistenz prüfen" im Bücher-Bereich nutzbar. Letzterer vergleicht Namen
-und Orte über alle Geschichten hinweg (z. B. „Balu" vs. „Balou") und
-extrahiert dafür pro Geschichte höchstens einmal eine kurze Namensliste per
-KI – der eigentliche Abgleich zwischen den Geschichten läuft danach
-komplett lokal im Browser, ganz ohne weitere KI-Kosten.
+Danach sind der Button „✨ KI-Vorschläge" im Schreiben-Bereich, „🔍 Konsistenz
+prüfen" sowie „✨ Kapitel-Titel vorschlagen" im Bücher-Bereich nutzbar.
+„Konsistenz prüfen" vergleicht Namen und Orte über alle Geschichten hinweg
+(z. B. „Balu" vs. „Balou") und extrahiert dafür pro Geschichte höchstens
+einmal eine kurze Namensliste per KI – der eigentliche Abgleich zwischen den
+Geschichten läuft danach komplett lokal im Browser, ganz ohne weitere
+KI-Kosten. „Kapitel-Titel vorschlagen" schickt pro Kapitel nur die Titel und
+kurze Ausschnitte der enthaltenen Geschichten (keine vollen Texte) und
+schlägt darauf passende, stimmungsvolle Kapitel-Titel vor – die Reihenfolge
+der Geschichten bleibt dabei unangetastet, das entscheidet weiterhin
+ausschließlich die Autorin selbst.
 
 ### Kosten im Blick behalten
 

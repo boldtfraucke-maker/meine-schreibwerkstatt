@@ -838,8 +838,15 @@
         <div class="stat-card"><div class="num">${stats.percent}%</div><div class="label">fertig</div></div>
       </div>
 
-      <p class="section-label">Kapitel</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <p class="section-label" style="margin:0;">Kapitel</p>
+        <div class="btn-with-info">
+          <button class="btn btn-outline" id="chapterTitlesBtn">✨ Kapitel-Titel vorschlagen</button>
+          <button class="info-badge" id="chapterTitlesInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+        </div>
+      </div>
       <div id="chapterList"></div>
+      <div id="chapterAssistantPanel"></div>
       <button class="btn btn-outline" id="addChapterBtn">+ Kapitel hinzufügen</button>
 
       <div style="margin-top:28px;">
@@ -883,6 +890,12 @@
       await saveBook(book);
       renderBookDetail(book);
     });
+
+    document.getElementById("chapterTitlesBtn").addEventListener("click", () => runChapterTitleSuggestions(book));
+    document.getElementById("chapterTitlesInfoBtn").addEventListener("click", () => showAlert(
+      "Schaut sich die Geschichten in deinen Kapiteln an und schlägt dazu passende, stimmungsvolle Titel vor - statt nur \"Kapitel 1, 2, 3\". " +
+      "Übernimmt nie automatisch, du entscheidest bei jedem Vorschlag selbst. Am besten nutzen, wenn die Kapitel-Einteilung schon steht, nicht nach jeder kleinen Änderung."
+    ));
 
     document.getElementById("deleteBookBtn").addEventListener("click", () => {
       showConfirm(
@@ -1007,6 +1020,89 @@
       });
 
       container.appendChild(block);
+    });
+  }
+
+  // ---------- Buch-Assistent: Kapitel-Titel-Vorschläge ----------
+  async function runChapterTitleSuggestions(book) {
+    const panel = document.getElementById("chapterAssistantPanel");
+    if (!panel) return;
+    if (!AIProvider.isConfigured()) {
+      switchView("settings");
+      showAlert("Bitte zuerst unter Einstellungen die KI-Vorschläge einrichten - die Kapitel-Titel-Vorschläge nutzen dieselbe Anbindung.");
+      return;
+    }
+
+    const chaptersData = (book.chapters || [])
+      .filter(ch => (ch.storyIds || []).length > 0)
+      .map(ch => ({
+        chapterId: ch.id,
+        currentTitle: ch.title || "",
+        stories: ch.storyIds.map(id => {
+          const story = stories.find(s => s.id === id);
+          return story ? { title: story.title || "Ohne Titel", snippet: plainSnippet(story.content, 160) } : null;
+        }).filter(Boolean)
+      }));
+
+    if (chaptersData.length === 0) {
+      panel.innerHTML = '<div class="ai-panel-status">Noch keine Kapitel mit Geschichten vorhanden.</div>';
+      return;
+    }
+
+    panel.innerHTML = '<div class="ai-panel-status">✨ Wird geprüft …</div>';
+    try {
+      const suggestions = await AIProvider.suggestChapterTitles(chaptersData);
+      renderChapterTitleSuggestions(panel, book, suggestions);
+    } catch (err) {
+      console.error("Kapitel-Titel-Fehler", err);
+      const msg = err && err.message === "NOT_CONFIGURED"
+        ? "Bitte zuerst unter Einstellungen die KI-Vorschläge einrichten."
+        : "Prüfung fehlgeschlagen: " + (err && err.message ? err.message : String(err));
+      panel.innerHTML = `<div class="ai-panel-status ai-panel-error">${escapeHtml(msg)}</div>`;
+    }
+  }
+
+  function renderChapterTitleSuggestions(panel, book, suggestions) {
+    if (suggestions.length === 0) {
+      panel.innerHTML = '<div class="ai-panel-status">✓ Die aktuellen Kapitel-Titel passen schon gut.</div>';
+      return;
+    }
+    panel.innerHTML = `
+      <p class="section-label" style="margin-top:8px;">✨ Kapitel-Titel-Vorschläge</p>
+      <div id="chapterTitleList" class="ai-suggestion-list"></div>`;
+    const list = panel.querySelector("#chapterTitleList");
+
+    function checkEmpty() {
+      if (list.children.length === 0) panel.innerHTML = '<div class="ai-panel-status">✓ Alle Vorschläge bearbeitet.</div>';
+    }
+
+    suggestions.forEach((sug) => {
+      const chapter = (book.chapters || []).find(ch => ch.id === sug.chapterId);
+      if (!chapter) return;
+      const card = document.createElement("div");
+      card.className = "ai-suggestion-card";
+      card.innerHTML = `
+        <div class="ai-suggestion-type">Kapitel-Titel</div>
+        <div class="ai-suggestion-arrow">„${escapeHtml(chapter.title || "Ohne Titel")}" → „${escapeHtml(sug.title)}"</div>
+        <div class="ai-suggestion-reason"><strong>Warum?</strong> ${escapeHtml(sug.reason)}</div>
+        <div class="ai-suggestion-actions">
+          <button class="btn btn-primary ai-apply-btn">Übernehmen</button>
+          <button class="btn btn-ghost ai-dismiss-btn">Ablehnen</button>
+        </div>`;
+
+      card.querySelector(".ai-apply-btn").addEventListener("click", async () => {
+        chapter.title = sug.title;
+        await saveBook(book);
+        renderChapters(book);
+        card.remove();
+        checkEmpty();
+      });
+      card.querySelector(".ai-dismiss-btn").addEventListener("click", () => {
+        card.remove();
+        checkEmpty();
+      });
+
+      list.appendChild(card);
     });
   }
 

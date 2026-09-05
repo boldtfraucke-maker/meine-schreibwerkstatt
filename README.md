@@ -85,10 +85,13 @@ schlägt darauf passende, stimmungsvolle Kapitel-Titel vor – die Reihenfolge
 der Geschichten bleibt dabei unangetastet, das entscheidet weiterhin
 ausschließlich die Autorin selbst. „📖 Aufbau prüfen" schaut sich (wie „✨
 KI-Vorschläge" auch) den vollen Text einer Geschichte an, gibt aber statt
-einzelner Textstellen-Vorschläge eine kurze Gesamteinschätzung zu
-Spannungsbogen, emotionaler Wirkung und Lebendigkeit der Beschreibungen –
-und falls sinnvoll einen Hinweis, wo ein Schnitt in zwei Teile in Frage käme.
-Reine Einschätzung zum Nachdenken, es wird nichts automatisch verändert.
+einzelner Textstellen-Vorschläge eine kurze Gesamteinschätzung entlang der
+Lektorats-Reihenfolge vom Großen ins Detail: Aufbau & Spannungsbogen,
+Einladung zum Weiterlesen, Erzähltempo und Show-don't-tell – und falls
+sinnvoll einen Hinweis, wo ein Schnitt in zwei Teile in Frage käme. Reine
+Einschätzung zum Nachdenken, es wird nichts automatisch verändert. Die
+Anmerkungen bleiben an der jeweiligen Geschichte gespeichert (nicht im
+Ideenparkplatz) und lassen sich einzeln als erledigt markieren.
 
 ### Kosten im Blick behalten
 

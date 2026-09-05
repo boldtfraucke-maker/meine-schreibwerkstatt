@@ -518,8 +518,9 @@
     wireBoth(["structureCheckBtn", "structureCheckBtnTop"], () => runStructureCheck(story, editorPage));
     wireBoth(["structureInfoBtn", "structureInfoBtnTop"], () => showAlert(
       "Schaut sich die ganze Geschichte im Zusammenhang an (nicht einzelne Sätze), in der Reihenfolge, wie es Lektorate auch tun - vom Großen ins Detail: Aufbau & Spannungsbogen, ob der Schluss zum Weiterlesen einlädt, das Erzähltempo, und Show-don't-tell. " +
-      "Reine Einschätzung zum Nachdenken, nichts wird automatisch verändert - du kannst jeden Punkt auch direkt als Idee für später speichern. Kostet eine Kleinigkeit pro Klick, am besten bei einer fertigen Geschichte nutzen."
+      "Reine Einschätzung zum Nachdenken, nichts wird automatisch verändert. Die Anmerkungen bleiben an der Geschichte gespeichert, bis du sie einzeln als erledigt markierst. Kostet eine Kleinigkeit pro Klick, am besten bei einer fertigen Geschichte nutzen."
     ));
+    renderStructureResults(document.getElementById("structurePanel"), story);
 
     wireBoth(["copyTextBtn", "copyTextBtnTop"], async (e) => {
       const plain = htmlToPlainText(editorPage.innerHTML);
@@ -642,7 +643,12 @@
     try {
       const plainText = htmlToPlainText(editorPage.innerHTML);
       const result = await AIProvider.analyzeStructure(plainText);
-      renderStructureResults(panel, story, result);
+      const findings = STRUCTURE_FIELDS
+        .map(f => ({ key: f.key, label: f.label, cat: f.cat, text: (result && result[f.key] || "").trim(), done: false }))
+        .filter(f => f.text);
+      story.structureCheck = { checkedAt: new Date().toISOString(), findings };
+      await Storage.save(story);
+      renderStructureResults(panel, story);
     } catch (err) {
       console.error("Aufbau-Prüfung-Fehler", err);
       const msg = err && err.message === "NOT_CONFIGURED"
@@ -652,50 +658,45 @@
     }
   }
 
-  async function saveStructureFindingAsIdea(story, label, text) {
-    const now = new Date().toISOString();
-    const idea = {
-      id: uid(),
-      text: `${story.title || "Ohne Titel"} – ${label}: ${text}`,
-      createdAt: now,
-      updatedAt: now
-    };
-    ideas.push(idea);
-    await IdeaStorage.save(idea);
-    renderIdeas();
-    if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
-  }
+  // Der letzte Aufbau-Check bleibt an der Geschichte selbst gespeichert (nicht
+  // im Ideenparkplatz) - beim erneuten Öffnen sieht man wieder, was zuletzt
+  // gefunden wurde, bis man einen Punkt einzeln als erledigt markiert.
+  function renderStructureResults(panel, story) {
+    const check = story.structureCheck;
+    const open = check ? check.findings.filter(f => !f.done) : [];
 
-  function renderStructureResults(panel, story, result) {
-    const entries = STRUCTURE_FIELDS
-      .map(f => ({ ...f, text: (result && result[f.key] || "").trim() }))
-      .filter(e => e.text);
-
-    if (entries.length === 0) {
+    if (!check) { panel.innerHTML = ""; return; }
+    if (open.length === 0) {
       panel.innerHTML = '<div class="ai-panel-status">✓ Wirkt schon rund – keine besonderen Anmerkungen.</div>';
       return;
     }
 
+    const stale = new Date(story.updatedAt) > new Date(check.checkedAt);
     panel.innerHTML = `
       <p class="section-label" style="margin-top:20px;">📖 Aufbau & Wirkung</p>
+      ${stale ? '<div class="ai-suggestion-note" style="margin-bottom:10px;">Die Geschichte wurde seit dieser Prüfung verändert - die Anmerkungen könnten nicht mehr ganz aktuell sein.</div>' : ""}
       <div id="structureList" class="ai-suggestion-list"></div>`;
     const list = panel.querySelector("#structureList");
 
-    entries.forEach((e) => {
+    function checkEmpty() {
+      if (list.children.length === 0) panel.innerHTML = '<div class="ai-panel-status">✓ Alle Anmerkungen bearbeitet.</div>';
+    }
+
+    open.forEach((f) => {
       const card = document.createElement("div");
       card.className = "ai-suggestion-card";
-      card.dataset.cat = e.cat;
+      card.dataset.cat = f.cat;
       card.innerHTML = `
-        <div class="ai-suggestion-type">${escapeHtml(e.label)}</div>
-        <div class="ai-suggestion-reason">${escapeHtml(e.text)}</div>
+        <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
+        <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
         <div class="ai-suggestion-actions">
-          <button class="btn btn-ghost save-idea-btn">→ Als Idee speichern</button>
+          <button class="btn btn-ghost done-btn">✓ Erledigt</button>
         </div>`;
-      card.querySelector(".save-idea-btn").addEventListener("click", async (ev) => {
-        const btn = ev.currentTarget;
-        btn.disabled = true;
-        await saveStructureFindingAsIdea(story, e.label, e.text);
-        btn.textContent = "✓ Gespeichert";
+      card.querySelector(".done-btn").addEventListener("click", async () => {
+        f.done = true;
+        await Storage.save(story);
+        card.remove();
+        checkEmpty();
       });
       list.appendChild(card);
     });

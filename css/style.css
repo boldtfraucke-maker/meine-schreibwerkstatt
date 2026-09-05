@@ -583,6 +583,8 @@ select.status-select {
   border-radius: 10px;
   padding: 14px 16px;
 }
+.ai-suggestion-card[data-cat] { border-left-width: 6px; }
+.ai-suggestion-card[data-cat] .ai-suggestion-type::before { content: "●"; margin-right: 7px; font-size: 0.9em; }
 .ai-suggestion-card[data-cat="makro"] { border-left-color: var(--pine); }
 .ai-suggestion-card[data-cat="makro"] .ai-suggestion-type { color: var(--pine); }
 .ai-suggestion-card[data-cat="szene"] { border-left-color: var(--clay); }

@@ -81,7 +81,7 @@ Sehr wichtige Regeln:
           properties: {
             type: { type: "string", enum: ["korrektorat", "lektorat", "stil"] },
             excerpt: { type: "string" },
-            suggestions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 3 },
+            suggestions: { type: "array", items: { type: "string" } },
             reason: { type: "string" }
           },
           required: ["type", "excerpt", "suggestions", "reason"],
@@ -104,7 +104,10 @@ Sehr wichtige Regeln:
     const suggestions = Array.isArray(parsed && parsed.suggestions) ? parsed.suggestions : [];
     return suggestions
       .filter(s => s && typeof s.excerpt === "string" && s.excerpt.trim() && Array.isArray(s.suggestions) && s.suggestions.length)
-      .map(s => ({ ...s, suggestions: s.suggestions.filter(x => typeof x === "string" && x.trim()) }))
+      // "1 bis 3 Alternativen" steht nur im Prompt, nicht im Schema (Anthropic
+      // unterstützt minItems/maxItems dort nicht) - deshalb hier zur Sicherheit
+      // selbst auf höchstens 3 begrenzen.
+      .map(s => ({ ...s, suggestions: s.suggestions.filter(x => typeof x === "string" && x.trim()).slice(0, 3) }))
       .filter(s => s.suggestions.length);
   }
 

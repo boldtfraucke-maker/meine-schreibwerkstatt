@@ -604,7 +604,8 @@ select.status-select {
 .ai-suggestion-arrow { font-size: 0.95rem; margin-bottom: 8px; }
 .ai-suggestion-reason { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; margin-bottom: 10px; }
 .ai-suggestion-note { font-size: 0.8rem; color: var(--warn); margin-bottom: 10px; }
-.ai-suggestion-actions { display: flex; gap: 8px; }
+.ai-suggestion-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ai-locate-flash { background: var(--clay-tint); color: inherit; border-radius: 3px; box-shadow: 0 0 0 2px var(--clay-tint); }
 
 /* ---------- Buchvorschau ---------- */
 .book-preview {

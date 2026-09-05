@@ -87,9 +87,6 @@
       nodes.push({ node, start: fullText.length });
       fullText += node.nodeValue;
     }
-    const idx = fullText.indexOf(excerpt);
-    if (idx === -1) return null;
-    const end = idx + excerpt.length;
 
     function locate(offset) {
       for (let i = nodes.length - 1; i >= 0; i--) {
@@ -97,14 +94,76 @@
       }
       return null;
     }
-    const startLoc = locate(idx);
-    const endLoc = locate(end);
-    if (!startLoc || !endLoc) return null;
+    function buildRange(start, end) {
+      const startLoc = locate(start);
+      const endLoc = locate(end);
+      if (!startLoc || !endLoc) return null;
+      const range = document.createRange();
+      range.setStart(startLoc.node, startLoc.offset);
+      range.setEnd(endLoc.node, endLoc.offset);
+      return range;
+    }
 
-    const range = document.createRange();
-    range.setStart(startLoc.node, startLoc.offset);
-    range.setEnd(endLoc.node, endLoc.offset);
-    return range;
+    // 1) Exakte Suche.
+    const idx = fullText.indexOf(excerpt);
+    if (idx !== -1) return buildRange(idx, idx + excerpt.length);
+
+    // 2) Nachsichtige Suche als Rückfallebene: aus PDFs oder anderen Quellen
+    // kopierter Text hat oft andere Anführungszeichen-Varianten oder
+    // Leerzeichen-Arten (z. B. geschützte Leerzeichen) als das, was die KI
+    // beim Zitieren zurückgibt - deshalb hier vor dem Vergleich vereinheitlichen.
+    const normQuotes = (s) => s
+      .replace(/[‘’‚‛]/g, "'")
+      .replace(/[“”„«»]/g, '"');
+    function collapseWhitespace(s) {
+      let text = "", map = [], i = 0;
+      while (i < s.length) {
+        if (/\s/.test(s[i])) {
+          map.push(i);
+          text += " ";
+          while (i < s.length && /\s/.test(s[i])) i++;
+        } else {
+          map.push(i);
+          text += s[i];
+          i++;
+        }
+      }
+      return { text, map };
+    }
+    const { text: cwFull, map: mapFull } = collapseWhitespace(normQuotes(fullText));
+    const { text: cwExcerpt } = collapseWhitespace(normQuotes(excerpt));
+    const cIdx = cwFull.indexOf(cwExcerpt);
+    if (cIdx === -1) return null;
+    const startOrig = mapFull[cIdx];
+    const lastNormIdx = cIdx + cwExcerpt.length - 1;
+    const endOrig = (lastNormIdx + 1 < mapFull.length) ? mapFull[lastNormIdx + 1] : fullText.length;
+    return buildRange(startOrig, endOrig);
+  }
+
+  // Scrollt eine Fundstelle in die Mitte des Bildschirms und lässt sie kurz
+  // sichtbar aufleuchten, statt sie dauerhaft farbig zu markieren (das bliebe
+  // sonst als Formatierung im gespeicherten Text zurück).
+  function scrollAndFlashRange(range) {
+    const scroller = document.querySelector("main.content") || document.scrollingElement || document.documentElement;
+    const rect = range.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    const targetTop = scroller.scrollTop + (rect.top - scrollerRect.top) - scroller.clientHeight / 2;
+    scroller.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+    try {
+      const mark = document.createElement("mark");
+      mark.className = "ai-locate-flash";
+      range.surroundContents(mark);
+      setTimeout(() => {
+        const parent = mark.parentNode;
+        if (!parent) return;
+        while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+        parent.removeChild(mark);
+        parent.normalize();
+      }, 1800);
+    } catch (e) {
+      // Bereich lässt sich nicht sauber umschließen (z. B. spannt über mehrere
+      // Absätze hinweg) - dann eben ohne Aufleuchten, Scrollen reicht meist auch.
+    }
   }
 
   function upsertLocal(story) {
@@ -531,10 +590,15 @@
         <div class="ai-suggestion-reason"><strong>Warum?</strong> ${escapeHtml(sug.reason)}</div>
         ${!canApply ? '<div class="ai-suggestion-note">Konnte die Textstelle nicht genau wiederfinden – bitte von Hand anpassen.</div>' : ""}
         <div class="ai-suggestion-actions">
+          <button class="btn btn-ghost ai-locate-btn" ${canApply ? "" : "disabled"}>→ Zur Stelle springen</button>
           <button class="btn btn-primary ai-apply-btn" ${canApply ? "" : "disabled"}>Übernehmen</button>
           <button class="btn btn-ghost ai-dismiss-btn">Ablehnen</button>
         </div>`;
 
+      card.querySelector(".ai-locate-btn").addEventListener("click", () => {
+        const range = findExcerptRange(editorPage, sug.excerpt);
+        if (range) scrollAndFlashRange(range);
+      });
       card.querySelector(".ai-apply-btn").addEventListener("click", () => {
         const range = findExcerptRange(editorPage, sug.excerpt);
         if (!range) return;

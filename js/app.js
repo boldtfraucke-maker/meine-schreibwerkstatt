@@ -347,7 +347,21 @@
   // Ein Einstiegspunkt für beide Funktionen zusammen: entscheidet je nach
   // Bildschirmbreite, ob Marker (PC/Tablet quer) oder die Liste (Handy)
   // gezeigt werden, und hält beides synchron nach jeder Änderung.
+  // Geschichten, deren KI-Vorschläge noch vor der Umstellung auf mehrere
+  // Formulierungs-Alternativen gespeichert wurden, haben noch das alte Feld
+  // "suggestion" (Text) statt "suggestions" (Liste) - hier auf das neue
+  // Format anheben, damit sie nicht zum Absturz führen.
+  function normalizeAiCheck(story) {
+    if (!story.aiCheck || !Array.isArray(story.aiCheck.suggestions)) return;
+    story.aiCheck.suggestions.forEach((sug) => {
+      if (!Array.isArray(sug.suggestions)) {
+        sug.suggestions = (typeof sug.suggestion === "string" && sug.suggestion.trim()) ? [sug.suggestion] : [""];
+      }
+    });
+  }
+
   function refreshSuggestionUI(story, editorPage, scheduleSave) {
+    normalizeAiCheck(story);
     const desktop = window.matchMedia("(min-width: 821px)").matches;
     renderAiSuggestions(document.getElementById("aiPanel"), story, editorPage, scheduleSave, { desktop });
     renderStructureResults(document.getElementById("structurePanel"), story, editorPage, { desktop });

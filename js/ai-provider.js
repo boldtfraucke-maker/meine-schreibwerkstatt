@@ -197,8 +197,57 @@ Wichtige Regeln:
     return suggestions.filter(s => s && typeof s.chapterId === "string" && typeof s.title === "string" && s.title.trim());
   }
 
+  // ---------- Aufbau & Wirkung (Spannungsbogen, Emotion, Beschreibungen) ----------
+  // Anders als "analyzeStory": schaut sich die ganze Geschichte als Zusammenhang
+  // an statt einzelne Textstellen. Braucht deshalb den vollen Text (wie
+  // analyzeStory auch schon), ist also nicht teurer als die bestehende Prüfung.
+  const STRUCTURE_SYSTEM_PROMPT = `Du bist eine einfühlsame Schreib-Mentorin für eine Hobby-Autorin, die Kurzgeschichten aus dem Alltag mit Hunden schreibt, oft aus der Perspektive der Hunde.
+
+Du bekommst den vollständigen Text einer Geschichte. Gib eine kurze, ermutigende Gesamteinschätzung zum großen Zusammenhang - kein Feintuning einzelner Sätze (das übernimmt eine andere Funktion), sondern:
+
+- spannungsbogen: Baut sich über die Geschichte hinweg Spannung auf? Gibt es einen erkennbaren Höhepunkt? Zieht sich ein Teil, oder wirkt das Ende zu abrupt?
+- emotionaleWirkung: Wie gut kommt die emotionale Seite der Geschichte beim Lesen an?
+- beschreibungen: Sind Personen, Orte und Gegenstände lebendig genug beschrieben, um sie sich vorzustellen?
+- kapitelTrennung: Nur befüllen, wenn die Geschichte lang/vielschichtig genug ist, dass ein Schnitt in zwei eigenständige Teile sinnvoll wäre - mit kurzer Begründung und einem Hinweis, an welcher Stelle (grob beschrieben, keine wörtliche Textstelle nötig).
+
+Wichtig:
+- Sei konkret und nachvollziehbar, keine leeren Floskeln.
+- Erfinde keine Probleme nur um etwas zu liefern - funktioniert ein Aspekt schon gut, gib dort einen leeren Text zurück.
+- Bleib wertschätzend, das ist eine Hobby-Autorin, kein Uni-Seminar.
+- Du schreibst nichts um, du gibst nur Einschätzungen.`;
+
+  const STRUCTURE_SCHEMA = {
+    type: "object",
+    properties: {
+      spannungsbogen: { type: "string" },
+      emotionaleWirkung: { type: "string" },
+      beschreibungen: { type: "string" },
+      kapitelTrennung: { type: "string" }
+    },
+    required: ["spannungsbogen", "emotionaleWirkung", "beschreibungen", "kapitelTrennung"],
+    additionalProperties: false
+  };
+
+  async function analyzeStructure(plainText) {
+    if (!plainText || !plainText.trim()) {
+      return { spannungsbogen: "", emotionaleWirkung: "", beschreibungen: "", kapitelTrennung: "" };
+    }
+    const parsed = await callClaude(
+      STRUCTURE_SYSTEM_PROMPT,
+      "Hier ist die Geschichte:\n\n" + plainText,
+      STRUCTURE_SCHEMA,
+      1024
+    );
+    return {
+      spannungsbogen: (parsed && parsed.spannungsbogen) || "",
+      emotionaleWirkung: (parsed && parsed.emotionaleWirkung) || "",
+      beschreibungen: (parsed && parsed.beschreibungen) || "",
+      kapitelTrennung: (parsed && parsed.kapitelTrennung) || ""
+    };
+  }
+
   return {
     getWorkerUrl, setWorkerUrl, getWorkerKey, setWorkerKey, isConfigured,
-    analyzeStory, extractEntities, suggestChapterTitles
+    analyzeStory, extractEntities, suggestChapterTitles, analyzeStructure
   };
 })();

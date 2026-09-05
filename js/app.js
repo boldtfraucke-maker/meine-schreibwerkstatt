@@ -234,6 +234,10 @@
             <button class="btn btn-outline" id="aiCheckBtnTop">✨ KI-Vorschläge</button>
             <button class="info-badge" id="aiCheckInfoBtnTop" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
           </div>
+          <div class="btn-with-info">
+            <button class="btn btn-outline" id="structureCheckBtnTop">📖 Aufbau prüfen</button>
+            <button class="info-badge" id="structureInfoBtnTop" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+          </div>
           <button class="btn btn-danger" id="deleteStoryBtnTop">Löschen</button>
         </div>
       </div>
@@ -246,10 +250,15 @@
             <button class="btn btn-outline" id="aiCheckBtn">✨ KI-Vorschläge</button>
             <button class="info-badge" id="aiCheckInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
           </div>
+          <div class="btn-with-info">
+            <button class="btn btn-outline" id="structureCheckBtn">📖 Aufbau prüfen</button>
+            <button class="info-badge" id="structureInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+          </div>
           <button class="btn btn-danger" id="deleteStoryBtn">Löschen</button>
         </div>
       </div>
-      <div id="aiPanel"></div>`;
+      <div id="aiPanel"></div>
+      <div id="structurePanel"></div>`;
 
     const titleInput = document.getElementById("titleInput");
     const statusSelect = document.getElementById("statusSelect");
@@ -375,6 +384,12 @@
       "Kostet eine Kleinigkeit (Bruchteile eines Cents) pro Klick. Am besten einsetzen, wenn eine Geschichte fertig geschrieben ist - nicht nach jedem einzelnen Satz."
     ));
 
+    wireBoth(["structureCheckBtn", "structureCheckBtnTop"], () => runStructureCheck(story, editorPage));
+    wireBoth(["structureInfoBtn", "structureInfoBtnTop"], () => showAlert(
+      "Schaut sich die ganze Geschichte im Zusammenhang an (nicht einzelne Sätze): Spannungsbogen, emotionale Wirkung, Lebendigkeit der Beschreibungen - und falls sinnvoll, ob ein Schnitt in zwei Teile Sinn ergeben würde. " +
+      "Reine Einschätzung zum Nachdenken, nichts wird automatisch verändert. Kostet eine Kleinigkeit pro Klick, am besten bei einer fertigen Geschichte nutzen."
+    ));
+
     wireBoth(["copyTextBtn", "copyTextBtnTop"], async (e) => {
       const plain = htmlToPlainText(editorPage.innerHTML);
       const text = (titleInput.value ? titleInput.value + "\n\n" : "") + plain;
@@ -465,6 +480,53 @@
 
       list.appendChild(card);
     });
+  }
+
+  // ---------- Aufbau & Wirkung (Spannungsbogen, Emotion, Beschreibungen) ----------
+  const STRUCTURE_FIELD_LABELS = {
+    spannungsbogen: "Spannungsbogen",
+    emotionaleWirkung: "Emotionale Wirkung",
+    beschreibungen: "Beschreibungen",
+    kapitelTrennung: "Mögliche Kapitel-Trennung"
+  };
+
+  async function runStructureCheck(story, editorPage) {
+    const panel = document.getElementById("structurePanel");
+    if (!AIProvider.isConfigured()) {
+      switchView("settings");
+      showAlert("Bitte zuerst unter Einstellungen die KI-Vorschläge einrichten.");
+      return;
+    }
+    panel.innerHTML = '<div class="ai-panel-status">📖 Wird geprüft …</div>';
+    try {
+      const plainText = htmlToPlainText(editorPage.innerHTML);
+      const result = await AIProvider.analyzeStructure(plainText);
+      renderStructureResults(panel, result);
+    } catch (err) {
+      console.error("Aufbau-Prüfung-Fehler", err);
+      const msg = err && err.message === "NOT_CONFIGURED"
+        ? "Bitte zuerst unter Einstellungen die KI-Vorschläge einrichten."
+        : "Prüfung fehlgeschlagen: " + (err && err.message ? err.message : String(err));
+      panel.innerHTML = `<div class="ai-panel-status ai-panel-error">${escapeHtml(msg)}</div>`;
+    }
+  }
+
+  function renderStructureResults(panel, result) {
+    const entries = Object.keys(STRUCTURE_FIELD_LABELS)
+      .map(key => ({ key, label: STRUCTURE_FIELD_LABELS[key], text: (result && result[key] || "").trim() }))
+      .filter(e => e.text);
+
+    if (entries.length === 0) {
+      panel.innerHTML = '<div class="ai-panel-status">✓ Wirkt schon rund – keine besonderen Anmerkungen.</div>';
+      return;
+    }
+
+    const rows = entries.map(e => `
+      <div class="ai-suggestion-card">
+        <div class="ai-suggestion-type">${escapeHtml(e.label)}</div>
+        <div class="ai-suggestion-reason">${escapeHtml(e.text)}</div>
+      </div>`).join("");
+    panel.innerHTML = `<p class="section-label" style="margin-top:20px;">📖 Aufbau & Wirkung</p><div class="ai-suggestion-list">${rows}</div>`;
   }
 
   function renderAiSettings() {

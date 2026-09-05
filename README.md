@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt.
 
 ## Lokal testen
 
@@ -71,8 +71,10 @@ Cloudflare Worker, der den Key geheim hält und nur weiterleitet.
 6. Die Worker-Adresse (`https://<name>.<konto>.workers.dev`) kopieren.
 7. In der App unter **Einstellungen → ✨ KI-Vorschläge (Claude)** die Worker-Adresse und den selbst ausgedachten `WORKER_ACCESS_KEY` eintragen und speichern.
 
-Danach sind der Button „✨ KI-Vorschläge" im Schreiben-Bereich, „🔍 Konsistenz
-prüfen" sowie „✨ Kapitel-Titel vorschlagen" im Bücher-Bereich nutzbar.
+Danach sind der Button „✨ KI-Vorschläge" und „📖 Aufbau prüfen" im
+Schreiben-Bereich sowie „🔍 Konsistenz prüfen" und „✨ Kapitel-Titel
+vorschlagen" im Bücher-Bereich nutzbar.
+
 „Konsistenz prüfen" vergleicht Namen und Orte über alle Geschichten hinweg
 (z. B. „Balu" vs. „Balou") und extrahiert dafür pro Geschichte höchstens
 einmal eine kurze Namensliste per KI – der eigentliche Abgleich zwischen den
@@ -81,7 +83,12 @@ KI-Kosten. „Kapitel-Titel vorschlagen" schickt pro Kapitel nur die Titel und
 kurze Ausschnitte der enthaltenen Geschichten (keine vollen Texte) und
 schlägt darauf passende, stimmungsvolle Kapitel-Titel vor – die Reihenfolge
 der Geschichten bleibt dabei unangetastet, das entscheidet weiterhin
-ausschließlich die Autorin selbst.
+ausschließlich die Autorin selbst. „📖 Aufbau prüfen" schaut sich (wie „✨
+KI-Vorschläge" auch) den vollen Text einer Geschichte an, gibt aber statt
+einzelner Textstellen-Vorschläge eine kurze Gesamteinschätzung zu
+Spannungsbogen, emotionaler Wirkung und Lebendigkeit der Beschreibungen –
+und falls sinnvoll einen Hinweis, wo ein Schnitt in zwei Teile in Frage käme.
+Reine Einschätzung zum Nachdenken, es wird nichts automatisch verändert.
 
 ### Kosten im Blick behalten
 

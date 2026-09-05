@@ -73,6 +73,40 @@
     return Array.from(blocks).map(el => el.textContent).join("\n\n").trim();
   }
 
+  // Sucht einen Textausschnitt im sichtbaren Text (nicht im rohen HTML) und
+  // gibt dafür eine DOM-Range zurück - robuster als ein Vergleich gegen
+  // innerHTML, das durch verschachtelte Formatierung (z. B. <b>) oder
+  // HTML-Sonderzeichen leicht vom sichtbaren Text abweicht.
+  function findExcerptRange(root, excerpt) {
+    if (!excerpt) return null;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let fullText = "";
+    let node;
+    while ((node = walker.nextNode())) {
+      nodes.push({ node, start: fullText.length });
+      fullText += node.nodeValue;
+    }
+    const idx = fullText.indexOf(excerpt);
+    if (idx === -1) return null;
+    const end = idx + excerpt.length;
+
+    function locate(offset) {
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        if (offset >= nodes[i].start) return { node: nodes[i].node, offset: offset - nodes[i].start };
+      }
+      return null;
+    }
+    const startLoc = locate(idx);
+    const endLoc = locate(end);
+    if (!startLoc || !endLoc) return null;
+
+    const range = document.createRange();
+    range.setStart(startLoc.node, startLoc.offset);
+    range.setEnd(endLoc.node, endLoc.offset);
+    return range;
+  }
+
   function upsertLocal(story) {
     const idx = stories.findIndex(s => s.id === story.id);
     if (idx >= 0) stories[idx] = story; else stories.push(story);
@@ -471,7 +505,7 @@
     }
 
     suggestions.forEach((sug) => {
-      const canApply = editorPage.innerHTML.includes(sug.excerpt);
+      const canApply = !!findExcerptRange(editorPage, sug.excerpt);
       const card = document.createElement("div");
       card.className = "ai-suggestion-card";
       card.innerHTML = `
@@ -486,11 +520,11 @@
         </div>`;
 
       card.querySelector(".ai-apply-btn").addEventListener("click", () => {
-        const html = editorPage.innerHTML;
-        if (!html.includes(sug.excerpt)) return;
-        // Ersetzungsfunktion statt String, damit "$"-Zeichen im Vorschlag nicht
-        // als Sonderzeichen für String.replace() interpretiert werden.
-        editorPage.innerHTML = html.replace(sug.excerpt, () => escapeHtml(sug.suggestion));
+        const range = findExcerptRange(editorPage, sug.excerpt);
+        if (!range) return;
+        range.deleteContents();
+        range.insertNode(document.createTextNode(sug.suggestion));
+        editorPage.normalize();
         scheduleSave();
         card.remove();
         checkEmpty();

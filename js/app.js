@@ -285,6 +285,28 @@
     statusSelect.addEventListener("change", scheduleSave);
     editorPage.addEventListener("input", scheduleSave);
 
+    // Eingefügter Text kommt oft mit Formatierungs-Ballast aus anderen
+    // Programmen (Word, PDF, Google Docs) - u. a. mit einem Zeilenumbruch
+    // pro sichtbarer Zeile statt echten Absätzen. Deshalb nur den reinen Text
+    // übernehmen und selbst zu sauberen Absätzen zusammensetzen: eine Leerzeile
+    // trennt Absätze, einzelne Zeilenumbrüche dazwischen werden zu einem
+    // Leerzeichen (statt zu einer erzwungenen neuen Zeile).
+    editorPage.addEventListener("paste", (e) => {
+      const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+      if (!text) return;
+      e.preventDefault();
+      const paragraphs = text
+        .replace(/\r\n?/g, "\n")
+        .split(/\n{2,}/)
+        .map(block => block.split("\n").map(line => line.trim()).filter(Boolean).join(" ").trim())
+        .filter(Boolean);
+      const html = paragraphs.length
+        ? paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join("")
+        : escapeHtml(text);
+      document.execCommand("insertHTML", false, html);
+      scheduleSave();
+    });
+
     // contenteditable verliert die Textmarkierung, sobald man auf ein
     // Toolbar-Dropdown klickt (der Fokus wechselt kurz weg). Deshalb merken
     // wir uns die letzte gültige Markierung im Editor und stellen sie vor

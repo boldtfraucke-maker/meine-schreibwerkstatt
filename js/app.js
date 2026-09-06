@@ -1205,12 +1205,24 @@
   // zwischen den Geschichten passiert danach komplett lokal, ohne weitere
   // KI-Kosten.
   const LS_ENTITY_CACHE = "sw_entity_cache"; // { storyId: { updatedAt, entities: [{name,type}] } }
+  const LS_CONSISTENCY_RESULT = "sw_consistency_result"; // { checkedAt, pairs: [{type,nameA,storyIdsA,nameB,storyIdsB,done}] }
 
   function getEntityCache() {
     try { return JSON.parse(localStorage.getItem(LS_ENTITY_CACHE) || "{}"); }
     catch (e) { return {}; }
   }
   function setEntityCache(cache) { localStorage.setItem(LS_ENTITY_CACHE, JSON.stringify(cache)); }
+
+  // Bleibt wie KI-Vorschläge/Aufbau & Wirkung gespeichert, statt bei jedem
+  // Verlassen der Bücher-Seite zu verschwinden - jeder Punkt lässt sich
+  // einzeln als erledigt markieren (Abgleich über pairKey, damit das auch
+  // nach einer erneuten Prüfung erhalten bleibt).
+  function getConsistencyResult() {
+    try { return JSON.parse(localStorage.getItem(LS_CONSISTENCY_RESULT) || "null"); }
+    catch (e) { return null; }
+  }
+  function setConsistencyResult(result) { localStorage.setItem(LS_CONSISTENCY_RESULT, JSON.stringify(result)); }
+  function pairKey(p) { return p.type + "::" + p.nameA + "::" + p.nameB; }
 
   function levenshtein(a, b) {
     const m = a.length, n = b.length;
@@ -1298,30 +1310,83 @@
       Object.keys(cache).forEach((id) => { if (!validIds.has(id)) delete cache[id]; });
       setEntityCache(cache);
 
-      renderConsistencyResults(panel, findSimilarNamePairs(cache));
+      // Bereits als erledigt markierte Punkte bleiben es auch nach einer
+      // erneuten Prüfung, solange derselbe Namens-/Orte-Vergleich wieder
+      // auftaucht (Abgleich über pairKey).
+      const prevDone = new Set((getConsistencyResult()?.pairs || []).filter(p => p.done).map(pairKey));
+      const pairs = findSimilarNamePairs(cache).map(p => ({ ...p, done: prevDone.has(pairKey(p)) }));
+      const result = { checkedAt: new Date().toISOString(), pairs };
+      setConsistencyResult(result);
+      renderConsistencyResults(panel, result);
     } catch (err) {
       console.error("Konsistenzprüfung-Fehler", err);
       panel.innerHTML = `<div class="ai-panel-status ai-panel-error">Prüfung fehlgeschlagen: ${escapeHtml(err && err.message ? err.message : String(err))}</div>`;
     }
   }
 
-  function renderConsistencyResults(panel, pairs) {
-    if (pairs.length === 0) {
-      panel.innerHTML = '<div class="ai-panel-status">✓ Keine möglichen Unstimmigkeiten bei Namen oder Orten gefunden.</div>';
+  // Öffnet die Geschichte im Schreiben-Bereich und springt direkt zur
+  // ersten Fundstelle des Namens - sonst müsste man bei mehreren Seiten
+  // pro Buch die Stelle selbst suchen. Bewusst kein Marker/Schritt-Ansicht
+  // wie bei KI-Vorschläge/Aufbau & Wirkung: Die Konsistenzprüfung
+  // vergleicht mehrere Geschichten auf einmal, es gibt keinen einzelnen
+  // Text, neben dem ein Marker sitzen könnte - und laut Rückmeldung wird
+  // diese Prüfung ohnehin nur am PC genutzt, nie am Handy.
+  function jumpToStoryOccurrence(storyId, name) {
+    switchView("write");
+    openStory(storyId);
+    const editorPage = document.getElementById("editorPage");
+    if (!editorPage) return;
+    const range = findExcerptRange(editorPage, name);
+    if (range) scrollAndFlashRange(range);
+  }
+
+  function renderConsistencyResults(panel, result) {
+    const pairs = result ? result.pairs : [];
+    const open = pairs.filter(p => !p.done);
+    setCountBadge(["consistencyCheckBtn"], open.length);
+
+    if (!result) { panel.innerHTML = ""; return; }
+    if (open.length === 0) {
+      panel.innerHTML = pairs.length === 0
+        ? '<div class="ai-panel-status">✓ Keine möglichen Unstimmigkeiten bei Namen oder Orten gefunden.</div>'
+        : '<div class="ai-panel-status">✓ Alle Punkte bearbeitet.</div>';
       return;
     }
-    const rows = pairs.map((p) => {
+
+    const stale = stories.some(s => new Date(s.updatedAt) > new Date(result.checkedAt));
+    panel.innerHTML = `
+      <p class="section-label" style="margin-top:8px;">🔍 Mögliche Unstimmigkeiten (${open.length})</p>
+      ${stale ? '<div class="ai-suggestion-note" style="margin-bottom:10px;">Seit dieser Prüfung wurden Geschichten geändert - das Ergebnis könnte nicht mehr ganz aktuell sein. Am besten einmal neu prüfen.</div>' : ""}
+      <div id="consistencyList" class="ai-suggestion-list"></div>`;
+    const list = panel.querySelector("#consistencyList");
+
+    function storyLinksHtml(ids, name) {
+      return ids.map(id => `<button type="button" class="link-btn consistency-jump" data-story="${escapeAttr(id)}" data-name="${escapeAttr(name)}">${escapeHtml(storyTitleById(id))}</button>`).join(", ");
+    }
+
+    open.forEach((p) => {
       const typeLabel = p.type === "ort" ? "Ort" : "Person/Tier";
-      const storiesA = p.storyIdsA.map(storyTitleById).map(escapeHtml).join(", ");
-      const storiesB = p.storyIdsB.map(storyTitleById).map(escapeHtml).join(", ");
-      return `
-        <div class="ai-suggestion-card">
-          <div class="ai-suggestion-type">${escapeHtml(typeLabel)}</div>
-          <div class="ai-suggestion-arrow">„${escapeHtml(p.nameA)}" (${storiesA}) &nbsp;↔&nbsp; „${escapeHtml(p.nameB)}" (${storiesB})</div>
-          <div class="ai-suggestion-reason"><strong>Warum?</strong> Die Schreibweisen sind sich sehr ähnlich - könnte dieselbe ${p.type === "ort" ? "Sache" : "Figur"} sein, nur unterschiedlich geschrieben. Falls ja, lohnt sich eine einheitliche Schreibweise. Du entscheidest, ob und wo du das anpasst.</div>
+      const card = document.createElement("div");
+      card.className = "ai-suggestion-card";
+      card.innerHTML = `
+        <div class="ai-suggestion-type">${escapeHtml(typeLabel)}</div>
+        <div class="ai-suggestion-arrow">„${escapeHtml(p.nameA)}" (${storyLinksHtml(p.storyIdsA, p.nameA)}) &nbsp;↔&nbsp; „${escapeHtml(p.nameB)}" (${storyLinksHtml(p.storyIdsB, p.nameB)})</div>
+        <div class="ai-suggestion-reason"><strong>Warum?</strong> Die Schreibweisen sind sich sehr ähnlich - könnte dieselbe ${p.type === "ort" ? "Sache" : "Figur"} sein, nur unterschiedlich geschrieben. Falls ja, lohnt sich eine einheitliche Schreibweise. Du entscheidest, ob und wo du das anpasst.</div>
+        <div class="ai-suggestion-actions">
+          <button class="btn btn-ghost consistency-done-btn">✓ Erledigt</button>
         </div>`;
-    }).join("");
-    panel.innerHTML = `<p class="section-label" style="margin-top:8px;">🔍 Mögliche Unstimmigkeiten (${pairs.length})</p><div class="ai-suggestion-list">${rows}</div>`;
+      card.querySelectorAll(".consistency-jump").forEach(btn => {
+        btn.addEventListener("click", () => jumpToStoryOccurrence(btn.dataset.story, btn.dataset.name));
+      });
+      card.querySelector(".consistency-done-btn").addEventListener("click", () => {
+        const stored = getConsistencyResult();
+        const match = stored.pairs.find(x => pairKey(x) === pairKey(p));
+        if (match) match.done = true;
+        setConsistencyResult(stored);
+        renderConsistencyResults(panel, stored);
+      });
+      list.appendChild(card);
+    });
   }
 
   // ---------- Ideenparkplatz ----------
@@ -1648,6 +1713,7 @@
     consistencyPanel.id = "consistencyPanel";
     consistencyPanel.style.marginTop = "24px";
     panel.appendChild(consistencyPanel);
+    renderConsistencyResults(consistencyPanel, getConsistencyResult());
 
     document.getElementById("newBookBtn").addEventListener("click", async () => {
       const book = {

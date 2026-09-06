@@ -85,7 +85,15 @@ eigene Randmarker-Farbe.
 (z. B. „Balu" vs. „Balou") und extrahiert dafür pro Geschichte höchstens
 einmal eine kurze Namensliste per KI – der eigentliche Abgleich zwischen den
 Geschichten läuft danach komplett lokal im Browser, ganz ohne weitere
-KI-Kosten. „Kapitel-Titel vorschlagen" schickt pro Kapitel nur die Titel und
+KI-Kosten. Das Ergebnis bleibt gespeichert (mit Zahlen-Abzeichen am Button)
+und jeder Fund lässt sich einzeln als erledigt markieren, ganz wie bei
+KI-Vorschläge/Aufbau & Wirkung - bleibt aber bewusst eine einfache Liste
+ohne Marker im Text oder Handy-Schrittansicht, weil sich ein Fund über
+mehrere Geschichten hinweg nicht an einer einzelnen Textstelle festmachen
+lässt und diese Prüfung erfahrungsgemäß ohnehin nur am PC genutzt wird. Ein
+Klick auf den Geschichtentitel im Fund öffnet die betroffene Geschichte
+direkt im Schreiben-Bereich und springt zur ersten Fundstelle. „Kapitel-
+Titel vorschlagen" schickt pro Kapitel nur die Titel und
 kurze Ausschnitte der enthaltenen Geschichten (keine vollen Texte) und
 schlägt darauf passende, stimmungsvolle Kapitel-Titel vor – die Reihenfolge
 der Geschichten bleibt dabei unangetastet, das entscheidet weiterhin

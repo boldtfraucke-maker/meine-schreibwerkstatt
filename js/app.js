@@ -299,12 +299,8 @@
         pop.innerHTML = `
           <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
           <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
-          <div class="ai-suggestion-actions">
-            <button class="btn btn-ghost pop-done-btn">✓ Erledigt</button>
-          </div>`;
-        pop.querySelector(".pop-done-btn").addEventListener("click", async () => {
-          f.done = true;
-          await Storage.save(story);
+          ${structureActionsHtml(f)}`;
+        wireStructureActions(pop, f, story, editorPage, scheduleSave, () => {
           closeMarkerPopover();
           onResolved();
         });
@@ -364,7 +360,7 @@
     normalizeAiCheck(story);
     const desktop = window.matchMedia("(min-width: 821px)").matches;
     renderAiSuggestions(document.getElementById("aiPanel"), story, editorPage, scheduleSave, { desktop });
-    renderStructureResults(document.getElementById("structurePanel"), story, editorPage, { desktop });
+    renderStructureResults(document.getElementById("structurePanel"), story, editorPage, scheduleSave, { desktop });
     if (desktop) {
       renderMarkerGutter(story, editorPage, scheduleSave, () => refreshSuggestionUI(story, editorPage, scheduleSave));
     } else {
@@ -795,6 +791,76 @@
     return checked ? sug.suggestions[Number(checked.value)] : sug.suggestions[0];
   }
 
+  // "Aufbau & Wirkung" liefert keine fertige Alternative wie KI-Vorschläge,
+  // sondern nur eine Einschätzung - hier bekommt die Autorin stattdessen ein
+  // Entwurfsfeld: eine Kopie der Textstelle, die sie in Ruhe selbst
+  // umschreiben kann, ohne den Originaltext direkt zu verändern. Der
+  // Entwurf wird zwischengespeichert, damit nichts verloren geht, falls sie
+  // das Feld zwischendurch schließt.
+  function structureActionsHtml(f, opts) {
+    const canLocate = !!(opts && opts.canLocate);
+    const locateBtn = canLocate ? '<button class="btn btn-ghost locate-btn">→ Zur Stelle springen</button>' : "";
+    const editBtn = f.excerpt ? '<button class="btn btn-ghost edit-draft-btn">✎ Text bearbeiten</button>' : "";
+    const draftBox = f.excerpt ? `
+      <div class="draft-editor" hidden>
+        <textarea class="draft-textarea" rows="4">${escapeHtml(f.draft || f.excerpt)}</textarea>
+        <div class="ai-suggestion-actions">
+          <button class="btn btn-primary draft-insert-btn">Einfügen</button>
+          <button class="btn btn-ghost draft-cancel-btn">Abbrechen</button>
+        </div>
+      </div>` : "";
+    return `
+      <div class="ai-suggestion-actions">
+        ${locateBtn}
+        ${editBtn}
+        <button class="btn btn-ghost done-btn">✓ Erledigt</button>
+      </div>
+      ${draftBox}`;
+  }
+
+  function wireStructureActions(container, f, story, editorPage, scheduleSave, onResolved) {
+    const locateBtn = container.querySelector(".locate-btn");
+    if (locateBtn) {
+      locateBtn.addEventListener("click", () => {
+        const range = findExcerptRange(editorPage, f.excerpt);
+        if (range) scrollAndFlashRange(range);
+      });
+    }
+    container.querySelector(".done-btn").addEventListener("click", async () => {
+      f.done = true;
+      await Storage.save(story);
+      onResolved();
+    });
+
+    const editBtn = container.querySelector(".edit-draft-btn");
+    if (!editBtn) return;
+    const draftBox = container.querySelector(".draft-editor");
+    const textarea = container.querySelector(".draft-textarea");
+
+    editBtn.addEventListener("click", () => { draftBox.hidden = !draftBox.hidden; });
+
+    let draftSaveTimer = null;
+    textarea.addEventListener("input", () => {
+      clearTimeout(draftSaveTimer);
+      draftSaveTimer = setTimeout(async () => {
+        f.draft = textarea.value;
+        await Storage.save(story);
+      }, 500);
+    });
+
+    container.querySelector(".draft-insert-btn").addEventListener("click", async () => {
+      if (!replaceExcerptText(editorPage, f.excerpt, textarea.value)) return;
+      f.done = true;
+      delete f.draft;
+      await Storage.save(story);
+      scheduleSave();
+      onResolved();
+    });
+    container.querySelector(".draft-cancel-btn").addEventListener("click", () => {
+      draftBox.hidden = true;
+    });
+  }
+
   async function runAiCheck(story, editorPage, scheduleSave) {
     const panel = document.getElementById("aiPanel");
     if (!AIProvider.isConfigured()) {
@@ -942,7 +1008,7 @@
   // Der letzte Aufbau-Check bleibt an der Geschichte selbst gespeichert (nicht
   // im Ideenparkplatz) - beim erneuten Öffnen sieht man wieder, was zuletzt
   // gefunden wurde, bis man einen Punkt einzeln als erledigt markiert.
-  function renderStructureResults(panel, story, editorPage, opts) {
+  function renderStructureResults(panel, story, editorPage, scheduleSave, opts) {
     const desktop = !!(opts && opts.desktop);
     const check = story.structureCheck;
     const allOpen = check ? check.findings.filter(f => !f.done) : [];
@@ -983,19 +1049,8 @@
       card.innerHTML = `
         <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
         <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
-        <div class="ai-suggestion-actions">
-          ${canLocate ? '<button class="btn btn-ghost locate-btn">→ Zur Stelle springen</button>' : ""}
-          <button class="btn btn-ghost done-btn">✓ Erledigt</button>
-        </div>`;
-      if (canLocate) {
-        card.querySelector(".locate-btn").addEventListener("click", () => {
-          const range = findExcerptRange(editorPage, f.excerpt);
-          if (range) scrollAndFlashRange(range);
-        });
-      }
-      card.querySelector(".done-btn").addEventListener("click", async () => {
-        f.done = true;
-        await Storage.save(story);
+        ${structureActionsHtml(f, { canLocate })}`;
+      wireStructureActions(card, f, story, editorPage, scheduleSave, () => {
         card.remove();
         checkEmpty();
         setCountBadge(["structureCheckBtn", "structureCheckBtnTop"], check.findings.filter(x => !x.done).length);

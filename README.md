@@ -95,7 +95,12 @@ einzelner Textstellen-Vorschläge eine kurze Gesamteinschätzung entlang der
 Lektorats-Reihenfolge vom Großen ins Detail: Aufbau & Spannungsbogen,
 Einladung zum Weiterlesen, Erzähltempo und Show-don't-tell – und falls
 sinnvoll einen Hinweis, wo ein Schnitt in zwei Teile in Frage käme. Reine
-Einschätzung zum Nachdenken, es wird nichts automatisch verändert.
+Einschätzung zum Nachdenken, es wird nichts automatisch verändert. Lässt
+sich ein Fund einer Textstelle zuordnen, gibt es zusätzlich "✎ Text
+bearbeiten": eine Kopie der Stelle in einem Entwurfsfeld, die man in Ruhe
+selbst umschreiben und danach per "Einfügen" an der ursprünglichen Stelle
+einsetzen kann - der Entwurf wird zwischengespeichert, auch wenn man das
+Feld erstmal wieder schließt.
 
 Offene Punkte aus beiden Funktionen (KI-Vorschläge und Aufbau & Wirkung)
 bleiben an der jeweiligen Geschichte gespeichert (nicht im Ideenparkplatz)

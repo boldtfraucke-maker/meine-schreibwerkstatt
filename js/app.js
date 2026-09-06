@@ -296,10 +296,8 @@
         });
       } else {
         const f = item.data;
-        pop.innerHTML = `
-          <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
-          <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
-          ${structureActionsHtml(f)}`;
+        pop.classList.toggle("positive", !!f.positive);
+        pop.innerHTML = structureBodyHtml(f) + structureActionsHtml(f);
         wireStructureActions(pop, f, story, editorPage, scheduleSave, () => {
           closeMarkerPopover();
           onResolved();
@@ -319,7 +317,7 @@
       if (!sug.done) items.push({ kind: "ai", data: sug, excerpt: sug.excerpt, cat: sug.type || "korrektorat" });
     });
     (story.structureCheck ? story.structureCheck.findings : []).forEach((f) => {
-      if (!f.done && f.excerpt) items.push({ kind: "structure", data: f, excerpt: f.excerpt, cat: f.cat });
+      if (!f.done && f.excerpt) items.push({ kind: "structure", data: f, excerpt: f.excerpt, cat: f.positive ? "positive" : f.cat });
     });
 
     const gutterRect = gutter.getBoundingClientRect();
@@ -791,9 +789,20 @@
     return checked ? sug.suggestions[Number(checked.value)] : sug.suggestions[0];
   }
 
+  function structureBodyHtml(f) {
+    const suggestionPreview = (!f.positive && f.suggestion)
+      ? `<div class="ai-suggestion-arrow">→ ${escapeHtml(f.suggestion)}</div>`
+      : "";
+    return `
+      <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
+      <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
+      ${suggestionPreview}`;
+  }
+
   // "Aufbau & Wirkung" liefert keine fertige Alternative wie KI-Vorschläge,
   // sondern nur eine Einschätzung - hier bekommt die Autorin stattdessen ein
-  // Entwurfsfeld: eine Kopie der Textstelle, die sie in Ruhe selbst
+  // Entwurfsfeld: eine Kopie der Textstelle (oder, falls vorhanden, gleich der
+  // KI-Formulierungsvorschlag als Ausgangspunkt), die sie in Ruhe selbst
   // umschreiben kann, ohne den Originaltext direkt zu verändern. Der
   // Entwurf wird zwischengespeichert, damit nichts verloren geht, falls sie
   // das Feld zwischendurch schließt.
@@ -803,7 +812,7 @@
     const editBtn = f.excerpt ? '<button class="btn btn-ghost edit-draft-btn">✎ Text bearbeiten</button>' : "";
     const draftBox = f.excerpt ? `
       <div class="draft-editor" hidden>
-        <textarea class="draft-textarea" rows="4">${escapeHtml(f.draft || f.excerpt)}</textarea>
+        <textarea class="draft-textarea" rows="4">${escapeHtml(f.draft || f.suggestion || f.excerpt)}</textarea>
         <div class="ai-suggestion-actions">
           <button class="btn btn-primary draft-insert-btn">Einfügen</button>
           <button class="btn btn-ghost draft-cancel-btn">Abbrechen</button>
@@ -990,7 +999,14 @@
       const findings = STRUCTURE_FIELDS
         .map(f => {
           const r = result && result[f.key];
-          return { key: f.key, label: f.label, cat: f.cat, text: ((r && r.text) || "").trim(), excerpt: ((r && r.excerpt) || "").trim(), done: false };
+          return {
+            key: f.key, label: f.label, cat: f.cat,
+            text: ((r && r.text) || "").trim(),
+            excerpt: ((r && r.excerpt) || "").trim(),
+            positive: !!(r && r.positive),
+            suggestion: ((r && r.suggestion) || "").trim(),
+            done: false
+          };
         })
         .filter(f => f.text);
       story.structureCheck = { checkedAt: new Date().toISOString(), findings };
@@ -1044,12 +1060,9 @@
     open.forEach((f) => {
       const canLocate = !!(f.excerpt && editorPage && findExcerptRange(editorPage, f.excerpt));
       const card = document.createElement("div");
-      card.className = "ai-suggestion-card";
+      card.className = "ai-suggestion-card" + (f.positive ? " positive" : "");
       card.dataset.cat = f.cat;
-      card.innerHTML = `
-        <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
-        <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
-        ${structureActionsHtml(f, { canLocate })}`;
+      card.innerHTML = structureBodyHtml(f) + structureActionsHtml(f, { canLocate });
       wireStructureActions(card, f, story, editorPage, scheduleSave, () => {
         card.remove();
         checkEmpty();

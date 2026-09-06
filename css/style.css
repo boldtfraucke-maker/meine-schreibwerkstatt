@@ -398,6 +398,7 @@ select.status-select {
 .margin-marker.cat-szene { background: var(--clay); }
 .margin-marker.cat-mikro { background: var(--sky); }
 .margin-marker.cat-stil { background: var(--danger); }
+.margin-marker.cat-positive { background: var(--pine); }
 
 .marker-popover {
   position: fixed;
@@ -411,6 +412,9 @@ select.status-select {
   box-shadow: 0 8px 28px rgba(27, 25, 18, 0.18);
 }
 .marker-popover[hidden] { display: none; }
+.marker-popover.positive { border-left: 6px solid var(--pine); }
+.marker-popover.positive .ai-suggestion-type { color: var(--pine); }
+.marker-popover.positive .ai-suggestion-type::before { content: "✓ "; }
 
 .editor-page {
   flex: 1;
@@ -645,6 +649,12 @@ select.status-select {
 .ai-suggestion-card[data-cat="mikro"] .ai-suggestion-type { color: var(--sky); }
 .ai-suggestion-card[data-cat="stil"] { border-left-color: var(--danger); }
 .ai-suggestion-card[data-cat="stil"] .ai-suggestion-type { color: var(--danger); }
+/* Lob ohne Handlungsbedarf sticht per Grün hervor, unabhängig von der
+   sonstigen Kategorie-Farbe - Reihenfolge nach den Kategorie-Regeln, damit
+   es bei gleicher Spezifität gewinnt. */
+.ai-suggestion-card.positive { border-left-color: var(--pine); }
+.ai-suggestion-card.positive .ai-suggestion-type { color: var(--pine); }
+.ai-suggestion-card.positive .ai-suggestion-type::before { content: "✓"; }
 .ai-suggestion-type {
   display: inline-block;
   font-size: 0.72rem;

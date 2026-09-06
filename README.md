@@ -97,10 +97,17 @@ Einladung zum Weiterlesen, Erzähltempo und Show-don't-tell – und falls
 sinnvoll einen Hinweis, wo ein Schnitt in zwei Teile in Frage käme. Reine
 Einschätzung zum Nachdenken, es wird nichts automatisch verändert. Lässt
 sich ein Fund einer Textstelle zuordnen, gibt es zusätzlich "✎ Text
-bearbeiten": eine Kopie der Stelle in einem Entwurfsfeld, die man in Ruhe
-selbst umschreiben und danach per "Einfügen" an der ursprünglichen Stelle
-einsetzen kann - der Entwurf wird zwischengespeichert, auch wenn man das
-Feld erstmal wieder schließt.
+bearbeiten": ein Entwurfsfeld, vorausgefüllt mit einem konkreten
+Formulierungsvorschlag der KI (falls vorhanden, sonst mit der Originalstelle),
+das man in Ruhe frei weiterbearbeiten und danach per "Einfügen" an der
+ursprünglichen Stelle einsetzen kann - der Entwurf wird zwischengespeichert,
+auch wenn man das Feld erstmal wieder schließt.
+
+Ist ein Fund reines Lob ohne Handlungsbedarf (z. B. ein besonders gelungener
+Schluss), wird die Karte bzw. der Marker grün hervorgehoben statt in der
+sonstigen Kategorie-Farbe - so ist auf einen Blick klar, wo nichts zu tun
+ist. Das passiert nur, wenn der KI wirklich etwas Positives auffällt, nicht
+als Pflicht-Kommentar für jede Kategorie.
 
 Offene Punkte aus beiden Funktionen (KI-Vorschläge und Aufbau & Wirkung)
 bleiben an der jeweiligen Geschichte gespeichert (nicht im Ideenparkplatz)

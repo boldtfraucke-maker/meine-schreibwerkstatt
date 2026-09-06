@@ -222,22 +222,27 @@ Du bekommst den vollständigen Text einer Geschichte. Gib eine kurze, ermutigend
 - showDontTell (Stil-Ebene): Werden Gefühle nur benannt ("Sie hatte Angst") statt durch Handlung/Körperreaktion spürbar gemacht ("Ihre Pfoten zitterten")?
 - kapitelTrennung: Nur befüllen, wenn die Geschichte lang/vielschichtig genug ist, dass ein Schnitt in zwei eigenständige Teile sinnvoll wäre - mit kurzer Begründung.
 
-Zu jeder Ebene gibst du zusätzlich "excerpt" mit: eine kurze, zeichengenau wörtlich aus der Geschichte kopierte Textstelle, auf die sich dein Kommentar konkret bezieht (kein Umformulieren, keine ergänzten Anführungszeichen) - damit die Stelle im Text wiedergefunden werden kann. Bezieht sich dein Kommentar auf die Geschichte als Ganzes statt auf eine bestimmte Stelle (z. B. allgemeines Tempo-Feedback), lass "excerpt" leer.
+Zu jeder Ebene gibst du zusätzlich:
+- "excerpt": eine kurze, zeichengenau wörtlich aus der Geschichte kopierte Textstelle, auf die sich dein Kommentar konkret bezieht (kein Umformulieren, keine ergänzten Anführungszeichen) - damit die Stelle im Text wiedergefunden werden kann. Bezieht sich dein Kommentar auf die Geschichte als Ganzes statt auf eine bestimmte Stelle (z. B. allgemeines Tempo-Feedback), lass "excerpt" leer.
+- "positive": true, wenn dein Kommentar ein echtes Lob ohne Handlungsbedarf ist (z. B. ein besonders gelungener Schluss) - false, wenn es ein Hinweis mit Verbesserungspotenzial ist.
+- "suggestion": nur wenn "positive" false ist und sich ein "excerpt" ergibt: ein konkreter, vollständiger Formulierungsvorschlag für genau diese Stelle - die Autorin kann ihn direkt übernehmen oder als Ausgangspunkt zum eigenen Weiterbearbeiten nutzen. Bei Lob oder ohne konkrete Stelle leer lassen.
 
 Wichtig:
 - Sei konkret und nachvollziehbar, keine leeren Floskeln.
-- Erfinde keine Probleme nur um etwas zu liefern - funktioniert eine Ebene schon gut, gib dort "text" und "excerpt" leer zurück.
+- Kommentiere pro Ebene nur, wenn wirklich etwas Bemerkenswertes auffällt - weder erfindest du Probleme, noch erfindest du Lob für jede einzelne Ebene, nur damit überall etwas steht. Fällt nichts Besonderes auf (weder positiv noch verbesserungswürdig), gib "text" und "excerpt" leer zurück.
 - Dränge die Autorin nie in einen fremden Stil oder ein fremdes Genre (z. B. Spannung/Action-Schreibweise) - bewerte innerhalb ihres eigenen, ruhigen Tons.
 - Bleib wertschätzend, das ist eine Hobby-Autorin, kein Uni-Seminar.
-- Du schreibst nichts um, du gibst nur Einschätzungen.`;
+- Außer bei "suggestion" schreibst du nichts um, du gibst nur Einschätzungen.`;
 
   const STRUCTURE_FINDING_SCHEMA = {
     type: "object",
     properties: {
       text: { type: "string" },
-      excerpt: { type: "string" }
+      excerpt: { type: "string" },
+      positive: { type: "boolean" },
+      suggestion: { type: "string" }
     },
-    required: ["text", "excerpt"],
+    required: ["text", "excerpt", "positive", "suggestion"],
     additionalProperties: false
   };
 
@@ -254,7 +259,7 @@ Wichtig:
     additionalProperties: false
   };
 
-  function emptyFinding() { return { text: "", excerpt: "" }; }
+  function emptyFinding() { return { text: "", excerpt: "", positive: false, suggestion: "" }; }
 
   async function analyzeStructure(plainText) {
     const empty = {
@@ -270,7 +275,12 @@ Wichtig:
     );
     function pick(key) {
       const f = parsed && parsed[key];
-      return { text: (f && f.text) || "", excerpt: (f && f.excerpt) || "" };
+      return {
+        text: (f && f.text) || "",
+        excerpt: (f && f.excerpt) || "",
+        positive: !!(f && f.positive),
+        suggestion: (f && f.suggestion) || ""
+      };
     }
     return {
       aufbauSpannungsbogen: pick("aufbauSpannungsbogen"),

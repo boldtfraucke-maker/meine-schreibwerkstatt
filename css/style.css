@@ -535,7 +535,7 @@ select.status-select {
 .idea-card[data-color="blue"] { border-left-color: var(--idea-blue); }
 .idea-card[data-color="green"] { border-left-color: var(--idea-green); }
 .idea-card .idea-title { font-weight: 600; margin-bottom: 4px; }
-.idea-category-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.idea-category-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .idea-category-chip {
   display: inline-flex;
   align-items: center;

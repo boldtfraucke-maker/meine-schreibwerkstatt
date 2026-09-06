@@ -1335,8 +1335,8 @@
   const IDEA_CATEGORY_PRESETS = [
     { label: "Blitzgedanke", icon: "💡", color: "yellow" },
     { label: "Cooler Satz", icon: "💬", color: "orange" },
-    { label: "Metaphern", icon: "🌉", color: "violet" },
     { label: "Bildsprache", icon: "🖼️", color: "blue" },
+    { label: "Metaphern", icon: "🌉", color: "violet" },
     { label: "Emotionen & Bewegung", icon: "💓", color: "green" }
   ];
 

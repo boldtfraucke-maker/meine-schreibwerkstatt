@@ -109,6 +109,11 @@ sonstigen Kategorie-Farbe - so ist auf einen Blick klar, wo nichts zu tun
 ist. Das passiert nur, wenn der KI wirklich etwas Positives auffällt, nicht
 als Pflicht-Kommentar für jede Kategorie.
 
+In der Begründung zitierte Textstellen (in Anführungszeichen) werden fett
+hervorgehoben, damit man auf einen Blick erkennt, welcher Satz konkret
+gemeint ist - das gilt sowohl für KI-Vorschläge als auch für Aufbau &
+Wirkung.
+
 Offene Punkte aus beiden Funktionen (KI-Vorschläge und Aufbau & Wirkung)
 bleiben an der jeweiligen Geschichte gespeichert (nicht im Ideenparkplatz)
 und erscheinen beim erneuten Öffnen automatisch wieder, bis man sie

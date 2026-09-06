@@ -227,6 +227,11 @@ Zu jeder Ebene gibst du zusätzlich:
 - "positive": true, wenn dein Kommentar ein echtes Lob ohne Handlungsbedarf ist (z. B. ein besonders gelungener Schluss) - false, wenn es ein Hinweis mit Verbesserungspotenzial ist.
 - "suggestion": nur wenn "positive" false ist und sich ein "excerpt" ergibt: ein konkreter, vollständiger Formulierungsvorschlag für genau diese Stelle - die Autorin kann ihn direkt übernehmen oder als Ausgangspunkt zum eigenen Weiterbearbeiten nutzen. Bei Lob oder ohne konkrete Stelle leer lassen.
 
+Ganz wichtig - "text", "excerpt" und "suggestion" müssen sich immer auf EIN UND DIESELBE Textstelle beziehen, nie auf zwei verschiedene:
+- Vermische in "text" niemals ein gelungenes Beispiel und eine schwächere Stelle aus unterschiedlichen Passagen. Fallen dir zu einer Ebene sowohl eine gelungene als auch eine verbesserungswürdige Stelle auf, wähle nur EINE davon (die relevantere) und kommentiere ausschließlich diese - erwähne die andere gar nicht.
+- "excerpt" muss exakt die Stelle sein, die "text" bespricht - nicht eine andere, eventuell positivere Passage aus derselben Szene.
+- Ist "positive" false und es gibt ein "excerpt", gib so gut wie immer auch ein "suggestion" mit - ein Verbesserungshinweis ohne konkreten Formulierungsvorschlag hilft der Autorin wenig.
+
 Wichtig:
 - Sei konkret und nachvollziehbar, keine leeren Floskeln.
 - Kommentiere pro Ebene nur, wenn wirklich etwas Bemerkenswertes auffällt - weder erfindest du Probleme, noch erfindest du Lob für jede einzelne Ebene, nur damit überall etwas steht. Fällt nichts Besonderes auf (weder positiv noch verbesserungswürdig), gib "text" und "excerpt" leer zurück.

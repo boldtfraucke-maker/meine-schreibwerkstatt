@@ -63,6 +63,18 @@
     return (str || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
   function escapeAttr(str) { return escapeHtml(str); }
+
+  // Hebt in einem bereits escapten Text zitierte Wortgruppen (in
+  // Anführungszeichen) fett hervor, damit man in einer Begründung leichter
+  // erkennt, welche Textstelle konkret gemeint ist. Arbeitet bewusst auf dem
+  // schon escapten String (kein XSS-Risiko), deshalb auch die escapten
+  // Formen gerader Anführungszeichen (&quot;/&#39;) mit berücksichtigen.
+  function highlightQuotedPhrases(escapedText) {
+    return escapedText.replace(
+      /(&quot;|&#39;|„|")([^&"'„“”]{2,}?)(&quot;|&#39;|"|“|”)/g,
+      (m, open, inner, close) => `${open}<strong>${inner}</strong>${close}`
+    );
+  }
   function textToHtml(text) {
     return text.split(/\n+/).filter(Boolean).map(line => `<p>${escapeHtml(line)}</p>`).join("");
   }
@@ -240,6 +252,24 @@
     }
   }
 
+  // In eine eigene Funktion ausgelagert, damit die Position nicht nur beim
+  // ersten Öffnen berechnet wird, sondern auch erneut, wenn sich die Höhe
+  // des Feldes danach ändert (z. B. beim Aufklappen des Entwurfsfelds) -
+  // sonst blieb das Feld starr an der ursprünglichen Stelle und konnte über
+  // den unteren Bildschirmrand hinausragen, sodass man nicht mehr
+  // hineinklicken/-schreiben konnte.
+  function positionMarkerPopover(pop, markerEl) {
+    const markerRect = markerEl.getBoundingClientRect();
+    const popRect = pop.getBoundingClientRect();
+    let left = markerRect.left - popRect.width - 12;
+    if (left < 8) left = markerRect.right + 12;
+    if (left + popRect.width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - popRect.width - 8);
+    let top = markerRect.top;
+    if (top + popRect.height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - popRect.height - 8);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+  }
+
   function openMarkerPopover(markerEl, buildContent) {
     if (!markerPopoverEl) {
       markerPopoverEl = document.createElement("div");
@@ -251,16 +281,7 @@
     pop.innerHTML = "";
     buildContent(pop);
     pop.hidden = false;
-
-    const markerRect = markerEl.getBoundingClientRect();
-    const popRect = pop.getBoundingClientRect();
-    let left = markerRect.left - popRect.width - 12;
-    if (left < 8) left = markerRect.right + 12;
-    if (left + popRect.width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - popRect.width - 8);
-    let top = markerRect.top;
-    if (top + popRect.height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - popRect.height - 8);
-    pop.style.left = left + "px";
-    pop.style.top = top + "px";
+    positionMarkerPopover(pop, markerEl);
 
     markerOutsideClickHandler = (e) => {
       if (!pop.contains(e.target) && e.target !== markerEl) closeMarkerPopover();
@@ -301,7 +322,7 @@
         wireStructureActions(pop, f, story, editorPage, scheduleSave, () => {
           closeMarkerPopover();
           onResolved();
-        });
+        }, () => positionMarkerPopover(pop, markerEl));
       }
     });
   }
@@ -780,7 +801,7 @@
       <div class="ai-suggestion-type">${escapeHtml(AI_TYPE_LABELS[sug.type] || "Vorschlag")}</div>
       <div class="ai-suggestion-excerpt">„${escapeHtml(sug.excerpt)}"</div>
       ${options}
-      <div class="ai-suggestion-reason"><strong>Warum?</strong> ${escapeHtml(sug.reason)}</div>`;
+      <div class="ai-suggestion-reason"><strong>Warum?</strong> ${highlightQuotedPhrases(escapeHtml(sug.reason))}</div>`;
   }
 
   function getSelectedSuggestion(container, sug) {
@@ -795,7 +816,7 @@
       : "";
     return `
       <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
-      <div class="ai-suggestion-reason">${escapeHtml(f.text)}</div>
+      <div class="ai-suggestion-reason">${highlightQuotedPhrases(escapeHtml(f.text))}</div>
       ${suggestionPreview}`;
   }
 
@@ -827,7 +848,7 @@
       ${draftBox}`;
   }
 
-  function wireStructureActions(container, f, story, editorPage, scheduleSave, onResolved) {
+  function wireStructureActions(container, f, story, editorPage, scheduleSave, onResolved, onToggleDraft) {
     const locateBtn = container.querySelector(".locate-btn");
     if (locateBtn) {
       locateBtn.addEventListener("click", () => {
@@ -846,7 +867,10 @@
     const draftBox = container.querySelector(".draft-editor");
     const textarea = container.querySelector(".draft-textarea");
 
-    editBtn.addEventListener("click", () => { draftBox.hidden = !draftBox.hidden; });
+    editBtn.addEventListener("click", () => {
+      draftBox.hidden = !draftBox.hidden;
+      if (onToggleDraft) onToggleDraft();
+    });
 
     let draftSaveTimer = null;
     textarea.addEventListener("input", () => {

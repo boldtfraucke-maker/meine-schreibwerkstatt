@@ -635,6 +635,8 @@ select.status-select {
 }
 .ai-panel-error { color: var(--danger); }
 .ai-suggestion-list { display: flex; flex-direction: column; gap: 10px; }
+.stepper-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.stepper-count { font-size: 0.85rem; color: var(--ink-soft); white-space: nowrap; }
 .ai-suggestion-card {
   background: var(--bg-card);
   border: 1px solid var(--border);

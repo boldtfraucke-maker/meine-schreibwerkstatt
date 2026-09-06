@@ -931,6 +931,76 @@
     }
   }
 
+  // Baut eine einzelne KI-Vorschlag-Karte inkl. Verdrahtung (Zur-Stelle-
+  // springen/Übernehmen/Ablehnen) - wird sowohl für die normale Liste (PC)
+  // als auch für die Schritt-für-Schritt-Ansicht (Handy) verwendet.
+  function buildAiSuggestionCard(sug, story, check, editorPage, scheduleSave, onResolved) {
+    const canApply = !!findExcerptRange(editorPage, sug.excerpt);
+    const card = document.createElement("div");
+    card.className = "ai-suggestion-card";
+    card.innerHTML = aiSuggestionBodyHtml(sug, "ai-opt-" + uid()) + `
+      ${!canApply ? '<div class="ai-suggestion-note">Konnte die Textstelle nicht genau wiederfinden – bitte von Hand anpassen.</div>' : ""}
+      <div class="ai-suggestion-actions">
+        <button class="btn btn-ghost ai-locate-btn" ${canApply ? "" : "disabled"}>→ Zur Stelle springen</button>
+        <button class="btn btn-primary ai-apply-btn" ${canApply ? "" : "disabled"}>Übernehmen</button>
+        <button class="btn btn-ghost ai-dismiss-btn">Ablehnen</button>
+      </div>`;
+
+    card.querySelector(".ai-locate-btn").addEventListener("click", () => {
+      const range = findExcerptRange(editorPage, sug.excerpt);
+      if (range) scrollAndFlashRange(range);
+    });
+    card.querySelector(".ai-apply-btn").addEventListener("click", async () => {
+      const chosen = getSelectedSuggestion(card, sug);
+      if (!replaceExcerptText(editorPage, sug.excerpt, chosen)) return;
+      sug.done = true;
+      await Storage.save(story);
+      scheduleSave();
+      setCountBadge(["aiCheckBtn", "aiCheckBtnTop"], check.suggestions.filter(s => !s.done).length);
+      onResolved();
+    });
+    card.querySelector(".ai-dismiss-btn").addEventListener("click", async () => {
+      sug.done = true;
+      await Storage.save(story);
+      setCountBadge(["aiCheckBtn", "aiCheckBtnTop"], check.suggestions.filter(s => !s.done).length);
+      onResolved();
+    });
+    return card;
+  }
+
+  // Zeigt offene Punkte auf dem Handy einzeln nacheinander an (statt einer
+  // langen Liste zum Durchscrollen), mit Zähler "X von Y" sowie Weiter/
+  // Zurück - erleichtert das schrittweise Abarbeiten unterwegs, ohne den
+  // Überblick zu verlieren. "items" wird beim Erledigen eines Punktes direkt
+  // verkürzt, sodass automatisch der nächste offene Punkt erscheint.
+  function renderStepper(panel, topHtml, doneHtml, items, buildCard) {
+    let index = 0;
+    function renderCard() {
+      if (items.length === 0) {
+        panel.innerHTML = doneHtml;
+        return;
+      }
+      if (index > items.length - 1) index = items.length - 1;
+      if (index < 0) index = 0;
+      panel.innerHTML = `
+        ${topHtml}
+        <div class="stepper-nav">
+          <button class="btn btn-ghost stepper-prev" ${index === 0 ? "disabled" : ""}>← Zurück</button>
+          <span class="stepper-count">${index + 1} von ${items.length}</span>
+          <button class="btn btn-ghost stepper-next" ${index === items.length - 1 ? "disabled" : ""}>Weiter →</button>
+        </div>
+        <div id="stepperCard" class="ai-suggestion-list"></div>`;
+      const list = panel.querySelector("#stepperCard");
+      list.appendChild(buildCard(items[index], () => {
+        items.splice(index, 1);
+        renderCard();
+      }));
+      panel.querySelector(".stepper-prev").addEventListener("click", () => { index--; renderCard(); });
+      panel.querySelector(".stepper-next").addEventListener("click", () => { index++; renderCard(); });
+    }
+    renderCard();
+  }
+
   // Bleibt wie "Aufbau & Wirkung" an der Geschichte gespeichert - beim
   // erneuten Öffnen erscheinen offene Vorschläge automatisch wieder, statt
   // nach jedem Verlassen der Seite zu verschwinden.
@@ -955,54 +1025,34 @@
       return;
     }
     const stale = new Date(story.updatedAt) > new Date(check.checkedAt);
-    panel.innerHTML = `
+    const topHtml = `
       <p class="section-label" style="margin-top:20px;">✨ KI-Vorschläge</p>
-      ${stale ? '<div class="ai-suggestion-note" style="margin-bottom:10px;">Die Geschichte wurde seit dieser Prüfung verändert - manche Textstellen werden dadurch eventuell nicht mehr gefunden.</div>' : ""}
-      <div id="aiSuggestionList" class="ai-suggestion-list"></div>`;
+      ${stale ? '<div class="ai-suggestion-note" style="margin-bottom:10px;">Die Geschichte wurde seit dieser Prüfung verändert - manche Textstellen werden dadurch eventuell nicht mehr gefunden.</div>' : ""}`;
+
+    if (!desktop) {
+      renderStepper(
+        panel, topHtml,
+        '<div class="ai-panel-status">✓ Alle Vorschläge bearbeitet.</div>',
+        listItems.slice(),
+        (sug, onResolved) => buildAiSuggestionCard(sug, story, check, editorPage, scheduleSave, onResolved)
+      );
+      return;
+    }
+
+    panel.innerHTML = `${topHtml}<div id="aiSuggestionList" class="ai-suggestion-list"></div>`;
     const list = panel.querySelector("#aiSuggestionList");
 
     function checkEmpty() {
       if (list.children.length === 0) {
-        panel.innerHTML = desktop
-          ? '<div class="ai-panel-status">Siehe die farbigen Marker rechts neben dem Text →</div>'
-          : '<div class="ai-panel-status">✓ Alle Vorschläge bearbeitet.</div>';
+        panel.innerHTML = '<div class="ai-panel-status">Siehe die farbigen Marker rechts neben dem Text →</div>';
       }
     }
 
     listItems.forEach((sug) => {
-      const canApply = !!findExcerptRange(editorPage, sug.excerpt);
-      const card = document.createElement("div");
-      card.className = "ai-suggestion-card";
-      card.innerHTML = aiSuggestionBodyHtml(sug, "ai-opt-" + uid()) + `
-        ${!canApply ? '<div class="ai-suggestion-note">Konnte die Textstelle nicht genau wiederfinden – bitte von Hand anpassen.</div>' : ""}
-        <div class="ai-suggestion-actions">
-          <button class="btn btn-ghost ai-locate-btn" ${canApply ? "" : "disabled"}>→ Zur Stelle springen</button>
-          <button class="btn btn-primary ai-apply-btn" ${canApply ? "" : "disabled"}>Übernehmen</button>
-          <button class="btn btn-ghost ai-dismiss-btn">Ablehnen</button>
-        </div>`;
-
-      card.querySelector(".ai-locate-btn").addEventListener("click", () => {
-        const range = findExcerptRange(editorPage, sug.excerpt);
-        if (range) scrollAndFlashRange(range);
-      });
-      card.querySelector(".ai-apply-btn").addEventListener("click", async () => {
-        const chosen = getSelectedSuggestion(card, sug);
-        if (!replaceExcerptText(editorPage, sug.excerpt, chosen)) return;
-        sug.done = true;
-        await Storage.save(story);
-        scheduleSave();
+      const card = buildAiSuggestionCard(sug, story, check, editorPage, scheduleSave, () => {
         card.remove();
         checkEmpty();
-        setCountBadge(["aiCheckBtn", "aiCheckBtnTop"], check.suggestions.filter(s => !s.done).length);
       });
-      card.querySelector(".ai-dismiss-btn").addEventListener("click", async () => {
-        sug.done = true;
-        await Storage.save(story);
-        card.remove();
-        checkEmpty();
-        setCountBadge(["aiCheckBtn", "aiCheckBtnTop"], check.suggestions.filter(s => !s.done).length);
-      });
-
       list.appendChild(card);
     });
   }
@@ -1059,6 +1109,22 @@
   // Der letzte Aufbau-Check bleibt an der Geschichte selbst gespeichert (nicht
   // im Ideenparkplatz) - beim erneuten Öffnen sieht man wieder, was zuletzt
   // gefunden wurde, bis man einen Punkt einzeln als erledigt markiert.
+  // Baut eine einzelne "Aufbau & Wirkung"-Karte inkl. Verdrahtung - wird
+  // sowohl für die normale Liste (PC) als auch für die Schritt-für-Schritt-
+  // Ansicht (Handy) verwendet.
+  function buildStructureCard(f, story, check, editorPage, scheduleSave, onResolved) {
+    const canLocate = !!(f.excerpt && editorPage && findExcerptRange(editorPage, f.excerpt));
+    const card = document.createElement("div");
+    card.className = "ai-suggestion-card" + (f.positive ? " positive" : "");
+    card.dataset.cat = f.cat;
+    card.innerHTML = structureBodyHtml(f) + structureActionsHtml(f, { canLocate });
+    wireStructureActions(card, f, story, editorPage, scheduleSave, () => {
+      setCountBadge(["structureCheckBtn", "structureCheckBtnTop"], check.findings.filter(x => !x.done).length);
+      onResolved();
+    });
+    return card;
+  }
+
   function renderStructureResults(panel, story, editorPage, scheduleSave, opts) {
     const desktop = !!(opts && opts.desktop);
     const check = story.structureCheck;
@@ -1082,10 +1148,21 @@
     }
 
     const stale = new Date(story.updatedAt) > new Date(check.checkedAt);
-    panel.innerHTML = `
+    const topHtml = `
       <p class="section-label" style="margin-top:20px;">📖 Aufbau & Wirkung</p>
-      ${stale ? '<div class="ai-suggestion-note" style="margin-bottom:10px;">Die Geschichte wurde seit dieser Prüfung verändert - die Anmerkungen könnten nicht mehr ganz aktuell sein.</div>' : ""}
-      <div id="structureList" class="ai-suggestion-list"></div>`;
+      ${stale ? '<div class="ai-suggestion-note" style="margin-bottom:10px;">Die Geschichte wurde seit dieser Prüfung verändert - die Anmerkungen könnten nicht mehr ganz aktuell sein.</div>' : ""}`;
+
+    if (!desktop) {
+      renderStepper(
+        panel, topHtml,
+        '<div class="ai-panel-status">✓ Alle Anmerkungen bearbeitet.</div>',
+        open.slice(),
+        (f, onResolved) => buildStructureCard(f, story, check, editorPage, scheduleSave, onResolved)
+      );
+      return;
+    }
+
+    panel.innerHTML = `${topHtml}<div id="structureList" class="ai-suggestion-list"></div>`;
     const list = panel.querySelector("#structureList");
 
     function checkEmpty() {
@@ -1093,15 +1170,9 @@
     }
 
     open.forEach((f) => {
-      const canLocate = !!(f.excerpt && editorPage && findExcerptRange(editorPage, f.excerpt));
-      const card = document.createElement("div");
-      card.className = "ai-suggestion-card" + (f.positive ? " positive" : "");
-      card.dataset.cat = f.cat;
-      card.innerHTML = structureBodyHtml(f) + structureActionsHtml(f, { canLocate });
-      wireStructureActions(card, f, story, editorPage, scheduleSave, () => {
+      const card = buildStructureCard(f, story, check, editorPage, scheduleSave, () => {
         card.remove();
         checkEmpty();
-        setCountBadge(["structureCheckBtn", "structureCheckBtnTop"], check.findings.filter(x => !x.done).length);
       });
       list.appendChild(card);
     });

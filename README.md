@@ -128,10 +128,12 @@ der sich einer bestimmten Textstelle zuordnen lässt, als kleiner farbiger
 Marker direkt im Rand neben dem Text (Klick öffnet ein Feld mit
 Übernehmen/Ablehnen bzw. Erledigt, ohne den Text-Kontext zu verlassen).
 Auf dem Handy oder im Hochformat (kein Platz für einen Rand) erscheinen
-dieselben Funde stattdessen als Liste unter dem Text, inklusive
-„→ Zur Stelle springen". Allgemeine Anmerkungen ohne konkrete Textstelle
-(z. B. übergreifendes Tempo-Feedback) bleiben immer in der Liste, auch am
-PC.
+dieselben Funde stattdessen einzeln nacheinander (statt einer langen Liste
+zum Durchscrollen), mit Zähler „X von Y" sowie Weiter/Zurück, inklusive
+„→ Zur Stelle springen". Wird ein Punkt übernommen/abgelehnt/als erledigt
+markiert, erscheint automatisch der nächste offene Punkt. Allgemeine
+Anmerkungen ohne konkrete Textstelle (z. B. übergreifendes Tempo-Feedback)
+bleiben immer in der Liste, auch am PC.
 
 ### Kosten im Blick behalten
 

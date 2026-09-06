@@ -1324,6 +1324,31 @@
   }
 
   // ---------- Ideenparkplatz ----------
+  const IDEA_COLORS = ["pine", "clay", "sky", "warn", "danger"];
+
+  // Baut eine Reihe farbiger Kreise zur Auswahl einer Karten-Farbe - "keine"
+  // (grauer Rand, erste Option) ist immer möglich. onChange(color) wird bei
+  // jedem Klick aufgerufen ("" für "keine"); .value liest den aktuellen Stand.
+  function buildColorPicker(container, initial, onChange) {
+    let current = initial || "";
+    function render() {
+      container.innerHTML = ["", ...IDEA_COLORS].map(c => `
+        <button type="button" class="idea-color-swatch${c === current ? " selected" : ""}" data-color="${c}"
+          style="${c ? `background:var(--${c})` : ""}" title="${c ? "" : "Keine Farbe"}"></button>`).join("");
+      container.querySelectorAll(".idea-color-swatch").forEach(btn => {
+        btn.addEventListener("click", () => {
+          current = btn.dataset.color;
+          render();
+          onChange(current);
+        });
+      });
+    }
+    render();
+    return { get value() { return current; } };
+  }
+
+  let newIdeaColorPicker = buildColorPicker(document.getElementById("ideaColorPicker"), "", () => {});
+
   function renderIdeas() {
     const list = document.getElementById("ideaList");
     const sorted = [...ideas].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1336,8 +1361,9 @@
       const card = document.createElement("div");
       card.className = "idea-item";
       card.innerHTML = `
-        <div class="idea-card">
+        <div class="idea-card" data-color="${idea.color || ""}">
           <div class="idea-text-wrap">
+            ${idea.title ? `<div class="idea-title">${escapeHtml(idea.title)}</div>` : ""}
             <div class="text">${escapeHtml(idea.text)}</div>
             <div class="meta">${relativeTime(idea.updatedAt || idea.createdAt)}</div>
           </div>
@@ -1352,18 +1378,24 @@
         card.querySelector(".idea-actions").style.display = "none";
         const textWrap = card.querySelector(".text").parentElement;
         textWrap.innerHTML = `
+          <input type="text" class="idea-title-input idea-edit-title" placeholder="Titel (optional)" value="${escapeAttr(idea.title || "")}">
           <textarea class="idea-textarea idea-edit-textarea" rows="2">${escapeHtml(idea.text)}</textarea>
+          <div class="idea-color-picker idea-edit-color-picker"></div>
           <div style="display:flex;gap:8px;margin-top:8px;">
             <button class="btn btn-primary idea-edit-save">Speichern</button>
             <button class="btn btn-ghost idea-edit-cancel">Abbrechen</button>
           </div>`;
         const editTextarea = textWrap.querySelector(".idea-edit-textarea");
+        const editTitleInput = textWrap.querySelector(".idea-edit-title");
+        const editColorPicker = buildColorPicker(textWrap.querySelector(".idea-edit-color-picker"), idea.color || "", () => {});
         editTextarea.focus();
         editTextarea.setSelectionRange(editTextarea.value.length, editTextarea.value.length);
         textWrap.querySelector(".idea-edit-save").addEventListener("click", async () => {
           const newText = editTextarea.value.trim();
           if (!newText) return;
           idea.text = newText;
+          idea.title = editTitleInput.value.trim();
+          idea.color = editColorPicker.value;
           idea.updatedAt = new Date().toISOString();
           await IdeaStorage.save(idea);
           renderIdeas();
@@ -1413,13 +1445,16 @@
 
   document.getElementById("ideaSaveBtn").addEventListener("click", async () => {
     const textarea = document.getElementById("ideaInput");
+    const titleInput = document.getElementById("ideaTitleInput");
     const text = textarea.value.trim();
     if (!text) return;
     const now = new Date().toISOString();
-    const idea = { id: uid(), text, createdAt: now, updatedAt: now };
+    const idea = { id: uid(), title: titleInput.value.trim(), color: newIdeaColorPicker.value, text, createdAt: now, updatedAt: now };
     ideas.push(idea);
     await IdeaStorage.save(idea);
     textarea.value = "";
+    titleInput.value = "";
+    newIdeaColorPicker = buildColorPicker(document.getElementById("ideaColorPicker"), "", () => {});
     renderIdeas();
     if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
   });
@@ -1823,12 +1858,18 @@
 
     const chaptersHtml = chapters.map(chapter => {
       const storyIds = chapter.storyIds || [];
+      // Der Geschichtentitel erscheint hier nur, wenn ein Kapitel mehrere
+      // Geschichten bündelt (dann braucht man ihn, um sie auseinander zu
+      // halten) - bei genau einer Geschichte pro Kapitel reicht der
+      // Kapiteltitel allein, sonst gäbe es (wie im Cover-Beispiel) dieselbe
+      // Überschrift doppelt.
+      const showStoryTitle = storyIds.length > 1;
       const storiesHtml = storyIds.map(id => {
         const story = stories.find(s => s.id === id);
         if (!story) return "";
         return `
           <div class="preview-story">
-            <h3 class="preview-story-title">${escapeHtml(story.title || "Ohne Titel")}</h3>
+            ${showStoryTitle ? `<h3 class="preview-story-title">${escapeHtml(story.title || "Ohne Titel")}</h3>` : ""}
             <div class="preview-story-content">${story.content || ""}</div>
           </div>`;
       }).join("");
@@ -1843,7 +1884,6 @@
       <button class="btn btn-ghost" id="backToBookDetailBtn" style="margin-bottom:16px;">← Zurück zur Bearbeitung</button>
       <div class="book-preview">
         <div class="preview-titlepage">
-          ${book.cover ? `<img class="preview-cover" src="${book.cover}" alt="">` : ""}
           <h1 class="preview-title">${escapeHtml(book.title || "Ohne Titel")}</h1>
           ${book.subtitle ? `<p class="preview-subtitle">${escapeHtml(book.subtitle)}</p>` : ""}
           ${book.description ? `<p class="preview-description">${escapeHtml(book.description)}</p>` : ""}

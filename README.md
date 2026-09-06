@@ -135,6 +135,21 @@ markiert, erscheint automatisch der nächste offene Punkt. Allgemeine
 Anmerkungen ohne konkrete Textstelle (z. B. übergreifendes Tempo-Feedback)
 bleiben immer in der Liste, auch am PC.
 
+### Ideenparkplatz
+
+Jede Idee kann optional einen Titel und eine Farbe bekommen (als farbiger
+Rand auf der Karte) - hilfreich, um bei vielen Ideen den Überblick zu
+behalten, z. B. nach Geschichte oder Thema sortiert per Farbe.
+
+### Bücher
+
+Das Cover dient nur der Übersicht (Bücher-Liste und -Bearbeitung) und
+erscheint nicht in „Vorschau ansehen" - das eigentliche Layout kommt erst
+mit den Layoutvorlagen in Phase 6. Der Titel jeder einzelnen Geschichte
+erscheint in der Vorschau nur, wenn ein Kapitel mehrere Geschichten bündelt
+(zum Auseinanderhalten) - bei einem Kapitel mit nur einer Geschichte reicht
+der Kapiteltitel allein, ohne doppelte Überschrift.
+
 ### Kosten im Blick behalten
 
 Die App selbst, Hosting, Speicherung und Google-Drive-Sync sind komplett

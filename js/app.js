@@ -1392,6 +1392,64 @@
     (picker) => { newIdeaColorPicker = picker; }
   );
 
+  // Diktier-Button neben einem Ideen-Textfeld: nutzt die im Browser
+  // eingebaute Spracherkennung (Web Speech API) - keine KI-Anfrage, keine
+  // Kosten. Läuft nicht in jedem Browser (v. a. nicht in Firefox) - der
+  // Button verschwindet dann einfach, Tippen geht immer weiter. Der
+  // erkannte Text bleibt danach ganz normal bearbeitbar, bevor man
+  // speichert - genau wie manuell eingetippter Text.
+  function attachDictation(button, textarea) {
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) { button.hidden = true; return; }
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = "de-DE";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let listening = false;
+    let baseText = "";
+    let finalText = "";
+
+    function stopUi() {
+      listening = false;
+      button.classList.remove("recording");
+      button.textContent = "🎤";
+      button.title = "Diktieren";
+    }
+
+    recognition.addEventListener("result", (event) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalText += transcript;
+        else interim += transcript;
+      }
+      textarea.value = [baseText, finalText, interim].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    });
+    recognition.addEventListener("end", stopUi);
+    recognition.addEventListener("error", (event) => {
+      stopUi();
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        showAlert("Der Zugriff aufs Mikrofon wurde nicht erlaubt. Bitte in den Browser-/Website-Einstellungen freigeben, falls du diktieren möchtest.");
+      }
+    });
+
+    button.addEventListener("click", () => {
+      if (listening) { recognition.stop(); return; }
+      baseText = textarea.value.trim();
+      finalText = "";
+      listening = true;
+      button.classList.add("recording");
+      button.textContent = "⏹";
+      button.title = "Aufnahme stoppen";
+      try { recognition.start(); }
+      catch (e) { stopUi(); }
+    });
+  }
+
+  attachDictation(document.getElementById("ideaMicBtn"), document.getElementById("ideaInput"));
+
   function renderIdeas() {
     const list = document.getElementById("ideaList");
     const sorted = [...ideas].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1423,7 +1481,10 @@
         textWrap.innerHTML = `
           ${ideaCategoryPickerHtml()}
           <input type="text" class="idea-title-input idea-edit-title" placeholder="Titel (optional)" value="${escapeAttr(idea.title || "")}">
-          <textarea class="idea-textarea idea-edit-textarea" rows="2">${escapeHtml(idea.text)}</textarea>
+          <div class="idea-textarea-wrap">
+            <textarea class="idea-textarea idea-edit-textarea" rows="2">${escapeHtml(idea.text)}</textarea>
+            <button type="button" class="idea-mic-btn idea-edit-mic" title="Diktieren" aria-label="Diktieren">🎤</button>
+          </div>
           <div class="idea-color-picker idea-edit-color-picker"></div>
           <div style="display:flex;gap:8px;margin-top:8px;">
             <button class="btn btn-primary idea-edit-save">Speichern</button>
@@ -1438,6 +1499,7 @@
           textWrap.querySelector(".idea-edit-color-picker"),
           (picker) => { editColorPicker = picker; }
         );
+        attachDictation(textWrap.querySelector(".idea-edit-mic"), editTextarea);
         editTextarea.focus();
         editTextarea.setSelectionRange(editTextarea.value.length, editTextarea.value.length);
         textWrap.querySelector(".idea-edit-save").addEventListener("click", async () => {

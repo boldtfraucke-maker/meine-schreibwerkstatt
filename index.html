@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=47">
+<link rel="stylesheet" href="css/style.css?v=48">
 </head>
 <body>
 <div id="app">
@@ -80,7 +80,10 @@
       <div class="idea-input-row">
         <div class="idea-input-main">
           <input type="text" id="ideaTitleInput" class="idea-title-input" placeholder="Titel (optional)" autocomplete="off">
-          <textarea id="ideaInput" class="idea-textarea" placeholder="Kurzer Gedanke, ein Satz, eine Beobachtung beim Spaziergang …" rows="2"></textarea>
+          <div class="idea-textarea-wrap">
+            <textarea id="ideaInput" class="idea-textarea" placeholder="Kurzer Gedanke, ein Satz, eine Beobachtung beim Spaziergang …" rows="2"></textarea>
+            <button type="button" class="idea-mic-btn" id="ideaMicBtn" title="Diktieren" aria-label="Diktieren">🎤</button>
+          </div>
           <div class="idea-color-picker" id="ideaColorPicker"></div>
         </div>
         <button class="btn btn-primary" id="ideaSaveBtn">+ Idee speichern</button>
@@ -164,9 +167,9 @@
   </div>
 </div>
 
-<script src="js/storage.js?v=47"></script>
-<script src="js/drive-sync.js?v=47"></script>
-<script src="js/ai-provider.js?v=47"></script>
-<script src="js/app.js?v=47"></script>
+<script src="js/storage.js?v=48"></script>
+<script src="js/drive-sync.js?v=48"></script>
+<script src="js/ai-provider.js?v=48"></script>
+<script src="js/app.js?v=48"></script>
 </body>
 </html>

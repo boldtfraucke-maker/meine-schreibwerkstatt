@@ -147,6 +147,14 @@ weiterschreiben oder ergänzen. Wer lieber eine eigene Kategorie möchte,
 tippt einfach einen eigenen Titel und wählt eine Farbe - die Vorschläge
 sind nur eine Abkürzung, keine Einschränkung.
 
+Ein Mikrofon-Knopf am Ideen-Textfeld erlaubt Diktieren statt Tippen -
+unterwegs praktisch. Das läuft komplett über eine im Browser eingebaute
+Funktion (Web Speech API), ganz ohne Anthropic-Anfrage und ohne
+zusätzliche Kosten. Funktioniert auf Android (Chrome) und iPhone (Safari),
+nicht im Firefox-Browser - dort fehlt der Knopf einfach, Tippen geht immer.
+Der diktierte Text bleibt danach ganz normal bearbeitbar, bevor man
+speichert.
+
 ### Bücher
 
 Das Cover dient nur der Übersicht (Bücher-Liste und -Bearbeitung) und

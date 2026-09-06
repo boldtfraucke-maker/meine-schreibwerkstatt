@@ -321,6 +321,7 @@
       } else {
         const f = item.data;
         pop.classList.toggle("positive", !!f.positive);
+        pop.dataset.cat = f.cat;
         pop.innerHTML = structureBodyHtml(f) + structureActionsHtml(f);
         wireStructureActions(pop, f, story, editorPage, scheduleSave, () => {
           closeMarkerPopover();
@@ -1324,7 +1325,42 @@
   }
 
   // ---------- Ideenparkplatz ----------
-  const IDEA_COLORS = ["pine", "clay", "sky", "warn", "danger"];
+  const IDEA_COLORS = ["yellow", "orange", "violet", "blue", "green"];
+
+  // Fest eingepflegte Kategorie-Vorschläge als Schnellauswahl - klickt man
+  // eine an, wird nur Titel und Farbe im bestehenden Formular vorausgefüllt
+  // (keine eigene Datenstruktur nötig). Wer eine andere/weitere Kategorie
+  // möchte, tippt einfach einen eigenen Titel und wählt eine Farbe - das
+  // bleibt weiterhin frei möglich, die Vorschläge sind nur eine Abkürzung.
+  const IDEA_CATEGORY_PRESETS = [
+    { label: "Blitzgedanke", icon: "💡", color: "yellow" },
+    { label: "Cooler Satz", icon: "💬", color: "orange" },
+    { label: "Metaphern", icon: "🌉", color: "violet" },
+    { label: "Bildsprache", icon: "🖼️", color: "blue" },
+    { label: "Emotionen & Bewegung", icon: "💓", color: "green" }
+  ];
+
+  function ideaCategoryPickerHtml() {
+    return `<div class="idea-category-picker">${IDEA_CATEGORY_PRESETS.map((p, i) => `
+      <button type="button" class="idea-category-chip" data-preset="${i}">
+        <span class="swatch" style="background:var(--idea-${p.color})"></span>${p.icon} ${escapeHtml(p.label)}
+      </button>`).join("")}</div>`;
+  }
+
+  // Wendet einen Kategorie-Vorschlag auf Titel-Feld + Farbauswahl an. Da
+  // buildColorPicker() bei jedem Aufruf eine neue Instanz erzeugt (das
+  // Container-innerHTML wird neu aufgebaut), meldet setColorPicker die neue
+  // Instanz an den Aufrufer zurück (newIdeaColorPicker bzw. die lokale
+  // Variable im Bearbeiten-Formular).
+  function wireCategoryPresets(container, titleInput, colorContainer, setColorPicker) {
+    container.querySelectorAll(".idea-category-chip").forEach((btn, i) => {
+      btn.addEventListener("click", () => {
+        const preset = IDEA_CATEGORY_PRESETS[i];
+        titleInput.value = `${preset.icon} ${preset.label}`;
+        setColorPicker(buildColorPicker(colorContainer, preset.color, () => {}));
+      });
+    });
+  }
 
   // Baut eine Reihe farbiger Kreise zur Auswahl einer Karten-Farbe - "keine"
   // (grauer Rand, erste Option) ist immer möglich. onChange(color) wird bei
@@ -1334,7 +1370,7 @@
     function render() {
       container.innerHTML = ["", ...IDEA_COLORS].map(c => `
         <button type="button" class="idea-color-swatch${c === current ? " selected" : ""}" data-color="${c}"
-          style="${c ? `background:var(--${c})` : ""}" title="${c ? "" : "Keine Farbe"}"></button>`).join("");
+          style="${c ? `background:var(--idea-${c})` : ""}" title="${c ? "" : "Keine Farbe"}"></button>`).join("");
       container.querySelectorAll(".idea-color-swatch").forEach(btn => {
         btn.addEventListener("click", () => {
           current = btn.dataset.color;
@@ -1348,6 +1384,13 @@
   }
 
   let newIdeaColorPicker = buildColorPicker(document.getElementById("ideaColorPicker"), "", () => {});
+  document.getElementById("ideaCategoryPicker").innerHTML = ideaCategoryPickerHtml();
+  wireCategoryPresets(
+    document.getElementById("ideaCategoryPicker"),
+    document.getElementById("ideaTitleInput"),
+    document.getElementById("ideaColorPicker"),
+    (picker) => { newIdeaColorPicker = picker; }
+  );
 
   function renderIdeas() {
     const list = document.getElementById("ideaList");
@@ -1378,6 +1421,7 @@
         card.querySelector(".idea-actions").style.display = "none";
         const textWrap = card.querySelector(".text").parentElement;
         textWrap.innerHTML = `
+          ${ideaCategoryPickerHtml()}
           <input type="text" class="idea-title-input idea-edit-title" placeholder="Titel (optional)" value="${escapeAttr(idea.title || "")}">
           <textarea class="idea-textarea idea-edit-textarea" rows="2">${escapeHtml(idea.text)}</textarea>
           <div class="idea-color-picker idea-edit-color-picker"></div>
@@ -1387,7 +1431,13 @@
           </div>`;
         const editTextarea = textWrap.querySelector(".idea-edit-textarea");
         const editTitleInput = textWrap.querySelector(".idea-edit-title");
-        const editColorPicker = buildColorPicker(textWrap.querySelector(".idea-edit-color-picker"), idea.color || "", () => {});
+        let editColorPicker = buildColorPicker(textWrap.querySelector(".idea-edit-color-picker"), idea.color || "", () => {});
+        wireCategoryPresets(
+          textWrap.querySelector(".idea-category-picker"),
+          editTitleInput,
+          textWrap.querySelector(".idea-edit-color-picker"),
+          (picker) => { editColorPicker = picker; }
+        );
         editTextarea.focus();
         editTextarea.setSelectionRange(editTextarea.value.length, editTextarea.value.length);
         textWrap.querySelector(".idea-edit-save").addEventListener("click", async () => {

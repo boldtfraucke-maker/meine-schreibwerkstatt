@@ -15,6 +15,11 @@
   --danger: #A8442F;
   --warn: #C08A2E;
   --positive: #2E7D46;
+  --idea-yellow: #F0C24B;
+  --idea-orange: #F0925C;
+  --idea-violet: #B48DD1;
+  --idea-blue: #6FB2DE;
+  --idea-green: #7CC08A;
   --shadow: rgba(43, 38, 32, 0.08);
   --focus: #5D7E8F;
 }
@@ -36,6 +41,11 @@
     --danger: #E28A73;
     --warn: #D9A94F;
     --positive: #6FCB8E;
+    --idea-yellow: #F0C24B;
+    --idea-orange: #F0925C;
+    --idea-violet: #C3A1DE;
+    --idea-blue: #7FC0E8;
+    --idea-green: #8ACC97;
     --shadow: rgba(0, 0, 0, 0.35);
     --focus: #8FB2C2;
   }
@@ -57,6 +67,11 @@
   --danger: #E28A73;
   --warn: #D9A94F;
   --positive: #6FCB8E;
+  --idea-yellow: #F0C24B;
+  --idea-orange: #F0925C;
+  --idea-violet: #C3A1DE;
+  --idea-blue: #7FC0E8;
+  --idea-green: #8ACC97;
   --shadow: rgba(0, 0, 0, 0.35);
   --focus: #8FB2C2;
 }
@@ -396,12 +411,12 @@ select.status-select {
 }
 .margin-marker:hover { box-shadow: 0 0 0 2px var(--ink-faint); }
 .margin-marker.cat-korrektorat { background: var(--ink-faint); }
-.margin-marker.cat-lektorat { background: var(--warn); }
-.margin-marker.cat-makro { background: var(--pine); }
-.margin-marker.cat-szene { background: var(--clay); }
-.margin-marker.cat-mikro { background: var(--sky); }
+.margin-marker.cat-lektorat { background: var(--idea-yellow); }
+.margin-marker.cat-makro { background: var(--idea-green); }
+.margin-marker.cat-szene { background: var(--idea-orange); }
+.margin-marker.cat-mikro { background: var(--idea-blue); }
 .margin-marker.cat-stil { background: var(--danger); }
-.margin-marker.cat-positive { background: var(--pine); }
+.margin-marker.cat-positive { background: var(--positive); }
 
 .marker-popover {
   position: fixed;
@@ -415,8 +430,18 @@ select.status-select {
   box-shadow: 0 8px 28px rgba(27, 25, 18, 0.18);
 }
 .marker-popover[hidden] { display: none; }
-.marker-popover.positive { border-left: 6px solid var(--pine); }
-.marker-popover.positive .ai-suggestion-type { color: var(--pine); }
+.marker-popover[data-cat="makro"] { border-left: 6px solid var(--idea-green); }
+.marker-popover[data-cat="makro"] .ai-suggestion-type { color: var(--pine); }
+.marker-popover[data-cat="szene"] { border-left: 6px solid var(--idea-orange); }
+.marker-popover[data-cat="szene"] .ai-suggestion-type { color: var(--clay); }
+.marker-popover[data-cat="mikro"] { border-left: 6px solid var(--idea-blue); }
+.marker-popover[data-cat="mikro"] .ai-suggestion-type { color: var(--sky); }
+.marker-popover[data-cat="stil"] { border-left: 6px solid var(--danger); }
+.marker-popover[data-cat="stil"] .ai-suggestion-type { color: var(--danger); }
+/* Reihenfolge bewusst nach den Kategorie-Regeln, damit reines Lob (grün) bei
+   gleicher Spezifität gewinnt, auch wenn die Kategorie z. B. "szene" ist. */
+.marker-popover.positive { border-left: 6px solid var(--positive); }
+.marker-popover.positive .ai-suggestion-type { color: var(--positive); }
 .marker-popover.positive .ai-suggestion-type::before { content: "✓ "; }
 
 .editor-page {
@@ -504,12 +529,28 @@ select.status-select {
   border-radius: 12px;
   padding: 14px 18px;
 }
-.idea-card[data-color="pine"] { border-left-color: var(--pine); }
-.idea-card[data-color="clay"] { border-left-color: var(--clay); }
-.idea-card[data-color="sky"] { border-left-color: var(--sky); }
-.idea-card[data-color="warn"] { border-left-color: var(--warn); }
-.idea-card[data-color="danger"] { border-left-color: var(--danger); }
+.idea-card[data-color="yellow"] { border-left-color: var(--idea-yellow); }
+.idea-card[data-color="orange"] { border-left-color: var(--idea-orange); }
+.idea-card[data-color="violet"] { border-left-color: var(--idea-violet); }
+.idea-card[data-color="blue"] { border-left-color: var(--idea-blue); }
+.idea-card[data-color="green"] { border-left-color: var(--idea-green); }
 .idea-card .idea-title { font-weight: 600; margin-bottom: 4px; }
+.idea-category-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.idea-category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.idea-category-chip:hover { border-color: var(--ink-faint); }
+.idea-category-chip .swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 .idea-card .text { white-space: pre-wrap; line-height: 1.5; }
 .idea-card .idea-edit-textarea { width: 100%; box-sizing: border-box; }
 .idea-card .meta { font-size: 0.76rem; color: var(--ink-faint); margin-top: 6px; }
@@ -677,19 +718,19 @@ select.status-select {
 }
 .ai-suggestion-card[data-cat] { border-left-width: 6px; }
 .ai-suggestion-card[data-cat] .ai-suggestion-type::before { content: "●"; margin-right: 7px; font-size: 0.9em; }
-.ai-suggestion-card[data-cat="makro"] { border-left-color: var(--pine); }
+.ai-suggestion-card[data-cat="makro"] { border-left-color: var(--idea-green); }
 .ai-suggestion-card[data-cat="makro"] .ai-suggestion-type { color: var(--pine); }
-.ai-suggestion-card[data-cat="szene"] { border-left-color: var(--clay); }
+.ai-suggestion-card[data-cat="szene"] { border-left-color: var(--idea-orange); }
 .ai-suggestion-card[data-cat="szene"] .ai-suggestion-type { color: var(--clay); }
-.ai-suggestion-card[data-cat="mikro"] { border-left-color: var(--sky); }
+.ai-suggestion-card[data-cat="mikro"] { border-left-color: var(--idea-blue); }
 .ai-suggestion-card[data-cat="mikro"] .ai-suggestion-type { color: var(--sky); }
 .ai-suggestion-card[data-cat="stil"] { border-left-color: var(--danger); }
 .ai-suggestion-card[data-cat="stil"] .ai-suggestion-type { color: var(--danger); }
 /* Lob ohne Handlungsbedarf sticht per Grün hervor, unabhängig von der
    sonstigen Kategorie-Farbe - Reihenfolge nach den Kategorie-Regeln, damit
    es bei gleicher Spezifität gewinnt. */
-.ai-suggestion-card.positive { border-left-color: var(--pine); }
-.ai-suggestion-card.positive .ai-suggestion-type { color: var(--pine); }
+.ai-suggestion-card.positive { border-left-color: var(--positive); }
+.ai-suggestion-card.positive .ai-suggestion-type { color: var(--positive); }
 .ai-suggestion-card.positive .ai-suggestion-type::before { content: "✓"; }
 .ai-suggestion-type {
   display: inline-block;

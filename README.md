@@ -139,7 +139,13 @@ bleiben immer in der Liste, auch am PC.
 
 Jede Idee kann optional einen Titel und eine Farbe bekommen (als farbiger
 Rand auf der Karte) - hilfreich, um bei vielen Ideen den Überblick zu
-behalten, z. B. nach Geschichte oder Thema sortiert per Farbe.
+behalten, z. B. nach Geschichte oder Thema sortiert per Farbe. Fünf fest
+eingepflegte Kategorien (Blitzgedanke, Cooler Satz, Metaphern, Bildsprache,
+Emotionen & Bewegung) stehen als Ein-Klick-Vorschläge bereit und füllen
+Titel und Farbe automatisch aus - man kann den Titel danach trotzdem frei
+weiterschreiben oder ergänzen. Wer lieber eine eigene Kategorie möchte,
+tippt einfach einen eigenen Titel und wählt eine Farbe - die Vorschläge
+sind nur eine Abkürzung, keine Einschränkung.
 
 ### Bücher
 

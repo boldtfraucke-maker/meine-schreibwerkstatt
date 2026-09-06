@@ -665,7 +665,10 @@ select.status-select {
   margin-bottom: 6px;
 }
 .ai-suggestion-excerpt { font-size: 0.92rem; color: var(--ink-soft); font-style: italic; margin-bottom: 4px; }
-.ai-suggestion-arrow { font-size: 0.95rem; margin-bottom: 8px; }
+.ai-suggestion-excerpt.is-problem { color: var(--danger); font-style: normal; }
+.ai-suggestion-arrow { font-size: 0.95rem; margin-bottom: 8px; color: var(--pine); font-weight: 500; }
+.quote-flag { color: var(--danger); font-weight: 600; }
+.quote-flag.quote-flag-positive { color: var(--pine); }
 .ai-suggestion-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .ai-suggestion-option {
   display: flex;

@@ -109,9 +109,11 @@ sonstigen Kategorie-Farbe - so ist auf einen Blick klar, wo nichts zu tun
 ist. Das passiert nur, wenn der KI wirklich etwas Positives auffällt, nicht
 als Pflicht-Kommentar für jede Kategorie.
 
-In der Begründung zitierte Textstellen (in Anführungszeichen) werden fett
-hervorgehoben, damit man auf einen Blick erkennt, welcher Satz konkret
-gemeint ist - das gilt sowohl für KI-Vorschläge als auch für Aufbau &
+Bei Handlungsbedarf zeigt die Karte die betroffene Original-Textstelle in
+Rot und den Formulierungsvorschlag (die "→ ..."-Zeile) in Grün an - wie ein
+Vorher/Nachher auf einen Blick. In der Begründung zitierte Textstellen
+werden ebenfalls farbig hervorgehoben (rot bei Handlungsbedarf, grün bei
+reinem Lob). Das gilt sowohl für KI-Vorschläge als auch für Aufbau &
 Wirkung.
 
 Offene Punkte aus beiden Funktionen (KI-Vorschläge und Aufbau & Wirkung)

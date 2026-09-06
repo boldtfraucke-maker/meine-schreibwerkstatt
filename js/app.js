@@ -65,14 +65,17 @@
   function escapeAttr(str) { return escapeHtml(str); }
 
   // Hebt in einem bereits escapten Text zitierte Wortgruppen (in
-  // Anführungszeichen) fett hervor, damit man in einer Begründung leichter
-  // erkennt, welche Textstelle konkret gemeint ist. Arbeitet bewusst auf dem
-  // schon escapten String (kein XSS-Risiko), deshalb auch die escapten
-  // Formen gerader Anführungszeichen (&quot;/&#39;) mit berücksichtigen.
-  function highlightQuotedPhrases(escapedText) {
+  // Anführungszeichen) farbig hervor, damit man in einer Begründung leichter
+  // erkennt, welche Textstelle konkret gemeint ist - rot bei Handlungsbedarf,
+  // grün bei reinem Lob (sonst wirkt eine rote Hervorhebung in einer
+  // positiven Karte widersprüchlich). Arbeitet bewusst auf dem schon
+  // escapten String (kein XSS-Risiko), deshalb auch die escapten Formen
+  // gerader Anführungszeichen (&quot;/&#39;) mit berücksichtigen.
+  function highlightQuotedPhrases(escapedText, positive) {
+    const cls = positive ? "quote-flag quote-flag-positive" : "quote-flag";
     return escapedText.replace(
       /(&quot;|&#39;|„|")([^&"'„“”]{2,}?)(&quot;|&#39;|"|“|”)/g,
-      (m, open, inner, close) => `${open}<strong>${inner}</strong>${close}`
+      (m, open, inner, close) => `${open}<span class="${cls}">${inner}</span>${close}`
     );
   }
   function textToHtml(text) {
@@ -799,7 +802,7 @@
       : `<div class="ai-suggestion-arrow">→ ${escapeHtml(sug.suggestions[0])}</div>`;
     return `
       <div class="ai-suggestion-type">${escapeHtml(AI_TYPE_LABELS[sug.type] || "Vorschlag")}</div>
-      <div class="ai-suggestion-excerpt">„${escapeHtml(sug.excerpt)}"</div>
+      <div class="ai-suggestion-excerpt is-problem">„${escapeHtml(sug.excerpt)}"</div>
       ${options}
       <div class="ai-suggestion-reason"><strong>Warum?</strong> ${highlightQuotedPhrases(escapeHtml(sug.reason))}</div>`;
   }
@@ -811,12 +814,20 @@
   }
 
   function structureBodyHtml(f) {
+    // Zeigt bei Handlungsbedarf die Original-Textstelle rot als eigene Zeile,
+    // damit "Problem" (rot) und "Vorschlag" (grün, siehe .ai-suggestion-arrow)
+    // wie ein Vorher/Nachher nebeneinanderstehen, statt sich in der
+    // Fließtext-Begründung zu verstecken.
+    const excerptLine = f.excerpt
+      ? `<div class="ai-suggestion-excerpt${f.positive ? "" : " is-problem"}">„${escapeHtml(f.excerpt)}"</div>`
+      : "";
     const suggestionPreview = (!f.positive && f.suggestion)
       ? `<div class="ai-suggestion-arrow">→ ${escapeHtml(f.suggestion)}</div>`
       : "";
     return `
       <div class="ai-suggestion-type">${escapeHtml(f.label)}</div>
-      <div class="ai-suggestion-reason">${highlightQuotedPhrases(escapeHtml(f.text))}</div>
+      ${excerptLine}
+      <div class="ai-suggestion-reason">${highlightQuotedPhrases(escapeHtml(f.text), f.positive)}</div>
       ${suggestionPreview}`;
   }
 

@@ -1718,6 +1718,7 @@
     document.getElementById("newBookBtn").addEventListener("click", async () => {
       const book = {
         id: uid(), title: "", subtitle: "", description: "", cover: "", chapters: [],
+        printProvider: "", printFormat: "",
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       };
       books.push(book);
@@ -1732,6 +1733,59 @@
       "Neue oder seit dem letzten Mal geänderte Geschichten kosten beim Prüfen eine Kleinigkeit; unveränderte Geschichten werden beim nächsten Mal wiederverwendet und kosten dann nichts mehr. " +
       "Am besten hin und wieder nutzen, z. B. bevor du ein Buch zusammenstellst - nicht nach jeder einzelnen Geschichte."
     ));
+  }
+
+  // ---------- Phase 6: Für den Druck (nur am PC, siehe CSS) ----------
+  // Nur Formate, deren Maße wir bei den jeweiligen Anbietern direkt bestätigt
+  // gefunden haben (Stand: eigene Recherche 2026) - bewusst keine geschätzten
+  // oder aus anderen Quellen übernommenen Werte, weil ein falsches Maß bei
+  // einer echten Druckbestellung teuer werden kann. Bei epubli und BoD sind
+  // die veröffentlichten Rand-/Beschnittwerte lückenhaft (epubli: kein
+  // öffentlicher Beschnitt-Wert gefunden; BoD: keine öffentlichen
+  // Rand-Werte) - "bleedMm: null" markiert das, die Autorin sollte vor einer
+  // echten Bestellung trotzdem einmal die eigene Vorlage des Anbieters
+  // gegenchecken.
+  const PRINT_PROVIDERS = {
+    kdp: {
+      label: "Amazon KDP",
+      bleedMm: 3.2,
+      formats: [
+        { key: "5x8", label: "12,7 × 20,3 cm (5″ × 8″)", widthMm: 127, heightMm: 203 },
+        { key: "5.25x8", label: "13,3 × 20,3 cm (5,25″ × 8″)", widthMm: 133, heightMm: 203 },
+        { key: "5.5x8.5", label: "14 × 21,6 cm (5,5″ × 8,5″)", widthMm: 140, heightMm: 216 },
+        { key: "6x9", label: "15,2 × 22,9 cm (6″ × 9″ – beliebtestes Format)", widthMm: 152, heightMm: 229 }
+      ]
+    },
+    epubli: {
+      label: "epubli",
+      bleedMm: null,
+      formats: [
+        { key: "taschenbuch", label: "12,5 × 19 cm (Taschenbuch)", widthMm: 125, heightMm: 190 },
+        { key: "a5", label: "14,8 × 21 cm (DIN A5)", widthMm: 148, heightMm: 210 },
+        { key: "sachbuch", label: "13,5 × 20,5 cm (Sachbuch)", widthMm: 135, heightMm: 205 }
+      ]
+    },
+    bod: {
+      label: "BoD (Books on Demand)",
+      bleedMm: 5,
+      formats: [
+        { key: "12x19", label: "12 × 19 cm (Taschenbuch)", widthMm: 120, heightMm: 190 }
+      ]
+    }
+  };
+
+  function populatePrintFormatSelect(providerKey, selectedFormatKey) {
+    const formatSelect = document.getElementById("printFormatSelect");
+    const provider = PRINT_PROVIDERS[providerKey];
+    if (!provider) {
+      formatSelect.innerHTML = '<option value="">– erst Anbieter wählen –</option>';
+      formatSelect.disabled = true;
+      return;
+    }
+    formatSelect.disabled = false;
+    formatSelect.innerHTML = provider.formats
+      .map(f => `<option value="${escapeAttr(f.key)}" ${f.key === selectedFormatKey ? "selected" : ""}>${escapeHtml(f.label)}</option>`)
+      .join("");
   }
 
   function renderBookDetail(book) {
@@ -1762,6 +1816,23 @@
         <div class="stat-card"><div class="num">${stats.percent}%</div><div class="label">fertig</div></div>
       </div>
 
+      <div class="book-print-settings" id="bookPrintSettings">
+        <p class="section-label" style="margin-top:0;">Für den Druck (nur am PC)</p>
+        <div class="print-settings-row">
+          <div class="settings-field">
+            <label for="printProviderSelect">Anbieter</label>
+            <select id="printProviderSelect">
+              <option value="">– wählen –</option>
+              ${Object.entries(PRINT_PROVIDERS).map(([key, p]) => `<option value="${key}" ${key === book.printProvider ? "selected" : ""}>${escapeHtml(p.label)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="settings-field">
+            <label for="printFormatSelect">Format</label>
+            <select id="printFormatSelect"><option value="">– erst Anbieter wählen –</option></select>
+          </div>
+        </div>
+      </div>
+
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <p class="section-label" style="margin:0;">Kapitel</p>
         <div class="btn-with-info">
@@ -1779,6 +1850,18 @@
 
     document.getElementById("backToBooksBtn").addEventListener("click", () => { activeBookId = null; renderBookList(); });
     document.getElementById("previewBookBtn").addEventListener("click", () => renderBookPreview(book));
+
+    populatePrintFormatSelect(book.printProvider, book.printFormat);
+    document.getElementById("printProviderSelect").addEventListener("change", (e) => {
+      book.printProvider = e.target.value;
+      book.printFormat = "";
+      populatePrintFormatSelect(book.printProvider, "");
+      scheduleBookSave(book);
+    });
+    document.getElementById("printFormatSelect").addEventListener("change", (e) => {
+      book.printFormat = e.target.value;
+      scheduleBookSave(book);
+    });
 
     const titleInput = document.getElementById("bookTitleInput");
     const subtitleInput = document.getElementById("bookSubtitleInput");

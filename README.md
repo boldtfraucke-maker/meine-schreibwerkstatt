@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) läuft, Stufe 1 (Anbieter & Format wählen) ist umgesetzt.
 
 ## Lokal testen
 
@@ -171,6 +171,30 @@ mit den Layoutvorlagen in Phase 6. Der Titel jeder einzelnen Geschichte
 erscheint in der Vorschau nur, wenn ein Kapitel mehrere Geschichten bündelt
 (zum Auseinanderhalten) - bei einem Kapitel mit nur einer Geschichte reicht
 der Kapiteltitel allein, ohne doppelte Überschrift.
+
+### Phase 6: Für den Druck (nur am PC)
+
+In der Buch-Bearbeitung lässt sich (nur am PC/Tablet-quer, ab 821px Breite -
+die Funktion wird auf dem Handy bewusst nicht angeboten) ein POD-Anbieter
+und dazu ein Seitenformat wählen. Enthalten sind ausschließlich Formate,
+deren Maße direkt beim jeweiligen Anbieter bestätigt gefunden wurden (Stand
+der Recherche: September 2026) - keine geschätzten oder von anderen
+Anbietern übernommenen Werte, weil ein falsches Maß bei einer echten
+Druckbestellung teuer werden kann:
+
+- **Amazon KDP:** 12,7×20,3 cm, 13,3×20,3 cm, 14×21,6 cm, 15,2×22,9 cm
+  (6″×9″, beliebtestes Format) - Beschnitt 3,2 mm.
+- **epubli:** 12,5×19 cm (Taschenbuch), 14,8×21 cm (A5), 13,5×20,5 cm
+  (Sachbuch) - kein öffentlicher Beschnitt-Wert gefunden.
+- **BoD:** 12×19 cm (Taschenbuch) - Beschnitt 5 mm.
+
+tredition bietet aktuell keine öffentlich gelistete feste Formatauswahl
+(freie Formatwahl bis DIN A4) und ist deshalb noch nicht enthalten. Bei
+epubli und BoD fehlen öffentliche Rand-/Beschnittangaben für einzelne
+Werte - vor einer echten Bestellung lohnt sich ein Blick in die jeweils
+aktuelle Vorlage des Anbieters. Anbieter und Format bleiben am Buch
+gespeichert; weitere Schritte (Druck-Layout, Titelei, Seitenzahlen,
+PDF-Export, Cover-Download) folgen.
 
 ### Kosten im Blick behalten
 

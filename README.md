@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) läuft, Stufe 1 (Anbieter & Format wählen) ist umgesetzt.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download.
 
 ## Lokal testen
 
@@ -205,9 +205,8 @@ aber nicht offiziell bestätigter Platzhalter, mit deutlichem Hinweis in
 der Vorschau. Die Seitengröße nutzt bewusst das reine Trimm-Maß ohne
 Beschnittzugabe (relevant nur bei randabfallenden Bildern, die es aktuell
 nicht gibt). Die Bildschirm-Vorschau zeigt eine vereinfachte Einzelseite;
-beim echten Drucken/PDF-Export (Browser-Druckfunktion, kommt in einem
-späteren Schritt) wechselt der Bundsteg über `@page :left`/`:right`
-korrekt zwischen linker und rechter Seite.
+beim echten Drucken/PDF-Export wechselt der Bundsteg über
+`@page :left`/`:right` korrekt zwischen linker und rechter Seite.
 
 Zusätzlich lassen sich Autor/in und ein Impressum-/Copyright-Text
 hinterlegen (beide optional). Die Titelseite zeigt Titel, Untertitel und
@@ -224,8 +223,16 @@ Bildschirm-Vorschau zeigt (wie schon erwähnt) nur eine vereinfachte
 Einzelseite ohne Seitenumbrüche und damit auch ohne sichtbare
 Seitenzahlen - das lässt sich aber schon jetzt im Browser-Druckdialog
 (Strg+P, danach „Abbrechen") mit echter Seitenaufteilung prüfen, ganz
-ohne etwas zu drucken oder zu speichern. Weitere Schritte
-(PDF-Export-Knopf, Cover-Download) folgen.
+ohne etwas zu drucken oder zu speichern.
+
+Bei gewähltem Format erscheint in der Vorschau der Knopf „🖨️ Drucken /
+Als PDF speichern" - öffnet den Browser-Druckdialog, dort lässt sich
+„Als PDF speichern" wählen. Das Cover lässt sich unabhängig davon über
+„⬇️ Cover herunterladen" (in der Buch-Bearbeitung, nur am PC, sobald ein
+Cover hochgeladen ist) als eigene Bilddatei herunterladen - in der
+tatsächlich hochgeladenen Auflösung, ohne Qualitätsverlust, und getrennt
+von der Innentext-Datei, weil der Umschlag beim Anbieter ohnehin separat
+hochgeladen wird.
 
 ### Kosten im Blick behalten
 

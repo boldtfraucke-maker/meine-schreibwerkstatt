@@ -685,8 +685,10 @@ select.status-select {
 /* Phase 6 (Für den Druck) ist bewusst nur am PC nutzbar - die Funktion
    wird auf dem Handy nicht angeboten. */
 .book-print-settings { display: none; margin-bottom: 24px; }
+.pc-only-block { display: none; }
 @media (min-width: 821px) {
   .book-print-settings { display: block; }
+  .pc-only-block { display: block; }
 }
 .print-settings-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .print-settings-row .settings-field { flex: 1 1 240px; margin-bottom: 0; }

@@ -1832,6 +1832,23 @@
     if (el) el.remove();
   }
 
+  // Cover bleibt bewusst außerhalb der Innentext-Datei (siehe oben) - beim
+  // Anbieter wird es als eigene Bilddatei hochgeladen. Lädt das Cover in
+  // seiner tatsächlich hochgeladenen Auflösung/Format herunter (kein
+  // erneutes Umkodieren, kein Qualitätsverlust).
+  function downloadCover(book) {
+    if (!book.cover) return;
+    const match = /^data:image\/(\w+);/.exec(book.cover);
+    const ext = match ? (match[1].toLowerCase() === "jpeg" ? "jpg" : match[1].toLowerCase()) : "png";
+    const safeTitle = (book.title || "Cover").replace(/[\\/:*?"<>|]+/g, "").trim() || "Cover";
+    const a = document.createElement("a");
+    a.href = book.cover;
+    a.download = `${safeTitle}-Cover.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   function renderBookDetail(book) {
     removePrintPageStyle();
     const panel = document.getElementById("booksPanel");
@@ -1846,6 +1863,7 @@
           ${book.cover ? `<img class="cover-thumb" src="${book.cover}" alt="">` : `<div class="cover-placeholder">📖</div>`}
           <button class="btn btn-ghost" id="coverBtn" style="width:100%;">Cover ${book.cover ? "ändern" : "hinzufügen"}</button>
           <input type="file" id="coverInput" accept="image/*" style="display:none;">
+          ${book.cover ? `<div class="pc-only-block"><button class="btn btn-ghost" id="coverDownloadBtn" style="width:100%;margin-top:8px;">⬇️ Cover herunterladen</button></div>` : ""}
         </div>
         <div class="book-fields">
           <input type="text" class="book-title-input" id="bookTitleInput" placeholder="Buchtitel" value="${escapeAttr(book.title)}">
@@ -1965,6 +1983,7 @@
       reader.readAsDataURL(file);
       e.target.value = "";
     });
+    document.getElementById("coverDownloadBtn")?.addEventListener("click", () => downloadCover(book));
 
     renderChapters(book);
 
@@ -2278,7 +2297,10 @@
       : "";
 
     panel.innerHTML = `
-      <button class="btn btn-ghost" id="backToBookDetailBtn" style="margin-bottom:16px;">← Zurück zur Bearbeitung</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+        <button class="btn btn-ghost" id="backToBookDetailBtn">← Zurück zur Bearbeitung</button>
+        ${spec ? '<button class="btn btn-primary" id="printExportBtn">🖨️ Drucken / Als PDF speichern</button>' : ""}
+      </div>
       ${formatNote}
       <div class="book-preview${spec ? " print-mode" : ""}"${pageStyle}>
         <div class="preview-titlepage">
@@ -2292,6 +2314,7 @@
       </div>`;
 
     document.getElementById("backToBookDetailBtn").addEventListener("click", () => { removePrintPageStyle(); renderBookDetail(book); });
+    document.getElementById("printExportBtn")?.addEventListener("click", () => window.print());
   }
 
   function pickStoryModal(excludeIds) {

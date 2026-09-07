@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download. Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen) ist umgesetzt.
 
 ## Lokal testen
 
@@ -233,6 +233,39 @@ Cover hochgeladen ist) als eigene Bilddatei herunterladen - in der
 tatsächlich hochgeladenen Auflösung, ohne Qualitätsverlust, und getrennt
 von der Innentext-Datei, weil der Umschlag beim Anbieter ohnehin separat
 hochgeladen wird.
+
+### Phase 7: Bilder im Buch & Cover-Wrap (nur am PC)
+
+Für Bücher mit Bildern soll die Autorin sich nicht mit Beschnitt/Pixel-
+Mathematik befassen müssen: Sie gestaltet Bilder extern (z. B. in Canva)
+in einer von der App berechneten Größe und lädt sie danach nur noch hoch -
+die App übernimmt Zuschnitt und exakte Platzierung.
+
+**Stufe 1 (umgesetzt):** In der Buch-Bearbeitung zeigt „🎨 Umschlag (Cover)
+für den Druck" die fertige Gesamtgröße des durchgehenden Covers (Rückseite
++ Buchrücken + Vorderseite + Beschnitt) als Maß in mm und als Pixelgröße
+bei 300dpi (mit Kopieren-Button, direkt einsetzbar als „Eigene Größe" in
+Canva) - abhängig vom gewählten Anbieter/Format und der geschätzten
+Seitenzahl des Buchs.
+
+- **Rückenbreite:** Bei KDP offiziell bestätigte, papierabhängige Formel
+  (Seitenzahl × Papierstärke-Faktor; wählbar zwischen Weiß/Cream/Farbe
+  Standard/Farbe Premium, je nachdem ob das Buch schwarzweiß oder farbig
+  gedruckt wird). Bei BoD/epubli gibt es keine öffentlich exakte Formel,
+  nur eine allgemeine Branchen-Faustformel als Schätzwert - dort mit
+  deutlichem Hinweis, vor der Bestellung den anbietereigenen Cover-Rechner
+  zu nutzen.
+- **ISBN-/Barcode-Fläche:** Bei KDP bestätigt 5,1 × 3,1 cm unten rechts auf
+  der Rückseite frei/hell zu lassen (Amazon druckt den Barcode automatisch
+  hinein - kein eigener Barcode nötig). Bei anderen Anbietern ein
+  allgemeiner Hinweis, da die genaue Fläche dort variiert.
+- Bei sehr dünnen Büchern (unter ca. 100 Seiten) druckt KDP möglicherweise
+  keinen Text auf den schmalen Buchrücken - die App weist bei Bedarf
+  entsprechend darauf hin.
+
+Weitere Stufen (Cover-Hintergrundbild hochladen mit automatischem
+randlosem Zuschnitt, Titel/Autor automatisch auf den Rücken setzen,
+Innenbild-Platzhalter mit Layout-Auswahl, Formatwechsel-Schutz) folgen.
 
 ### Kosten im Blick behalten
 

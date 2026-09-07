@@ -702,6 +702,15 @@ select.status-select {
   font-size: 0.88rem;
   font-family: inherit;
 }
+.cover-wrap-result {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.copy-status { margin-left: 8px; font-size: 0.82rem; color: var(--positive); }
 
 .chapter-block {
   background: var(--bg-card);

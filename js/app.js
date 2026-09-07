@@ -1775,6 +1775,119 @@
     }
   };
 
+  // ---------- Phase 7: Umschlag (Cover) für den Druck ----------
+  // Rückenbreite = Seitenzahl × Papierstärke-Faktor - bei KDP offiziell
+  // bestätigte Werte (unterschiedlich je Papierart, siehe README/Quellen).
+  // Bei BoD/epubli gibt es keine öffentlich exakte Formel, nur eine
+  // allgemeine Branchen-Faustformel als grober Schätzwert - dort immer mit
+  // Hinweis, den anbietereigenen Cover-Rechner vor der Bestellung zu nutzen.
+  const KDP_PAPER_TYPES = [
+    { key: "white_bw", label: "Weiß (Schwarz-Weiß-Innenteil)", inPerPage: 0.002252 },
+    { key: "cream_bw", label: "Cream (Schwarz-Weiß-Innenteil)", inPerPage: 0.0025 },
+    { key: "color_standard", label: "Farbe Standard", inPerPage: 0.0032 },
+    { key: "color_premium", label: "Farbe Premium", inPerPage: 0.002252 }
+  ];
+  const GENERIC_SPINE_GRAMMAGE = 90; // g/m², typischer Richtwert für Taschenbuch-Innenpapier
+
+  function spineWidthSpec(providerKey, pages, paperTypeKey) {
+    if (!pages || pages <= 0) return null;
+    if (providerKey === "kdp") {
+      const paper = KDP_PAPER_TYPES.find(p => p.key === paperTypeKey) || KDP_PAPER_TYPES[0];
+      return { widthMm: pages * paper.inPerPage * 25.4, confirmed: true };
+    }
+    // Allgemeine Branchen-Faustformel: Seitenzahl/2 (= Blattzahl) × Grammatur/1000.
+    const sheets = pages / 2;
+    return { widthMm: sheets * GENERIC_SPINE_GRAMMAGE / 1000, confirmed: false };
+  }
+
+  // Gesamtmaß des durchgehenden Umschlags (Rückseite + Rücken + Vorderseite
+  // + Beschnitt ringsum) - genau die Größe, die man in Canva als "Eigene
+  // Größe" anlegen würde.
+  function coverWrapSpec(book) {
+    const spec = bookPrintSpec(book);
+    if (!spec) return null;
+    const pages = bookStats(book).pages;
+    const spine = spineWidthSpec(book.printProvider, pages, book.paperType);
+    if (!spine) return null;
+    const bleedMm = spec.provider.bleedMm != null ? spec.provider.bleedMm : 3; // Fallback nur falls Anbieter-Beschnitt unbestätigt
+    const bleedConfirmed = spec.provider.bleedMm != null;
+    const widthMm = spec.format.widthMm * 2 + spine.widthMm + bleedMm * 2;
+    const heightMm = spec.format.heightMm + bleedMm * 2;
+    const dpi = 300;
+    const mmToPx = (mm) => Math.round((mm / 25.4) * dpi);
+    return {
+      spineWidthMm: spine.widthMm,
+      spineConfirmed: spine.confirmed,
+      bleedMm, bleedConfirmed,
+      widthMm, heightMm,
+      widthPx: mmToPx(widthMm), heightPx: mmToPx(heightMm),
+      pages, dpi
+    };
+  }
+
+  // Zeigt die fertig berechnete Umschlag-Größe (für Canva "Eigene Größe")
+  // an - reagiert auf Änderungen bei Anbieter/Format/Papierart, deshalb als
+  // eigene, wiederholt aufrufbare Funktion statt Teil des einmaligen
+  // renderBookDetail-Aufbaus.
+  function renderCoverWrapPanel(book) {
+    const panel = document.getElementById("coverWrapPanel");
+    if (!panel) return;
+    const wrap = coverWrapSpec(book);
+    if (!wrap) {
+      panel.innerHTML = book.printProvider && book.printFormat
+        ? '<p class="print-format-note" style="text-align:left;margin:0;">Für den Umschlag wird mindestens 1 Geschichte im Buch benötigt (für die Seitenzahl-Schätzung).</p>'
+        : '<p class="print-format-note" style="text-align:left;margin:0;">Anbieter und Format oben wählen, um die Umschlag-Größe zu berechnen.</p>';
+      return;
+    }
+    const providerLabel = PRINT_PROVIDERS[book.printProvider].label;
+    const paperSelectHtml = book.printProvider === "kdp"
+      ? `<div class="print-settings-row" style="margin-bottom:10px;">
+          <div class="settings-field">
+            <label for="coverPaperSelect">Papierart (für Rückenbreite)</label>
+            <select id="coverPaperSelect">
+              ${KDP_PAPER_TYPES.map(p => `<option value="${p.key}" ${p.key === (book.paperType || KDP_PAPER_TYPES[0].key) ? "selected" : ""}>${escapeHtml(p.label)}</option>`).join("")}
+            </select>
+          </div>
+        </div>`
+      : "";
+    const spineNote = wrap.spineConfirmed
+      ? ""
+      : ` – Formel nicht offiziell bestätigt, bitte im Cover-Rechner von ${escapeHtml(providerLabel)} gegenchecken.`;
+    const bleedNote = wrap.bleedConfirmed ? "" : " (Beschnitt nicht offiziell bestätigt, sicherer Richtwert)";
+    const spineTextNote = (book.printProvider === "kdp" && wrap.pages < 100)
+      ? '<div class="ai-suggestion-note">Bei so wenigen Seiten druckt Amazon evtl. keinen Text auf den schmalen Rücken (KDP verlangt dafür meist mindestens ca. 100 Seiten).</div>'
+      : "";
+    const isbnNote = book.printProvider === "kdp"
+      ? "eine Fläche von 5,1 × 3,1 cm unten rechts hell und frei von wichtigen Inhalten lassen (druckt Amazon automatisch den Barcode hinein)."
+      : "unten rechts eine helle, unwichtige Fläche freihalten (Größe je nach Anbieter unterschiedlich - siehe deren Cover-Vorlage).";
+    panel.innerHTML = `
+      ${paperSelectHtml}
+      <div class="cover-wrap-result">
+        <div><strong>Rückenbreite:</strong> ${wrap.spineWidthMm.toFixed(1)} mm${spineNote}</div>
+        <div style="margin-top:6px;"><strong>Gesamtgröße Umschlag</strong> (Rückseite + Rücken + Vorderseite, inkl. Beschnitt${bleedNote}):<br>
+          ${wrap.widthMm.toFixed(0)} × ${wrap.heightMm.toFixed(0)} mm &nbsp;=&nbsp; ${wrap.widthPx} × ${wrap.heightPx} px bei ${wrap.dpi}dpi
+        </div>
+        <button class="btn btn-ghost" id="copyCoverSizeBtn" type="button" style="margin-top:8px;">📋 Pixelgröße kopieren</button>
+        <span id="copyCoverSizeStatus" class="copy-status" hidden>Kopiert!</span>
+      </div>
+      ${spineTextNote}
+      <div class="ai-suggestion-note">Für den Barcode/ISBN ${isbnNote}</div>`;
+
+    document.getElementById("coverPaperSelect")?.addEventListener("change", (e) => {
+      book.paperType = e.target.value;
+      scheduleBookSave(book);
+      renderCoverWrapPanel(book);
+    });
+    document.getElementById("copyCoverSizeBtn")?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(`${wrap.widthPx} x ${wrap.heightPx} px`);
+        const status = document.getElementById("copyCoverSizeStatus");
+        status.hidden = false;
+        setTimeout(() => { status.hidden = true; }, 1800);
+      } catch (e) { /* Zwischenablage evtl. ohne Berechtigung - Wert steht ja trotzdem da */ }
+    });
+  }
+
   function populatePrintFormatSelect(providerKey, selectedFormatKey) {
     const formatSelect = document.getElementById("printFormatSelect");
     const provider = PRINT_PROVIDERS[providerKey];
@@ -1904,6 +2017,9 @@
           <label for="bookImprintInput">Impressum-/Copyright-Seite (optional)</label>
           <textarea id="bookImprintInput" rows="2" placeholder="${escapeAttr(`Leer lassen für automatisches „© ${new Date().getFullYear()} [Autor/in]“ – oder eigenen Text eintragen.`)}">${escapeHtml(book.imprintText || "")}</textarea>
         </div>
+
+        <p class="section-label">🎨 Umschlag (Cover) für den Druck</p>
+        <div id="coverWrapPanel"></div>
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -1942,11 +2058,14 @@
       // ist und die Vorschau fälschlich "kein Format gewählt" meldet.
       book.printFormat = document.getElementById("printFormatSelect").value;
       scheduleBookSave(book);
+      renderCoverWrapPanel(book);
     });
     document.getElementById("printFormatSelect").addEventListener("change", (e) => {
       book.printFormat = e.target.value;
       scheduleBookSave(book);
+      renderCoverWrapPanel(book);
     });
+    renderCoverWrapPanel(book);
 
     const authorInput = document.getElementById("bookAuthorInput");
     const imprintInput = document.getElementById("bookImprintInput");

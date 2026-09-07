@@ -2229,7 +2229,9 @@
     // sorgt dafür, dass der Bundsteg beim echten Druck/PDF-Export korrekt
     // zwischen linker und rechter Seite wechselt (das kann die
     // Bildschirm-Vorschau unten nicht nachbilden, da HTML sich erst beim
-    // Drucken selbst in Seiten aufteilt).
+    // Drucken selbst in Seiten aufteilt). @bottom-center zeigt die
+    // laufende Seitenzahl - auf der Titelseite bewusst nicht (wie bei
+    // gedruckten Büchern üblich).
     removePrintPageStyle();
     if (spec) {
       const styleTag = document.createElement("style");
@@ -2240,9 +2242,16 @@
             size: ${spec.format.widthMm}mm ${spec.format.heightMm}mm;
             margin-top: ${spec.margins.top}mm;
             margin-bottom: ${spec.margins.bottom}mm;
+            @bottom-center {
+              content: counter(page);
+              font-family: Georgia, 'Times New Roman', serif;
+              font-size: 9pt;
+              color: #555;
+            }
           }
           @page :left { margin-left: ${spec.margins.outer}mm; margin-right: ${spec.margins.inner}mm; }
           @page :right { margin-left: ${spec.margins.inner}mm; margin-right: ${spec.margins.outer}mm; }
+          @page :first { @bottom-center { content: normal; } }
         }`;
       document.head.appendChild(styleTag);
     }

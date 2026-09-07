@@ -214,8 +214,18 @@ hinterlegen (beide optional). Die Titelseite zeigt Titel, Untertitel und
 Autor/in. Ist Autor/in oder ein eigener Impressum-Text gesetzt, folgt eine
 eigene Impressum-Seite (leerer Text erzeugt automatisch „© [Jahr]
 [Autor/in]") - ohne beides bleibt diese Seite ganz weg, statt eine
-halbleere Seite einzufügen. Weitere Schritte (Seitenzahlen,
-PDF-Export-Knopf, Cover-Download) folgen.
+halbleere Seite einzufügen.
+
+Beim echten Drucken/PDF-Export bekommt jede Seite außer der Titelseite
+unten mittig eine laufende Seitenzahl (über `@page`-Randboxen, derselbe
+Mechanismus wie die Ränder) - wie bei gedruckten Büchern üblich beginnt
+die Zählung nicht sichtbar auf der Titelseite selbst. Die
+Bildschirm-Vorschau zeigt (wie schon erwähnt) nur eine vereinfachte
+Einzelseite ohne Seitenumbrüche und damit auch ohne sichtbare
+Seitenzahlen - das lässt sich aber schon jetzt im Browser-Druckdialog
+(Strg+P, danach „Abbrechen") mit echter Seitenaufteilung prüfen, ganz
+ohne etwas zu drucken oder zu speichern. Weitere Schritte
+(PDF-Export-Knopf, Cover-Download) folgen.
 
 ### Kosten im Blick behalten
 

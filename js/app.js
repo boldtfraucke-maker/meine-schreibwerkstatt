@@ -1719,7 +1719,7 @@
     document.getElementById("newBookBtn").addEventListener("click", async () => {
       const book = {
         id: uid(), title: "", subtitle: "", description: "", cover: "", chapters: [],
-        printProvider: "", printFormat: "",
+        printProvider: "", printFormat: "", author: "", imprintText: "",
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       };
       books.push(book);
@@ -1876,6 +1876,16 @@
             <select id="printFormatSelect"><option value="">– erst Anbieter wählen –</option></select>
           </div>
         </div>
+        <div class="print-settings-row">
+          <div class="settings-field">
+            <label for="bookAuthorInput">Autor/in (für Titelseite, optional)</label>
+            <input type="text" id="bookAuthorInput" placeholder="z. B. Helga Boldt" value="${escapeAttr(book.author || "")}">
+          </div>
+        </div>
+        <div class="settings-field">
+          <label for="bookImprintInput">Impressum-/Copyright-Seite (optional)</label>
+          <textarea id="bookImprintInput" rows="2" placeholder="${escapeAttr(`Leer lassen für automatisches „© ${new Date().getFullYear()} [Autor/in]“ – oder eigenen Text eintragen.`)}">${escapeHtml(book.imprintText || "")}</textarea>
+        </div>
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -1906,6 +1916,16 @@
     document.getElementById("printFormatSelect").addEventListener("change", (e) => {
       book.printFormat = e.target.value;
       scheduleBookSave(book);
+    });
+
+    const authorInput = document.getElementById("bookAuthorInput");
+    const imprintInput = document.getElementById("bookImprintInput");
+    [authorInput, imprintInput].forEach(el => {
+      el.addEventListener("input", () => {
+        book.author = authorInput.value;
+        book.imprintText = imprintInput.value;
+        scheduleBookSave(book);
+      });
     });
 
     const titleInput = document.getElementById("bookTitleInput");
@@ -2163,7 +2183,7 @@
     const chapters = book.chapters || [];
     const spec = bookPrintSpec(book);
 
-    const chaptersHtml = chapters.map((chapter, idx) => {
+    const chaptersHtml = chapters.map((chapter) => {
       const storyIds = chapter.storyIds || [];
       // Der Geschichtentitel erscheint hier nur, wenn ein Kapitel mehrere
       // Geschichten bündelt (dann braucht man ihn, um sie auseinander zu
@@ -2180,9 +2200,10 @@
             <div class="preview-story-content">${story.content || ""}</div>
           </div>`;
       }).join("");
-      // Jedes Kapitel außer dem ersten beginnt beim Druck auf einer neuen
-      // Seite (das erste startet direkt nach der Titelseite).
-      const pageBreak = spec && idx > 0 ? "break-before:page;" : "";
+      // Jedes Kapitel beginnt beim Druck auf einer neuen Seite (auch das
+      // erste - davor stehen ja noch die Titelseite und ggf. die
+      // Impressum-Seite).
+      const pageBreak = spec ? "break-before:page;" : "";
       return `
         <div class="preview-chapter" style="${pageBreak}">
           <h2 class="preview-chapter-title">${escapeHtml(chapter.title || "Ohne Titel")}</h2>
@@ -2226,6 +2247,15 @@
       ? ` style="width:${spec.format.widthMm}mm;padding:${spec.margins.top}mm ${spec.margins.outer}mm ${spec.margins.bottom}mm ${spec.margins.inner}mm;"`
       : "";
 
+    // Die Impressum-Seite gehört nur zum Druck-Layout (nicht zur
+    // allgemeinen Bildschirm-Vorschau) und erscheint nur, wenn tatsächlich
+    // etwas draufstehen würde - sonst gäbe es eine fast leere Seite.
+    const imprintText = (book.imprintText || "").trim()
+      || (book.author ? `© ${new Date().getFullYear()} ${book.author}` : "");
+    const imprintHtml = (spec && imprintText)
+      ? `<div class="preview-imprint" style="break-before:page;">${escapeHtml(imprintText).split("\n").map(line => `<p>${line}</p>`).join("")}</div>`
+      : "";
+
     panel.innerHTML = `
       <button class="btn btn-ghost" id="backToBookDetailBtn" style="margin-bottom:16px;">← Zurück zur Bearbeitung</button>
       ${formatNote}
@@ -2233,8 +2263,10 @@
         <div class="preview-titlepage">
           <h1 class="preview-title">${escapeHtml(book.title || "Ohne Titel")}</h1>
           ${book.subtitle ? `<p class="preview-subtitle">${escapeHtml(book.subtitle)}</p>` : ""}
+          ${book.author ? `<p class="preview-author">${escapeHtml(book.author)}</p>` : ""}
           ${book.description ? `<p class="preview-description">${escapeHtml(book.description)}</p>` : ""}
         </div>
+        ${imprintHtml}
         ${chapters.length === 0 ? '<p class="preview-empty">Noch keine Kapitel angelegt – lege in der Bearbeitung ein Kapitel an und füge Geschichten hinzu.</p>' : chaptersHtml}
       </div>`;
 

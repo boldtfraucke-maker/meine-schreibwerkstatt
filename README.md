@@ -207,8 +207,15 @@ Beschnittzugabe (relevant nur bei randabfallenden Bildern, die es aktuell
 nicht gibt). Die Bildschirm-Vorschau zeigt eine vereinfachte Einzelseite;
 beim echten Drucken/PDF-Export (Browser-Druckfunktion, kommt in einem
 späteren Schritt) wechselt der Bundsteg über `@page :left`/`:right`
-korrekt zwischen linker und rechter Seite. Weitere Schritte (Titelei,
-Seitenzahlen, PDF-Export-Knopf, Cover-Download) folgen.
+korrekt zwischen linker und rechter Seite.
+
+Zusätzlich lassen sich Autor/in und ein Impressum-/Copyright-Text
+hinterlegen (beide optional). Die Titelseite zeigt Titel, Untertitel und
+Autor/in. Ist Autor/in oder ein eigener Impressum-Text gesetzt, folgt eine
+eigene Impressum-Seite (leerer Text erzeugt automatisch „© [Jahr]
+[Autor/in]") - ohne beides bleibt diese Seite ganz weg, statt eine
+halbleere Seite einzufügen. Weitere Schritte (Seitenzahlen,
+PDF-Export-Knopf, Cover-Download) folgen.
 
 ### Kosten im Blick behalten
 

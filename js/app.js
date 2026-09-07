@@ -1672,6 +1672,7 @@
   }
 
   function renderBookList() {
+    removePrintPageStyle();
     const panel = document.getElementById("booksPanel");
     const sorted = [...books].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     panel.innerHTML = `
@@ -1788,7 +1789,51 @@
       .join("");
   }
 
+  // Innenrand (Bundsteg) bei KDP wächst mit der Seitenzahl, damit der Text
+  // nahe der Bindung nicht "verschluckt" wird - offiziell bestätigte
+  // Tabelle (siehe README/Quellen).
+  function kdpGutterMm(pages) {
+    if (pages <= 150) return 9.6;
+    if (pages <= 300) return 12.7;
+    if (pages <= 500) return 15.9;
+    if (pages <= 700) return 19.1;
+    return 22.3;
+  }
+
+  // Rand-Werte fürs Druck-Layout. KDP: offiziell bestätigte, seitenzahl-
+  // abhängige Werte. epubli: veröffentlichte Empfehlungswerte (fix, ohne
+  // Seitenzahl-Staffelung). BoD veröffentlicht keine Randwerte öffentlich -
+  // "confirmed:false" markiert das, die Vorschau zeigt dazu einen Hinweis.
+  function printMarginsFor(providerKey, estimatedPages) {
+    if (providerKey === "kdp") {
+      return { top: 6.4, bottom: 6.4, outer: 6.4, inner: kdpGutterMm(estimatedPages), confirmed: true };
+    }
+    if (providerKey === "epubli") {
+      return { top: 13, bottom: 20, outer: 17, inner: 15, confirmed: true };
+    }
+    return { top: 15, bottom: 15, outer: 15, inner: 20, confirmed: false };
+  }
+
+  // Seitengröße nutzt bewusst das reine Trimm-Maß (ohne Beschnittzugabe) -
+  // Beschnitt ist nur relevant, wenn Bilder bis an den Seitenrand reichen
+  // sollen, was beim aktuellen reinen Text-/Einzelbild-Layout nicht der
+  // Fall ist.
+  function bookPrintSpec(book) {
+    const provider = PRINT_PROVIDERS[book.printProvider];
+    if (!provider) return null;
+    const format = provider.formats.find(f => f.key === book.printFormat);
+    if (!format) return null;
+    const margins = printMarginsFor(book.printProvider, bookStats(book).pages);
+    return { provider, format, margins };
+  }
+
+  function removePrintPageStyle() {
+    const el = document.getElementById("bookPrintPageStyle");
+    if (el) el.remove();
+  }
+
   function renderBookDetail(book) {
+    removePrintPageStyle();
     const panel = document.getElementById("booksPanel");
     const stats = bookStats(book);
     panel.innerHTML = `
@@ -2116,8 +2161,9 @@
   function renderBookPreview(book) {
     const panel = document.getElementById("booksPanel");
     const chapters = book.chapters || [];
+    const spec = bookPrintSpec(book);
 
-    const chaptersHtml = chapters.map(chapter => {
+    const chaptersHtml = chapters.map((chapter, idx) => {
       const storyIds = chapter.storyIds || [];
       // Der Geschichtentitel erscheint hier nur, wenn ein Kapitel mehrere
       // Geschichten bündelt (dann braucht man ihn, um sie auseinander zu
@@ -2134,16 +2180,56 @@
             <div class="preview-story-content">${story.content || ""}</div>
           </div>`;
       }).join("");
+      // Jedes Kapitel außer dem ersten beginnt beim Druck auf einer neuen
+      // Seite (das erste startet direkt nach der Titelseite).
+      const pageBreak = spec && idx > 0 ? "break-before:page;" : "";
       return `
-        <div class="preview-chapter">
+        <div class="preview-chapter" style="${pageBreak}">
           <h2 class="preview-chapter-title">${escapeHtml(chapter.title || "Ohne Titel")}</h2>
           ${storiesHtml || '<p class="preview-empty">Dieses Kapitel ist noch leer.</p>'}
         </div>`;
     }).join("");
 
+    // Seitengröße/Ränder hängen vom gewählten Anbieter+Format ab - @page
+    // unterstützt dafür keine CSS-Variablen zuverlässig, deshalb ein
+    // eigenes <style>-Tag mit den konkreten Werten. @page :left/:right
+    // sorgt dafür, dass der Bundsteg beim echten Druck/PDF-Export korrekt
+    // zwischen linker und rechter Seite wechselt (das kann die
+    // Bildschirm-Vorschau unten nicht nachbilden, da HTML sich erst beim
+    // Drucken selbst in Seiten aufteilt).
+    removePrintPageStyle();
+    if (spec) {
+      const styleTag = document.createElement("style");
+      styleTag.id = "bookPrintPageStyle";
+      styleTag.textContent = `
+        @media print {
+          @page {
+            size: ${spec.format.widthMm}mm ${spec.format.heightMm}mm;
+            margin-top: ${spec.margins.top}mm;
+            margin-bottom: ${spec.margins.bottom}mm;
+          }
+          @page :left { margin-left: ${spec.margins.outer}mm; margin-right: ${spec.margins.inner}mm; }
+          @page :right { margin-left: ${spec.margins.inner}mm; margin-right: ${spec.margins.outer}mm; }
+        }`;
+      document.head.appendChild(styleTag);
+    }
+
+    const formatNote = spec
+      ? `<div class="print-format-note${spec.margins.confirmed ? "" : " unconfirmed"}">
+          📐 ${escapeHtml(spec.provider.label)} · ${escapeHtml(spec.format.label)}
+          ${!spec.margins.confirmed ? ` – Rand-Werte sind für ${escapeHtml(spec.provider.label)} nicht öffentlich bestätigt, hier ein sicherer Richtwert. Vor dem Bestellen bitte die eigene Vorlage von ${escapeHtml(spec.provider.label)} gegenchecken.` : ""}
+          <br>Die Bildschirm-Vorschau zeigt eine vereinfachte Einzelseite - beim echten Druck/PDF-Export wechselt der Bundsteg korrekt zwischen linker und rechter Seite.
+        </div>`
+      : `<div class="print-format-note">Noch kein Anbieter/Format gewählt - die Vorschau zeigt eine allgemeine Ansicht ohne feste Seitengröße. Format in der Bearbeitung wählen für eine druckgenaue Vorschau.</div>`;
+
+    const pageStyle = spec
+      ? ` style="width:${spec.format.widthMm}mm;padding:${spec.margins.top}mm ${spec.margins.outer}mm ${spec.margins.bottom}mm ${spec.margins.inner}mm;"`
+      : "";
+
     panel.innerHTML = `
       <button class="btn btn-ghost" id="backToBookDetailBtn" style="margin-bottom:16px;">← Zurück zur Bearbeitung</button>
-      <div class="book-preview">
+      ${formatNote}
+      <div class="book-preview${spec ? " print-mode" : ""}"${pageStyle}>
         <div class="preview-titlepage">
           <h1 class="preview-title">${escapeHtml(book.title || "Ohne Titel")}</h1>
           ${book.subtitle ? `<p class="preview-subtitle">${escapeHtml(book.subtitle)}</p>` : ""}
@@ -2152,7 +2238,7 @@
         ${chapters.length === 0 ? '<p class="preview-empty">Noch keine Kapitel angelegt – lege in der Bearbeitung ein Kapitel an und füge Geschichten hinzu.</p>' : chaptersHtml}
       </div>`;
 
-    document.getElementById("backToBookDetailBtn").addEventListener("click", () => renderBookDetail(book));
+    document.getElementById("backToBookDetailBtn").addEventListener("click", () => { removePrintPageStyle(); renderBookDetail(book); });
   }
 
   function pickStoryModal(excludeIds) {

@@ -193,8 +193,22 @@ tredition bietet aktuell keine öffentlich gelistete feste Formatauswahl
 epubli und BoD fehlen öffentliche Rand-/Beschnittangaben für einzelne
 Werte - vor einer echten Bestellung lohnt sich ein Blick in die jeweils
 aktuelle Vorlage des Anbieters. Anbieter und Format bleiben am Buch
-gespeichert; weitere Schritte (Druck-Layout, Titelei, Seitenzahlen,
-PDF-Export, Cover-Download) folgen.
+gespeichert.
+
+„Vorschau ansehen" zeigt bei gewähltem Anbieter/Format eine druckgenaue
+Seite in echter Größe (Seiten-Maß, Ränder), jedes Kapitel beginnt beim
+Druck auf einer neuen Seite. Die Ränder nutzen bei KDP die offiziell
+bestätigte, seitenzahl-abhängige Tabelle (Innenrand/Bundsteg wächst mit
+der geschätzten Seitenzahl des Buchs), bei epubli die veröffentlichten
+Empfehlungswerte. BoD veröffentlicht keine Randwerte - dort ein sicherer,
+aber nicht offiziell bestätigter Platzhalter, mit deutlichem Hinweis in
+der Vorschau. Die Seitengröße nutzt bewusst das reine Trimm-Maß ohne
+Beschnittzugabe (relevant nur bei randabfallenden Bildern, die es aktuell
+nicht gibt). Die Bildschirm-Vorschau zeigt eine vereinfachte Einzelseite;
+beim echten Drucken/PDF-Export (Browser-Druckfunktion, kommt in einem
+späteren Schritt) wechselt der Bundsteg über `@page :left`/`:right`
+korrekt zwischen linker und rechter Seite. Weitere Schritte (Titelei,
+Seitenzahlen, PDF-Export-Knopf, Cover-Download) folgen.
 
 ### Kosten im Blick behalten
 

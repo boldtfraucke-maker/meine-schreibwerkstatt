@@ -1907,10 +1907,22 @@
     document.getElementById("previewBookBtn").addEventListener("click", () => renderBookPreview(book));
 
     populatePrintFormatSelect(book.printProvider, book.printFormat);
+    // Selbstheilung für Bücher, die den oben behobenen Bug schon
+    // gespeichert haben: Anbieter gesetzt, aber Format leer, obwohl das
+    // Dropdown (Browser-Standardverhalten) trotzdem eine Option zeigt.
+    if (book.printProvider && !book.printFormat) {
+      const currentFormat = document.getElementById("printFormatSelect").value;
+      if (currentFormat) { book.printFormat = currentFormat; scheduleBookSave(book); }
+    }
     document.getElementById("printProviderSelect").addEventListener("change", (e) => {
       book.printProvider = e.target.value;
-      book.printFormat = "";
       populatePrintFormatSelect(book.printProvider, "");
+      // Ein <select> ohne "selected"-Option zeigt automatisch die erste
+      // Option an (Browser-Standardverhalten) - book.printFormat muss das
+      // widerspiegeln, sonst zeigt das Dropdown z. B. bei BoD (nur ein
+      // Format) scheinbar eine Auswahl, obwohl intern noch nichts gewählt
+      // ist und die Vorschau fälschlich "kein Format gewählt" meldet.
+      book.printFormat = document.getElementById("printFormatSelect").value;
       scheduleBookSave(book);
     });
     document.getElementById("printFormatSelect").addEventListener("change", (e) => {

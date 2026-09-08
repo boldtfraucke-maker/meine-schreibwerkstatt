@@ -2026,29 +2026,51 @@
         <button class="btn btn-ghost" id="backToBooksBtn">← Alle Bücher</button>
         <button class="btn btn-primary" id="previewBookBtn">📖 Vorschau ansehen</button>
       </div>
-      <div class="book-detail-top">
-        <div class="book-cover-col">
-          ${book.cover ? `<img class="cover-thumb" src="${book.cover}" alt="">` : `<div class="cover-placeholder">📖</div>`}
-          <button class="btn btn-ghost" id="coverBtn" style="width:100%;">Cover ${book.cover ? "ändern" : "hinzufügen"}</button>
-          <input type="file" id="coverInput" accept="image/*" style="display:none;">
-          ${book.cover ? `<div class="pc-only-block"><button class="btn btn-ghost" id="coverDownloadBtn" style="width:100%;margin-top:8px;">⬇️ Cover herunterladen</button></div>` : ""}
+
+      <div class="book-detail-tabs pc-only-flex">
+        <button type="button" class="book-detail-tab active" id="tabInhaltBtn">Inhalt</button>
+        <button type="button" class="book-detail-tab" id="tabDruckBtn">Für den Druck</button>
+      </div>
+
+      <div id="bookTabInhalt">
+        <div class="book-detail-top">
+          <div class="book-cover-col">
+            ${book.cover ? `<img class="cover-thumb" src="${book.cover}" alt="">` : `<div class="cover-placeholder">📖</div>`}
+            <button class="btn btn-ghost" id="coverBtn" style="width:100%;">Cover ${book.cover ? "ändern" : "hinzufügen"}</button>
+            <input type="file" id="coverInput" accept="image/*" style="display:none;">
+            ${book.cover ? `<div class="pc-only-block"><button class="btn btn-ghost" id="coverDownloadBtn" style="width:100%;margin-top:8px;">⬇️ Cover herunterladen</button></div>` : ""}
+          </div>
+          <div class="book-fields">
+            <input type="text" class="book-title-input" id="bookTitleInput" placeholder="Buchtitel" value="${escapeAttr(book.title)}">
+            <input type="text" class="book-subtitle-input" id="bookSubtitleInput" placeholder="Untertitel (optional)" value="${escapeAttr(book.subtitle)}">
+            <textarea class="book-description" id="bookDescInput" placeholder="Kurze Beschreibung (optional)">${escapeHtml(book.description || "")}</textarea>
+          </div>
         </div>
-        <div class="book-fields">
-          <input type="text" class="book-title-input" id="bookTitleInput" placeholder="Buchtitel" value="${escapeAttr(book.title)}">
-          <input type="text" class="book-subtitle-input" id="bookSubtitleInput" placeholder="Untertitel (optional)" value="${escapeAttr(book.subtitle)}">
-          <textarea class="book-description" id="bookDescInput" placeholder="Kurze Beschreibung (optional)">${escapeHtml(book.description || "")}</textarea>
+
+        <div class="book-stat-row">
+          <div class="stat-card"><div class="num">${stats.count}</div><div class="label">Geschichten</div></div>
+          <div class="stat-card"><div class="num">${stats.words.toLocaleString('de-DE')}</div><div class="label">Wörter</div></div>
+          <div class="stat-card"><div class="num">${stats.pages}</div><div class="label">Seiten (geschätzt)</div></div>
+          <div class="stat-card"><div class="num">${stats.percent}%</div><div class="label">fertig</div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <p class="section-label" style="margin:0;">Kapitel</p>
+          <div class="btn-with-info">
+            <button class="btn btn-outline" id="chapterTitlesBtn">✨ Kapitel-Titel vorschlagen</button>
+            <button class="info-badge" id="chapterTitlesInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
+          </div>
+        </div>
+        <div id="chapterList"></div>
+        <div id="chapterAssistantPanel"></div>
+        <button class="btn btn-outline" id="addChapterBtn">+ Kapitel hinzufügen</button>
+
+        <div style="margin-top:28px;">
+          <button class="btn btn-danger" id="deleteBookBtn">Löschen</button>
         </div>
       </div>
 
-      <div class="book-stat-row">
-        <div class="stat-card"><div class="num">${stats.count}</div><div class="label">Geschichten</div></div>
-        <div class="stat-card"><div class="num">${stats.words.toLocaleString('de-DE')}</div><div class="label">Wörter</div></div>
-        <div class="stat-card"><div class="num">${stats.pages}</div><div class="label">Seiten (geschätzt)</div></div>
-        <div class="stat-card"><div class="num">${stats.percent}%</div><div class="label">fertig</div></div>
-      </div>
-
-      <div class="book-print-settings" id="bookPrintSettings">
-        <p class="section-label" style="margin-top:0;">Für den Druck (nur am PC)</p>
+      <div class="book-print-settings tab-panel-hidden" id="bookPrintSettings">
         <div class="print-settings-row">
           <div class="settings-field">
             <label for="printProviderSelect">Anbieter</label>
@@ -2075,25 +2097,27 @@
 
         <p class="section-label">🎨 Umschlag (Cover) für den Druck</p>
         <div id="coverWrapPanel"></div>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <p class="section-label" style="margin:0;">Kapitel</p>
-        <div class="btn-with-info">
-          <button class="btn btn-outline" id="chapterTitlesBtn">✨ Kapitel-Titel vorschlagen</button>
-          <button class="info-badge" id="chapterTitlesInfoBtn" title="Was macht das?" aria-label="Was macht das?">ⓘ</button>
-        </div>
-      </div>
-      <div id="chapterList"></div>
-      <div id="chapterAssistantPanel"></div>
-      <button class="btn btn-outline" id="addChapterBtn">+ Kapitel hinzufügen</button>
-
-      <div style="margin-top:28px;">
-        <button class="btn btn-danger" id="deleteBookBtn">Löschen</button>
       </div>`;
 
     document.getElementById("backToBooksBtn").addEventListener("click", () => { activeBookId = null; renderBookList(); });
     document.getElementById("previewBookBtn").addEventListener("click", () => renderBookPreview(book));
+
+    const tabInhaltBtn = document.getElementById("tabInhaltBtn");
+    const tabDruckBtn = document.getElementById("tabDruckBtn");
+    const bookTabInhalt = document.getElementById("bookTabInhalt");
+    const bookTabDruck = document.getElementById("bookPrintSettings");
+    tabInhaltBtn.addEventListener("click", () => {
+      bookTabInhalt.classList.remove("tab-panel-hidden");
+      bookTabDruck.classList.add("tab-panel-hidden");
+      tabInhaltBtn.classList.add("active");
+      tabDruckBtn.classList.remove("active");
+    });
+    tabDruckBtn.addEventListener("click", () => {
+      bookTabDruck.classList.remove("tab-panel-hidden");
+      bookTabInhalt.classList.add("tab-panel-hidden");
+      tabDruckBtn.classList.add("active");
+      tabInhaltBtn.classList.remove("active");
+    });
 
     populatePrintFormatSelect(book.printProvider, book.printFormat);
     // Selbstheilung für Bücher, die den oben behobenen Bug schon

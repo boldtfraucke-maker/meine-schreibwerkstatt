@@ -172,6 +172,15 @@ erscheint in der Vorschau nur, wenn ein Kapitel mehrere Geschichten bündelt
 (zum Auseinanderhalten) - bei einem Kapitel mit nur einer Geschichte reicht
 der Kapiteltitel allein, ohne doppelte Überschrift.
 
+Die Buch-Bearbeitung ist (nur am PC/Tablet-quer, ab 821px Breite) in zwei
+Reiter aufgeteilt: „Inhalt" (Titel, Cover-Bildchen, Kapitel - das, womit
+man beim Schreiben/Zusammenstellen arbeitet) und „Für den Druck" (Anbieter,
+Titelei, Umschlag - das, was erst am Ende gebraucht wird). Das hält die
+Seite übersichtlich, auch wenn mit jeder Druck-Funktion mehr dazukommt.
+„Vorschau ansehen" bleibt dabei immer oben sichtbar, unabhängig vom Reiter.
+Am Handy gibt es diese Reiter nicht, dort ist „Für den Druck" ohnehin nicht
+verfügbar.
+
 ### Phase 6: Für den Druck (nur am PC)
 
 In der Buch-Bearbeitung lässt sich (nur am PC/Tablet-quer, ab 821px Breite -

@@ -686,9 +686,38 @@ select.status-select {
    wird auf dem Handy nicht angeboten. */
 .book-print-settings { display: none; margin-bottom: 24px; }
 .pc-only-block { display: none; }
+.pc-only-flex { display: none; }
 @media (min-width: 821px) {
   .book-print-settings { display: block; }
   .pc-only-block { display: block; }
+  .pc-only-flex { display: flex; }
+}
+
+/* Buch-Detailseite: "Inhalt" (Schreiben/Zusammenstellen) und "Für den
+   Druck" (Anbieter, Titelei, Umschlag) als getrennte Reiter, damit die
+   Seite nicht mit jeder neuen Druck-Funktion länger und unübersichtlicher
+   wird. Die Reiter selbst sind bewusst nur am PC sichtbar (.pc-only-flex) -
+   am Handy gibt es ohnehin nur "Inhalt", da "Für den Druck" dort nicht
+   angeboten wird. .tab-panel-hidden gilt deshalb auch nur ab der PC-Breite
+   (in derselben Kaskade nach der .book-print-settings-Regel, damit es sie
+   dort zuverlässig übersteuert) - sonst würde bei einer Fensterverkleinerung
+   unterhalb der PC-Breite plötzlich gar nichts mehr angezeigt, falls gerade
+   der Druck-Reiter aktiv war. */
+.book-detail-tabs { border-bottom: 1px solid var(--border); margin-bottom: 20px; gap: 4px; }
+.book-detail-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.book-detail-tab:hover { color: var(--ink); }
+.book-detail-tab.active { color: var(--clay); border-bottom-color: var(--clay); font-weight: 600; }
+@media (min-width: 821px) {
+  .tab-panel-hidden { display: none; }
 }
 .print-settings-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .print-settings-row .settings-field { flex: 1 1 240px; margin-bottom: 0; }

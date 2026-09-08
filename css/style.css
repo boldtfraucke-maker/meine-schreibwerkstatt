@@ -391,6 +391,25 @@ select.status-select {
   box-shadow: 0 1px 3px var(--shadow);
 }
 .info-badge:hover { border-color: var(--sky); color: var(--sky); }
+/* Wie .info-badge, aber im normalen Textfluss statt als Ecken-Badge auf
+   einem Button - für Info-Knöpfe direkt neben einer Überschrift. */
+.info-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.info-badge-inline:hover { border-color: var(--sky); color: var(--sky); }
 .tool-select:hover { border-color: var(--clay); color: var(--ink); }
 .toolbar-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
 .editor-with-margin { display: flex; align-items: stretch; gap: 8px; flex: 1; min-height: 0; }

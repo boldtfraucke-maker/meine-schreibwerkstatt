@@ -1826,6 +1826,29 @@
     };
   }
 
+  // Erklärtext für den Info-Knopf neben "Umschlag (Cover) für den Druck" -
+  // fasst zusammen, was vorher als mehrere feste Hinweistexte im Panel
+  // stand (ISBN-Fläche, Rücken-Text-Schwelle, was der Download-Knopf tut).
+  // Wird bei jedem Klick frisch aus dem aktuellen Buchzustand gebaut, statt
+  // fest im Panel zu stehen - reduziert die immer sichtbare Textmenge.
+  function coverWrapInfoText(book) {
+    const wrap = coverWrapSpec(book);
+    if (!wrap) return "Wähle zuerst oben Anbieter und Format und lege mindestens eine Geschichte im Buch an, dann erscheinen hier die Details zum Umschlag.";
+    const lines = [];
+    lines.push(`Die Gesamtgröße (${wrap.widthMm.toFixed(0)} × ${wrap.heightMm.toFixed(0)} mm) ist Rückseite + Buchrücken + Vorderseite inklusive Beschnitt ringsum - genau die Maße für Canvas „Eigene Größe".`);
+    lines.push(book.printProvider === "kdp"
+      ? "ISBN/Barcode: Amazon druckt den Barcode automatisch in die 5,1 × 3,1 cm große, in der Vorschau markierte Fläche unten rechts auf der Rückseite - dort nichts Wichtiges platzieren."
+      : "ISBN/Barcode: Unten rechts auf der Rückseite eine helle, unwichtige Fläche freihalten - die genaue Größe variiert je nach Anbieter, am besten in dessen eigener Cover-Vorlage nachsehen.");
+    const canShowSpineText = book.printProvider === "kdp" ? wrap.pages >= 200 : wrap.spineWidthMm >= 8;
+    if (canShowSpineText) {
+      lines.push("Titel und Autor/in setzt die App automatisch auf den Buchrücken (senkrecht, von unten nach oben lesbar) - dafür ist in Canva nichts zu gestalten. Die Textfarbe lässt sich frei wählen.");
+    } else if (book.printProvider === "kdp") {
+      lines.push(`Titel/Autor auf dem Rücken erscheint erst ab 200 Seiten (aktuell ${wrap.pages}) - bei weniger wirkt der schmale Rücken zu gedrängt. Amazon druckt technisch teils schon ab ca. 100 Seiten Text auf den Rücken.`);
+    }
+    lines.push('„Umschlag herunterladen" setzt Hintergrundbild und Rücken-Text zu einer fertigen Bilddatei in der berechneten Zielgröße zusammen - die Markierungen aus der Vorschau (Buchrücken-Streifen, ISBN-Fläche) erscheinen dabei nicht mit in der Datei, die sind nur zur Orientierung.');
+    return lines.join("\n\n");
+  }
+
   // Zeigt die fertig berechnete Umschlag-Größe (für Canva "Eigene Größe")
   // an - reagiert auf Änderungen bei Anbieter/Format/Papierart, deshalb als
   // eigene, wiederholt aufrufbare Funktion statt Teil des einmaligen
@@ -1855,12 +1878,6 @@
       ? ""
       : ` – Formel nicht offiziell bestätigt, bitte im Cover-Rechner von ${escapeHtml(providerLabel)} gegenchecken.`;
     const bleedNote = wrap.bleedConfirmed ? "" : " (Beschnitt nicht offiziell bestätigt, sicherer Richtwert)";
-    const spineTextNote = (book.printProvider === "kdp" && wrap.pages < 100)
-      ? '<div class="ai-suggestion-note">Bei so wenigen Seiten druckt Amazon evtl. keinen Text auf den schmalen Rücken (KDP verlangt dafür meist mindestens ca. 100 Seiten).</div>'
-      : "";
-    const isbnNote = book.printProvider === "kdp"
-      ? "eine Fläche von 5,1 × 3,1 cm unten rechts auf der Rückseite hell und frei von wichtigen Inhalten lassen (druckt Amazon automatisch den Barcode hinein) - unten in der Vorschau markiert."
-      : "unten rechts auf der Rückseite eine helle, unwichtige Fläche freihalten (Größe je nach Anbieter unterschiedlich - siehe deren Cover-Vorlage).";
     // Canva hat für "Eigene Größe" getrennte Felder für Breite und Höhe -
     // ein gemeinsamer "1234 x 5678 px"-Text lässt sich dort nirgends
     // sinnvoll einfügen. Deshalb zwei eigene Kopieren-Knöpfe, jeder mit nur
@@ -1926,8 +1943,7 @@
           <div class="cover-wrap-spine-marker" style="left:${spineLeftPercent}%;width:${spineWidthPercent}%;" title="Buchrücken">${spineTextHtml}</div>
           ${isbnBoxHtml}
           <div class="cover-wrap-zoom-hint">🔍</div>
-        </div>
-        <p class="ai-suggestion-note">So wird dein Bild randlos eingepasst (Vorschau, zum Vergrößern anklicken) - der markierte, schmale Streifen ist der Buchrücken, dort später möglichst nichts Wichtiges wie Gesichter platzieren.${canShowSpineText && spineText ? " Titel/Autor setzt die App automatisch dort hin." : ""}${book.printProvider === "kdp" ? " Das gestrichelte Feld unten rechts ist die ISBN/Barcode-Fläche." : ""}</p>`
+        </div>`
       : "";
     panel.innerHTML = `
       ${paperSelectHtml}
@@ -1945,8 +1961,6 @@
           <button class="btn btn-ghost copy-value-btn" type="button" data-value="${wrap.heightPx}">📋 Kopieren</button>
         </div>
       </div>
-      ${spineTextNote}
-      <div class="ai-suggestion-note">Für den Barcode/ISBN ${isbnNote}</div>
       ${spineColorPickerHtml}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <button class="btn btn-ghost" id="coverWrapImageBtn" type="button">🖼️ ${book.coverWrapImage ? "Umschlagbild ändern" : "Umschlagbild hochladen"}</button>
@@ -1954,7 +1968,6 @@
         ${book.coverWrapImage ? '<button class="btn btn-ghost" id="coverWrapImageRemoveBtn" type="button">Bild entfernen</button>' : ""}
         ${book.coverWrapImage ? '<button class="btn btn-primary" id="coverWrapDownloadBtn" type="button">⬇️ Umschlag herunterladen</button>' : ""}
       </div>
-      ${book.coverWrapImage ? '<p class="ai-suggestion-note">Lädt Hintergrundbild + Rücken-Text als eine fertige Bilddatei in der berechneten Zielgröße herunter (ohne die Buchrücken-/ISBN-Markierungen - die sind nur zur Orientierung in der Vorschau).</p>' : ""}
       ${previewHtml}`;
 
     document.getElementById("coverSpineTextColorSwatch")?.addEventListener("input", (e) => {
@@ -2246,7 +2259,10 @@
           <textarea id="bookImprintInput" rows="2" placeholder="${escapeAttr(`Leer lassen für automatisches „© ${new Date().getFullYear()} [Autor/in]“ – oder eigenen Text eintragen.`)}">${escapeHtml(book.imprintText || "")}</textarea>
         </div>
 
-        <p class="section-label">🎨 Umschlag (Cover) für den Druck</p>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <p class="section-label" style="margin:0;">🎨 Umschlag (Cover) für den Druck</p>
+          <button class="info-badge-inline" id="coverWrapInfoBtn" type="button" title="Was bedeutet das?" aria-label="Was bedeutet das?">ⓘ</button>
+        </div>
         <div id="coverWrapPanel"></div>
       </div>`;
 
@@ -2296,6 +2312,7 @@
       renderCoverWrapPanel(book);
     });
     renderCoverWrapPanel(book);
+    document.getElementById("coverWrapInfoBtn").addEventListener("click", () => showAlert(coverWrapInfoText(book)));
 
     const authorInput = document.getElementById("bookAuthorInput");
     const imprintInput = document.getElementById("bookImprintInput");
@@ -3055,10 +3072,15 @@
   }
 
   function showAlert(message) {
-    const p = document.createElement("p");
-    p.textContent = message;
     modalBody.innerHTML = "";
-    modalBody.appendChild(p);
+    // Absätze (getrennt durch eine Leerzeile) werden als eigene <p>
+    // gerendert, statt zusammenzulaufen - relevant für mehrteilige
+    // Erklärtexte wie den Umschlag-Info-Knopf.
+    message.split(/\n\n+/).forEach((paragraph) => {
+      const p = document.createElement("p");
+      p.textContent = paragraph;
+      modalBody.appendChild(p);
+    });
     modalActions.innerHTML = "";
     const okBtn = document.createElement("button");
     okBtn.className = "btn btn-primary";

@@ -256,6 +256,12 @@ Mathematik befassen müssen: Sie gestaltet Bilder extern (z. B. in Canva)
 in einer von der App berechneten Größe und lädt sie danach nur noch hoch -
 die App übernimmt Zuschnitt und exakte Platzierung.
 
+Erklärtexte zu ISBN-Fläche, Rücken-Text-Schwelle und was der
+Download-Knopf tut stehen nicht mehr dauerhaft im Umschlag-Bereich,
+sondern hinter dem Info-Knopf (ⓘ) neben der Überschrift „Umschlag
+(Cover) für den Druck" - hält den Bereich ruhig, für alle, die die
+Hinweise nach der ersten Nutzung nicht mehr brauchen.
+
 **Stufe 1 (umgesetzt):** In der Buch-Bearbeitung zeigt „🎨 Umschlag (Cover)
 für den Druck" die fertige Gesamtgröße des durchgehenden Covers (Rückseite
 + Buchrücken + Vorderseite + Beschnitt) als Maß in mm und als Pixelgröße

@@ -1788,6 +1788,11 @@
     { key: "color_premium", label: "Farbe Premium", inPerPage: 0.002252 }
   ];
   const GENERIC_SPINE_GRAMMAGE = 90; // g/m², typischer Richtwert für Taschenbuch-Innenpapier
+  // ISBN/Barcode-Fläche bei KDP: offiziell bestätigt 5,1 × 3,1 cm. Wird
+  // sowohl für die Bildschirm-Markierung als auch für die Canva-Schablone
+  // gebraucht, deshalb hier einmal zentral statt doppelt.
+  const ISBN_WIDTH_MM = 51;
+  const ISBN_HEIGHT_MM = 31;
 
   function spineWidthSpec(providerKey, pages, paperTypeKey) {
     if (!pages || pages <= 0) return null;
@@ -1846,6 +1851,7 @@
       lines.push(`Titel/Autor auf dem Rücken erscheint erst ab 200 Seiten (aktuell ${wrap.pages}) - bei weniger wirkt der schmale Rücken zu gedrängt. Amazon druckt technisch teils schon ab ca. 100 Seiten Text auf den Rücken.`);
     }
     lines.push('„Umschlag herunterladen" setzt Hintergrundbild und Rücken-Text zu einer fertigen Bilddatei in der berechneten Zielgröße zusammen - die Markierungen aus der Vorschau (Buchrücken-Streifen, ISBN-Fläche) erscheinen dabei nicht mit in der Datei, die sind nur zur Orientierung.');
+    lines.push('„Schablone für Canva herunterladen" lädt stattdessen ein durchsichtiges Bild in derselben Zielgröße, nur mit den Führungslinien (Beschnittkante, Buchrücken, ISBN-Fläche) - zum Auflegen als oberste Ebene in Canva, um dort frei zu gestalten und Text genau zu platzieren. Vor dem fertigen Export in Canva wieder entfernen.');
     return lines.join("\n\n");
   }
 
@@ -1901,8 +1907,6 @@
     // Rückseite (rechter Rand = linker Rand des Buchrückens), mit
     // Bodenabstand = Beschnitt, damit die Fläche ab der Schnittkante
     // (nicht ab der Bild-Außenkante) gemessen ist.
-    const ISBN_WIDTH_MM = 51;
-    const ISBN_HEIGHT_MM = 31;
     const isbnBoxHtml = book.printProvider === "kdp"
       ? `<div class="cover-wrap-isbn-marker" style="width:${(ISBN_WIDTH_MM / wrap.widthMm * 100)}%;height:${(ISBN_HEIGHT_MM / wrap.heightMm * 100)}%;right:${(100 - spineLeftPercent)}%;bottom:${(wrap.bleedMm / wrap.heightMm * 100)}%;" title="ISBN/Barcode-Fläche (5,1 × 3,1 cm, KDP)">ISBN</div>`
       : "";
@@ -1960,6 +1964,9 @@
           <span>Höhe: <strong>${wrap.heightPx} px</strong></span>
           <button class="btn btn-ghost copy-value-btn" type="button" data-value="${wrap.heightPx}">📋 Kopieren</button>
         </div>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn btn-ghost" id="coverWrapTemplateBtn" type="button">📐 Schablone für Canva herunterladen</button>
       </div>
       ${spineColorPickerHtml}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
@@ -2029,6 +2036,7 @@
       showLightboxHtml(clone.outerHTML);
     });
     document.getElementById("coverWrapDownloadBtn")?.addEventListener("click", (e) => downloadCoverWrap(book, e.target));
+    document.getElementById("coverWrapTemplateBtn")?.addEventListener("click", (e) => downloadCoverWrapTemplate(book, e.target));
   }
 
   // Setzt Hintergrundbild (randlos zugeschnitten, wie in der Vorschau) und
@@ -2099,6 +2107,105 @@
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = `${safeTitle}-Umschlag.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      if (triggerBtn) { triggerBtn.disabled = false; triggerBtn.textContent = originalLabel; }
+    }
+  }
+
+  // Schablone für Canva (o. ä.): transparentes PNG in der exakten
+  // Zielgröße, nur mit Führungslinien für Beschnittkante, Buchrücken und
+  // (bei KDP) ISBN-Fläche - ohne eigenes Hintergrundbild. Lässt sich in
+  // Canva als oberste Ebene auflegen, um dort frei zu gestalten und Text
+  // zu platzieren, und vor dem Export dort wieder entfernen. Ergänzt (statt
+  // ersetzt) "Umschlag herunterladen" - wer lieber in der App bleibt statt
+  // in Canva zu arbeiten, nutzt weiterhin das direkt fertige PNG.
+  //
+  // Bewusst nur Linien innerhalb des ohnehin schon sicheren Satzspiegels
+  // (Beschnittkante, Buchrücken, ISBN) - keine randabfallenden Markierungen,
+  // die vom Wechsel zwischen linker/rechter Buchseite abhängen würden (das
+  // lässt sich mit normalem Browser-Druck nicht zuverlässig vorausberechnen).
+  async function downloadCoverWrapTemplate(book, triggerBtn) {
+    const wrap = coverWrapSpec(book);
+    if (!wrap) return;
+    const originalLabel = triggerBtn ? triggerBtn.textContent : "";
+    if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.textContent = "Wird erstellt …"; }
+    try {
+      await (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve());
+
+      const canvas = document.createElement("canvas");
+      canvas.width = wrap.widthPx;
+      canvas.height = wrap.heightPx;
+      const ctx = canvas.getContext("2d");
+      // Bewusst kein fillRect - Hintergrund bleibt transparent, damit die
+      // Schablone als Ebene über der eigenen Gestaltung sichtbar bleibt.
+
+      const guideColor = "#FF00AA";
+      const mmToPxX = wrap.widthPx / wrap.widthMm;
+      const mmToPxY = wrap.heightPx / wrap.heightMm;
+      const labelFontPx = Math.max(20, Math.round(canvas.height * 0.014));
+
+      function drawLabel(text, x, y, align) {
+        ctx.save();
+        ctx.font = `600 ${labelFontPx}px Georgia, 'Times New Roman', serif`;
+        ctx.textAlign = align || "left";
+        ctx.textBaseline = "bottom";
+        ctx.lineWidth = Math.max(3, labelFontPx * 0.18);
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.strokeText(text, x, y);
+        ctx.fillStyle = guideColor;
+        ctx.fillText(text, x, y);
+        ctx.restore();
+      }
+
+      // Beschnittkante (Trimm-Linie) - Bereich zwischen Bildaußenkante und
+      // dieser Linie wird beim Anbieter weggeschnitten.
+      const bleedPxX = wrap.bleedMm * mmToPxX;
+      const bleedPxY = wrap.bleedMm * mmToPxY;
+      ctx.save();
+      ctx.setLineDash([canvas.height * 0.01, canvas.height * 0.006]);
+      ctx.lineWidth = Math.max(2, canvas.height * 0.0015);
+      ctx.strokeStyle = guideColor;
+      ctx.strokeRect(bleedPxX, bleedPxY, canvas.width - bleedPxX * 2, canvas.height - bleedPxY * 2);
+      ctx.restore();
+      drawLabel("Beschnittkante (nach dem Druck abgeschnitten)", bleedPxX, bleedPxY - 10, "left");
+
+      // Buchrücken (Spine) - zwei senkrechte Linien über die volle Höhe.
+      const spineLeftPx = (wrap.bleedMm + wrap.formatWidthMm) * mmToPxX;
+      const spineWidthPx = wrap.spineWidthMm * mmToPxX;
+      ctx.save();
+      ctx.setLineDash([canvas.height * 0.01, canvas.height * 0.006]);
+      ctx.lineWidth = Math.max(2, canvas.height * 0.0015);
+      ctx.strokeStyle = guideColor;
+      ctx.beginPath();
+      ctx.moveTo(spineLeftPx, 0); ctx.lineTo(spineLeftPx, canvas.height);
+      ctx.moveTo(spineLeftPx + spineWidthPx, 0); ctx.lineTo(spineLeftPx + spineWidthPx, canvas.height);
+      ctx.stroke();
+      ctx.restore();
+      drawLabel("Buchrücken", spineLeftPx + spineWidthPx / 2, canvas.height / 2, "center");
+
+      // ISBN/Barcode-Fläche - nur bei KDP mit offiziell bestätigter Größe.
+      if (book.printProvider === "kdp") {
+        const isbnWidthPx = ISBN_WIDTH_MM * mmToPxX;
+        const isbnHeightPx = ISBN_HEIGHT_MM * mmToPxY;
+        const isbnX = spineLeftPx - isbnWidthPx;
+        const isbnY = canvas.height - bleedPxY - isbnHeightPx;
+        ctx.save();
+        ctx.setLineDash([canvas.height * 0.01, canvas.height * 0.006]);
+        ctx.lineWidth = Math.max(2, canvas.height * 0.0015);
+        ctx.strokeStyle = guideColor;
+        ctx.strokeRect(isbnX, isbnY, isbnWidthPx, isbnHeightPx);
+        ctx.restore();
+        drawLabel("ISBN", isbnX + isbnWidthPx / 2, isbnY + isbnHeightPx / 2 + labelFontPx * 0.3, "center");
+      }
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const safeTitle = (book.title || "Umschlag").replace(/[\\/:*?"<>|]+/g, "").trim() || "Umschlag";
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${safeTitle}-Schablone.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();

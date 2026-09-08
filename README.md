@@ -320,8 +320,17 @@ berechneten Zielgröße zusammen - bereit zum Hochladen beim Anbieter. Die
 Buchrücken-/ISBN-Markierungen aus der Vorschau erscheinen dabei bewusst
 nicht mit in der Datei, die sind nur zur Orientierung gedacht.
 
+Wer lieber in Canva (o. ä.) gestaltet statt in der App ein Umschlagbild
+hochzuladen: „📐 Schablone für Canva herunterladen" lädt ein durchsichtiges
+PNG in derselben Zielgröße, das nur die Führungslinien zeigt (Beschnittkante,
+Buchrücken, bei KDP zusätzlich die ISBN-Fläche) - zum Auflegen als oberste
+Ebene über der eigenen Gestaltung, vor dem fertigen Export in Canva wieder
+entfernen. Braucht kein hochgeladenes Umschlagbild in der App, ist also
+unabhängig von „Umschlag herunterladen" nutzbar - beide Wege stehen parallel
+zur Verfügung.
+
 Weitere Stufen (Innenbild-Platzhalter mit Layout-Auswahl,
-Formatwechsel-Schutz, Umschlag als fertige Datei herunterladen) folgen.
+Formatwechsel-Schutz) folgen.
 
 ### Kosten im Blick behalten
 

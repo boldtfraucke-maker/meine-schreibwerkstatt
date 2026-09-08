@@ -234,6 +234,12 @@ tatsächlich hochgeladenen Auflösung, ohne Qualitätsverlust, und getrennt
 von der Innentext-Datei, weil der Umschlag beim Anbieter ohnehin separat
 hochgeladen wird.
 
+Die Leiste mit „← Zurück zur Bearbeitung" und „🖨️ Drucken" bleibt beim
+Scrollen durch lange Bücher oben am Bildschirm sichtbar (sticky), statt
+beim Lesen aus dem Blick zu wandern. Beim echten Drucken/PDF-Export
+werden App-Menü und diese Bedienleiste automatisch ausgeblendet - im
+Ausdruck erscheint nur das Buch selbst.
+
 ### Phase 7: Bilder im Buch & Cover-Wrap (nur am PC)
 
 Für Bücher mit Bildern soll die Autorin sich nicht mit Beschnitt/Pixel-

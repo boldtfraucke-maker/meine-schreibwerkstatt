@@ -927,6 +927,42 @@ select.status-select {
   line-height: 1.5;
 }
 .print-format-note.unconfirmed { color: var(--warn); }
+.book-preview-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 10px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Beim echten Drucken/PDF-Export soll nur das Buch selbst erscheinen -
+   App-Chrome und die Bildschirm-Vorschau-Bedienelemente werden ausgeblendet.
+   Die feste Breite/Innenabstand von .book-preview.print-mode ist nur für die
+   Bildschirm-Vorschau gedacht (simuliert dort eine einzelne Seite) - beim
+   echten Druck kommen die Seitenränder bereits von der @page-Regel, sonst
+   würden sie sich verdoppeln. */
+@media print {
+  .topbar, .sidebar, .tabbar-mobile, .book-preview-toolbar, .print-format-note {
+    display: none !important;
+  }
+  main.content { padding: 0 !important; overflow: visible !important; }
+  .book-preview.print-mode {
+    width: auto !important;
+    max-width: none !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+}
 
 /* ---------- Settings ---------- */
 .settings-block {

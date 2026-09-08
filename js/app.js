@@ -2471,7 +2471,7 @@
       : "";
 
     panel.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <div class="book-preview-toolbar">
         <button class="btn btn-ghost" id="backToBookDetailBtn">← Zurück zur Bearbeitung</button>
         ${spec ? '<button class="btn btn-primary" id="printExportBtn">🖨️ Drucken / Als PDF speichern</button>' : ""}
       </div>

@@ -299,16 +299,20 @@ Seiten, siehe Hinweis dort, wirkt bei so wenig Rückenbreite aber gedrängt;
 bei anderen Anbietern ab einer generischen Mindestbreite). Ein zu langer
 Titel wird in der Vorschau abgeschnitten (…) statt überzulaufen - ein
 Hinweis, ihn ggf. zu kürzen. Die Textfarbe lässt sich frei wählen (Farbwahl
-plus Hexcode-Eingabefeld), da Weiß nicht zu jedem Umschlagbild passt.
-Aktuell ist das eine reine Bildschirm-Vorschau, noch keine herunterladbare
-fertige Umschlag-Datei - das kommt mit einer späteren Stufe. Ein Klick auf
-die Vorschau öffnet sie vergrößert.
+plus Hexcode-Eingabefeld), da Weiß nicht zu jedem Umschlagbild passt. Ein
+Klick auf die Vorschau öffnet sie vergrößert.
 
 **Stufe 4 (umgesetzt):** Die ISBN-/Barcode-Fläche wird bei Amazon KDP direkt
 in der Vorschau als gestricheltes Feld unten rechts auf der Rückseite
 markiert (5,1 × 3,1 cm, offiziell bestätigt). Bei anderen Anbietern gibt es
 dafür keinen öffentlich bestätigten Wert - dort bleibt es bewusst beim
 allgemeinen Text-Hinweis, statt eine falsche Genauigkeit vorzugaukeln.
+
+„⬇️ Umschlag herunterladen" setzt Hintergrundbild (randlos zugeschnitten)
+und Rücken-Text (falls vorhanden) zu einer fertigen PNG-Datei in exakt der
+berechneten Zielgröße zusammen - bereit zum Hochladen beim Anbieter. Die
+Buchrücken-/ISBN-Markierungen aus der Vorschau erscheinen dabei bewusst
+nicht mit in der Datei, die sind nur zur Orientierung gedacht.
 
 Weitere Stufen (Innenbild-Platzhalter mit Layout-Auswahl,
 Formatwechsel-Schutz, Umschlag als fertige Datei herunterladen) folgen.

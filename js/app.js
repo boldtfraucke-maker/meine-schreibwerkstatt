@@ -1952,7 +1952,9 @@
         <button class="btn btn-ghost" id="coverWrapImageBtn" type="button">🖼️ ${book.coverWrapImage ? "Umschlagbild ändern" : "Umschlagbild hochladen"}</button>
         <input type="file" id="coverWrapImageInput" accept="image/*" style="display:none;">
         ${book.coverWrapImage ? '<button class="btn btn-ghost" id="coverWrapImageRemoveBtn" type="button">Bild entfernen</button>' : ""}
+        ${book.coverWrapImage ? '<button class="btn btn-primary" id="coverWrapDownloadBtn" type="button">⬇️ Umschlag herunterladen</button>' : ""}
       </div>
+      ${book.coverWrapImage ? '<p class="ai-suggestion-note">Lädt Hintergrundbild + Rücken-Text als eine fertige Bilddatei in der berechneten Zielgröße herunter (ohne die Buchrücken-/ISBN-Markierungen - die sind nur zur Orientierung in der Vorschau).</p>' : ""}
       ${previewHtml}`;
 
     document.getElementById("coverSpineTextColorSwatch")?.addEventListener("input", (e) => {
@@ -2013,6 +2015,83 @@
       clone.querySelector(".cover-wrap-zoom-hint")?.remove();
       showLightboxHtml(clone.outerHTML);
     });
+    document.getElementById("coverWrapDownloadBtn")?.addEventListener("click", (e) => downloadCoverWrap(book, e.target));
+  }
+
+  // Setzt Hintergrundbild (randlos zugeschnitten, wie in der Vorschau) und
+  // - falls vorhanden - den Rücken-Text zu einer fertigen Bilddatei in der
+  // berechneten Zielgröße zusammen. Bewusst OHNE die Buchrücken-/ISBN-
+  // Markierungen aus der Vorschau, die sind nur zur Orientierung gedacht
+  // und sollen nicht mitgedruckt werden.
+  async function downloadCoverWrap(book, triggerBtn) {
+    const wrap = coverWrapSpec(book);
+    if (!wrap || !book.coverWrapImage) return;
+    const originalLabel = triggerBtn ? triggerBtn.textContent : "";
+    if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.textContent = "Wird erstellt …"; }
+    try {
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = book.coverWrapImage;
+      });
+      await (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve());
+
+      const canvas = document.createElement("canvas");
+      canvas.width = wrap.widthPx;
+      canvas.height = wrap.heightPx;
+      const ctx = canvas.getContext("2d");
+
+      // object-fit:cover von Hand nachgebaut - randlos einpassen, egal
+      // welches Seitenverhältnis das hochgeladene Bild hat.
+      const canvasRatio = canvas.width / canvas.height;
+      const imgRatio = img.width / img.height;
+      let sx, sy, sw, sh;
+      if (imgRatio > canvasRatio) {
+        sh = img.height; sw = sh * canvasRatio; sx = (img.width - sw) / 2; sy = 0;
+      } else {
+        sw = img.width; sh = sw / canvasRatio; sx = 0; sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+      const canShowSpineText = book.printProvider === "kdp" ? wrap.pages >= 200 : wrap.spineWidthMm >= 8;
+      const spineText = book.title ? (book.author ? `${book.author} · ${book.title}` : book.title) : "";
+      if (canShowSpineText && spineText) {
+        const spineLeftPx = (wrap.bleedMm + wrap.formatWidthMm) / wrap.widthMm * canvas.width;
+        const spineWidthPx = wrap.spineWidthMm / wrap.widthMm * canvas.width;
+        const centerX = spineLeftPx + spineWidthPx / 2;
+        const centerY = canvas.height / 2;
+        const fontSizePx = Math.max(24, Math.round(canvas.height * 0.022));
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = book.coverWrapSpineTextColor || "#FFFFFF";
+        ctx.font = `600 ${fontSizePx}px Georgia, 'Times New Roman', serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,0.6)";
+        ctx.shadowBlur = fontSizePx * 0.3;
+        let text = spineText;
+        const maxTextWidth = canvas.height * 0.92;
+        while (text.length > 1 && ctx.measureText(text).width > maxTextWidth) {
+          text = text.slice(0, -1);
+        }
+        if (text !== spineText) text = text.replace(/\s+$/, "") + "…";
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+      }
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const safeTitle = (book.title || "Umschlag").replace(/[\\/:*?"<>|]+/g, "").trim() || "Umschlag";
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${safeTitle}-Umschlag.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      if (triggerBtn) { triggerBtn.disabled = false; triggerBtn.textContent = originalLabel; }
+    }
   }
 
   function populatePrintFormatSelect(providerKey, selectedFormatKey) {

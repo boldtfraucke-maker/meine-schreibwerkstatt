@@ -759,8 +759,24 @@ select.status-select {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-card);
+  cursor: zoom-in;
 }
 .cover-wrap-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cover-wrap-zoom-hint {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+/* Vergrößerte Ansicht (Klick auf die Umschlag-Vorschau) - eigene, breitere
+   Kartenbreite statt der schmalen 420px für normale Bestätigungsdialoge. */
+.modal-card.modal-card-image { max-width: min(94vw, 720px); }
+.modal-card-image .lightbox-cover-preview { max-width: none; cursor: default; margin: 0; }
 .cover-wrap-spine-marker {
   position: absolute;
   top: 0;

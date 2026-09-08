@@ -285,7 +285,8 @@ berechnete Gesamtgröße zu (per `object-fit: cover`) - die Autorin muss das
 Bild nicht selbst pixelgenau zurechtschneiden. Eine Vorschau zeigt das
 eingepasste Bild sowie einen markierten Streifen für den Buchrücken, damit
 dort nichts Wichtiges (z. B. Gesichter) landet. Das Bild kann jederzeit
-ausgetauscht oder entfernt werden.
+ausgetauscht oder entfernt werden. Ein Klick auf die Vorschau öffnet sie
+vergrößert (samt Rücken-Markierung/-Text).
 
 **Stufe 3 (umgesetzt):** Autor/in und Titel erscheinen automatisch (senkrecht,
 von unten nach oben lesbar - Kopf zum Lesen nach links geneigt, wie bei den

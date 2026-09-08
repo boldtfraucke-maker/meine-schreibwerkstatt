@@ -1908,11 +1908,12 @@
         </div>`
       : "";
     const previewHtml = book.coverWrapImage
-      ? `<div class="cover-wrap-preview" style="aspect-ratio:${wrap.widthMm}/${wrap.heightMm};">
+      ? `<div class="cover-wrap-preview" id="coverWrapPreviewBox" style="aspect-ratio:${wrap.widthMm}/${wrap.heightMm};" title="Zum Vergrößern anklicken">
           <img src="${book.coverWrapImage}" alt="">
           <div class="cover-wrap-spine-marker" style="left:${spineLeftPercent}%;width:${spineWidthPercent}%;" title="Buchrücken">${spineTextHtml}</div>
+          <div class="cover-wrap-zoom-hint">🔍</div>
         </div>
-        <p class="ai-suggestion-note">So wird dein Bild randlos eingepasst (Vorschau) - der markierte, schmale Streifen ist der Buchrücken, dort später möglichst nichts Wichtiges wie Gesichter platzieren.${canShowSpineText && spineText ? " Titel/Autor setzt die App automatisch dort hin." : ""}</p>`
+        <p class="ai-suggestion-note">So wird dein Bild randlos eingepasst (Vorschau, zum Vergrößern anklicken) - der markierte, schmale Streifen ist der Buchrücken, dort später möglichst nichts Wichtiges wie Gesichter platzieren.${canShowSpineText && spineText ? " Titel/Autor setzt die App automatisch dort hin." : ""}</p>`
       : "";
     panel.innerHTML = `
       ${paperSelectHtml}
@@ -1990,6 +1991,13 @@
       delete book.coverWrapImage;
       await saveBook(book);
       renderCoverWrapPanel(book);
+    });
+    document.getElementById("coverWrapPreviewBox")?.addEventListener("click", () => {
+      const clone = document.getElementById("coverWrapPreviewBox").cloneNode(true);
+      clone.removeAttribute("id");
+      clone.classList.add("lightbox-cover-preview");
+      clone.querySelector(".cover-wrap-zoom-hint")?.remove();
+      showLightboxHtml(clone.outerHTML);
     });
   }
 
@@ -2911,10 +2919,29 @@
 
   // ---------- In-App-Dialoge ----------
   const modalOverlay = document.getElementById("modalOverlay");
+  const modalCard = document.getElementById("modalCard");
   const modalBody = document.getElementById("modalBody");
   const modalActions = document.getElementById("modalActions");
 
-  function closeModal() { modalOverlay.hidden = true; }
+  function closeModal() { modalOverlay.hidden = true; modalCard.classList.remove("modal-card-image"); }
+
+  // Vergrößerte Ansicht z. B. für die Umschlag-Vorschau - nutzt denselben
+  // Modal-Rahmen wie Bestätigungsdialoge, aber mit eigener, breiterer
+  // Kartenbreite (modal-card-image), damit das Bild groß genug wird. Nimmt
+  // fertiges HTML entgegen (statt nur eine Bild-URL), damit sich z. B. die
+  // Umschlag-Vorschau mitsamt Buchrücken-Markierung/-Text unverändert groß
+  // anzeigen lässt.
+  function showLightboxHtml(html) {
+    modalCard.classList.add("modal-card-image");
+    modalBody.innerHTML = html;
+    modalActions.innerHTML = "";
+    const okBtn = document.createElement("button");
+    okBtn.className = "btn btn-ghost";
+    okBtn.textContent = "Schließen";
+    okBtn.addEventListener("click", closeModal);
+    modalActions.append(okBtn);
+    modalOverlay.hidden = false;
+  }
 
   function showConfirm(message, confirmLabel, onConfirm) {
     const p = document.createElement("p");

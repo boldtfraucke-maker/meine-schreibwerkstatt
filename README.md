@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download. Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt), Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) und Stufe 4 (ISBN-Fläche markieren) sind umgesetzt.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export, Cover-Download und eine Doppelseiten-Ansicht („Als Buch blättern"). Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt), Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) und Stufe 4 (ISBN-Fläche markieren) sind umgesetzt.
 
 ## Lokal testen
 
@@ -248,6 +248,18 @@ Scrollen durch lange Bücher oben am Bildschirm sichtbar (sticky), statt
 beim Lesen aus dem Blick zu wandern. Beim echten Drucken/PDF-Export
 werden App-Menü und diese Bedienleiste automatisch ausgeblendet - im
 Ausdruck erscheint nur das Buch selbst.
+
+**„📖 Als Buch blättern"** (bei gewähltem Format, neben „🖨️ Drucken") zeigt
+die *echte* Seitenaufteilung als Doppelseiten - wie ein aufgeschlagenes
+Buch, mit „← Zurückblättern"/„Weiterblättern →" und einer Seitenzahl-
+Anzeige. Im Unterschied zur normalen Bildschirm-Vorschau (nur eine
+vereinfachte Einzelseite) berechnet das hier tatsächlich, welcher Text auf
+welche Seite fällt, und zeigt dabei den korrekt wechselnden Bundsteg
+zwischen linker und rechter Seite direkt in der App - ohne dafür erst
+„Strg+P" öffnen zu müssen. Dafür wird einmalig
+[Paged.js](https://pagedjs.org/) nachgeladen (kostenlose, quelloffene
+Bibliothek, läuft komplett im Browser, verschickt keine Buchinhalte
+irgendwohin) - nur wenn die Ansicht tatsächlich geöffnet wird.
 
 ### Phase 7: Bilder im Buch & Cover-Wrap (nur am PC)
 

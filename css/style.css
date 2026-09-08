@@ -1049,6 +1049,33 @@ select.status-select {
   border-bottom: 1px solid var(--border);
 }
 
+/* Doppelseiten-Ansicht ("Als Buch blättern", Paged.js) */
+.spread-status { text-align: center; color: var(--ink-soft); margin: 60px auto; max-width: 480px; }
+.spread-nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.spread-indicator { color: var(--ink-soft); font-size: 0.88rem; white-space: nowrap; }
+.spread-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0;
+  overflow-x: auto;
+  padding: 20px 10px 40px;
+}
+.spread-page-frame {
+  background: var(--bg-editor);
+  box-shadow: 0 6px 20px var(--shadow);
+  flex-shrink: 0;
+}
+.spread-page-frame .pagedjs_page { box-shadow: none; margin: 0; }
+/* Leichter Schatten zur Buchmitte hin (Bundsteg), damit die beiden Seiten
+   wie ein aufgeschlagenes Buch wirken statt zwei lose Blätter. */
+.spread-page-left { border-radius: 4px 0 0 4px; box-shadow: inset -10px 0 14px -12px rgba(0,0,0,0.45), 0 6px 20px var(--shadow); }
+.spread-page-right { border-radius: 0 4px 4px 0; box-shadow: inset 10px 0 14px -12px rgba(0,0,0,0.45), 0 6px 20px var(--shadow); }
+@media (max-width: 820px) {
+  .spread-stage { flex-direction: column; align-items: center; }
+  .spread-page-left, .spread-page-right { border-radius: 4px; box-shadow: 0 6px 20px var(--shadow); }
+}
+
 /* Beim echten Drucken/PDF-Export soll nur das Buch selbst erscheinen -
    App-Chrome und die Bildschirm-Vorschau-Bedienelemente werden ausgeblendet.
    Die feste Breite/Innenabstand von .book-preview.print-mode ist nur für die

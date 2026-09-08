@@ -2682,11 +2682,12 @@
     });
   }
 
-  function renderBookPreview(book) {
-    const panel = document.getElementById("booksPanel");
+  // Titelseite + Impressum + Kapitel als HTML - gemeinsam genutzt von der
+  // einfachen Bildschirm-Vorschau (renderBookPreview) und der
+  // Doppelseiten-Ansicht (renderBookSpreadView), damit beide exakt denselben
+  // Inhalt zeigen.
+  function buildBookContentHtml(book, spec) {
     const chapters = book.chapters || [];
-    const spec = bookPrintSpec(book);
-
     const chaptersHtml = chapters.map((chapter) => {
       const storyIds = chapter.storyIds || [];
       // Der Geschichtentitel erscheint hier nur, wenn ein Kapitel mehrere
@@ -2715,51 +2716,6 @@
         </div>`;
     }).join("");
 
-    // Seitengröße/Ränder hängen vom gewählten Anbieter+Format ab - @page
-    // unterstützt dafür keine CSS-Variablen zuverlässig, deshalb ein
-    // eigenes <style>-Tag mit den konkreten Werten. @page :left/:right
-    // sorgt dafür, dass der Bundsteg beim echten Druck/PDF-Export korrekt
-    // zwischen linker und rechter Seite wechselt (das kann die
-    // Bildschirm-Vorschau unten nicht nachbilden, da HTML sich erst beim
-    // Drucken selbst in Seiten aufteilt). @bottom-center zeigt die
-    // laufende Seitenzahl - auf der Titelseite bewusst nicht (wie bei
-    // gedruckten Büchern üblich).
-    removePrintPageStyle();
-    if (spec) {
-      const styleTag = document.createElement("style");
-      styleTag.id = "bookPrintPageStyle";
-      styleTag.textContent = `
-        @media print {
-          @page {
-            size: ${spec.format.widthMm}mm ${spec.format.heightMm}mm;
-            margin-top: ${spec.margins.top}mm;
-            margin-bottom: ${spec.margins.bottom}mm;
-            @bottom-center {
-              content: counter(page);
-              font-family: Georgia, 'Times New Roman', serif;
-              font-size: 9pt;
-              color: #555;
-            }
-          }
-          @page :left { margin-left: ${spec.margins.outer}mm; margin-right: ${spec.margins.inner}mm; }
-          @page :right { margin-left: ${spec.margins.inner}mm; margin-right: ${spec.margins.outer}mm; }
-          @page :first { @bottom-center { content: normal; } }
-        }`;
-      document.head.appendChild(styleTag);
-    }
-
-    const formatNote = spec
-      ? `<div class="print-format-note${spec.margins.confirmed ? "" : " unconfirmed"}">
-          📐 ${escapeHtml(spec.provider.label)} · ${escapeHtml(spec.format.label)}
-          ${!spec.margins.confirmed ? ` – Rand-Werte sind für ${escapeHtml(spec.provider.label)} nicht öffentlich bestätigt, hier ein sicherer Richtwert. Vor dem Bestellen bitte die eigene Vorlage von ${escapeHtml(spec.provider.label)} gegenchecken.` : ""}
-          <br>Die Bildschirm-Vorschau zeigt eine vereinfachte Einzelseite - beim echten Druck/PDF-Export wechselt der Bundsteg korrekt zwischen linker und rechter Seite.
-        </div>`
-      : `<div class="print-format-note">Noch kein Anbieter/Format gewählt - die Vorschau zeigt eine allgemeine Ansicht ohne feste Seitengröße. Format in der Bearbeitung wählen für eine druckgenaue Vorschau.</div>`;
-
-    const pageStyle = spec
-      ? ` style="width:${spec.format.widthMm}mm;padding:${spec.margins.top}mm ${spec.margins.outer}mm ${spec.margins.bottom}mm ${spec.margins.inner}mm;"`
-      : "";
-
     // Die Impressum-Seite gehört nur zum Druck-Layout (nicht zur
     // allgemeinen Bildschirm-Vorschau) und erscheint nur, wenn tatsächlich
     // etwas draufstehen würde - sonst gäbe es eine fast leere Seite.
@@ -2769,25 +2725,245 @@
       ? `<div class="preview-imprint" style="break-before:page;">${escapeHtml(imprintText).split("\n").map(line => `<p>${line}</p>`).join("")}</div>`
       : "";
 
+    return `
+      <div class="preview-titlepage">
+        <h1 class="preview-title">${escapeHtml(book.title || "Ohne Titel")}</h1>
+        ${book.subtitle ? `<p class="preview-subtitle">${escapeHtml(book.subtitle)}</p>` : ""}
+        ${book.author ? `<p class="preview-author">${escapeHtml(book.author)}</p>` : ""}
+        ${book.description ? `<p class="preview-description">${escapeHtml(book.description)}</p>` : ""}
+      </div>
+      ${imprintHtml}
+      ${chapters.length === 0 ? '<p class="preview-empty">Noch keine Kapitel angelegt – lege in der Bearbeitung ein Kapitel an und füge Geschichten hinzu.</p>' : chaptersHtml}`;
+  }
+
+  // @page-Regeln als reiner CSS-Text - gemeinsam genutzt vom echten
+  // Druck/PDF-Export (@media print) und der Doppelseiten-Ansicht (Paged.js
+  // braucht dieselben Regeln ohne die @media-print-Klammer, da sie dort
+  // nicht beim echten Drucken, sondern direkt für die Bildschirm-Pagination
+  // ausgewertet werden).
+  function buildBookPageCss(spec, { mediaPrint }) {
+    if (!spec) return "";
+    const rules = `
+      @page {
+        size: ${spec.format.widthMm}mm ${spec.format.heightMm}mm;
+        margin-top: ${spec.margins.top}mm;
+        margin-bottom: ${spec.margins.bottom}mm;
+        @bottom-center {
+          content: counter(page);
+          font-family: Georgia, 'Times New Roman', serif;
+          font-size: 9pt;
+          color: #555;
+        }
+      }
+      @page :left { margin-left: ${spec.margins.outer}mm; margin-right: ${spec.margins.inner}mm; }
+      @page :right { margin-left: ${spec.margins.inner}mm; margin-right: ${spec.margins.outer}mm; }
+      @page :first { @bottom-center { content: normal; } }`;
+    return mediaPrint ? `@media print {${rules}}` : rules;
+  }
+
+  function renderBookPreview(book) {
+    const panel = document.getElementById("booksPanel");
+    const chapters = book.chapters || [];
+    const spec = bookPrintSpec(book);
+
+    // Seitengröße/Ränder hängen vom gewählten Anbieter+Format ab - @page
+    // unterstützt dafür keine CSS-Variablen zuverlässig, deshalb ein
+    // eigenes <style>-Tag mit den konkreten Werten. @page :left/:right
+    // sorgt dafür, dass der Bundsteg beim echten Druck/PDF-Export korrekt
+    // zwischen linker und rechter Seite wechselt (das kann die
+    // Bildschirm-Vorschau unten nicht nachbilden, da HTML sich erst beim
+    // Drucken selbst in Seiten aufteilt - dafür gibt es "Als Buch blättern").
+    removePrintPageStyle();
+    if (spec) {
+      const styleTag = document.createElement("style");
+      styleTag.id = "bookPrintPageStyle";
+      styleTag.textContent = buildBookPageCss(spec, { mediaPrint: true });
+      document.head.appendChild(styleTag);
+    }
+
+    const formatNote = spec
+      ? `<div class="print-format-note${spec.margins.confirmed ? "" : " unconfirmed"}">
+          📐 ${escapeHtml(spec.provider.label)} · ${escapeHtml(spec.format.label)}
+          ${!spec.margins.confirmed ? ` – Rand-Werte sind für ${escapeHtml(spec.provider.label)} nicht öffentlich bestätigt, hier ein sicherer Richtwert. Vor dem Bestellen bitte die eigene Vorlage von ${escapeHtml(spec.provider.label)} gegenchecken.` : ""}
+          <br>Die Bildschirm-Vorschau zeigt eine vereinfachte Einzelseite - „📖 Als Buch blättern" zeigt die echte Seitenaufteilung mit linker/rechter Seite.
+        </div>`
+      : `<div class="print-format-note">Noch kein Anbieter/Format gewählt - die Vorschau zeigt eine allgemeine Ansicht ohne feste Seitengröße. Format in der Bearbeitung wählen für eine druckgenaue Vorschau.</div>`;
+
+    const pageStyle = spec
+      ? ` style="width:${spec.format.widthMm}mm;padding:${spec.margins.top}mm ${spec.margins.outer}mm ${spec.margins.bottom}mm ${spec.margins.inner}mm;"`
+      : "";
+
     panel.innerHTML = `
       <div class="book-preview-toolbar">
         <button class="btn btn-ghost" id="backToBookDetailBtn">← Zurück zur Bearbeitung</button>
-        ${spec ? '<button class="btn btn-primary" id="printExportBtn">🖨️ Drucken / Als PDF speichern</button>' : ""}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${spec ? '<button class="btn btn-outline" id="spreadViewBtn">📖 Als Buch blättern</button>' : ""}
+          ${spec ? '<button class="btn btn-primary" id="printExportBtn">🖨️ Drucken / Als PDF speichern</button>' : ""}
+        </div>
       </div>
       ${formatNote}
       <div class="book-preview${spec ? " print-mode" : ""}"${pageStyle}>
-        <div class="preview-titlepage">
-          <h1 class="preview-title">${escapeHtml(book.title || "Ohne Titel")}</h1>
-          ${book.subtitle ? `<p class="preview-subtitle">${escapeHtml(book.subtitle)}</p>` : ""}
-          ${book.author ? `<p class="preview-author">${escapeHtml(book.author)}</p>` : ""}
-          ${book.description ? `<p class="preview-description">${escapeHtml(book.description)}</p>` : ""}
-        </div>
-        ${imprintHtml}
-        ${chapters.length === 0 ? '<p class="preview-empty">Noch keine Kapitel angelegt – lege in der Bearbeitung ein Kapitel an und füge Geschichten hinzu.</p>' : chaptersHtml}
+        ${buildBookContentHtml(book, spec)}
       </div>`;
 
     document.getElementById("backToBookDetailBtn").addEventListener("click", () => { removePrintPageStyle(); renderBookDetail(book); });
     document.getElementById("printExportBtn")?.addEventListener("click", () => window.print());
+    document.getElementById("spreadViewBtn")?.addEventListener("click", () => renderBookSpreadView(book));
+  }
+
+  // Lädt Paged.js (kostenlose, quelloffene Bibliothek) bei Bedarf von einem
+  // CDN nach - nur wenn die Doppelseiten-Ansicht tatsächlich geöffnet wird,
+  // nicht beim normalen App-Start. Läuft komplett im Browser, es werden
+  // dabei keine Buchinhalte irgendwohin verschickt.
+  //
+  // WICHTIG: "paged.js" (nicht "paged.polyfill.js") laden - die Polyfill-
+  // Variante übernimmt beim Laden automatisch die komplette Seite (verschiebt
+  // #app in ein verstecktes <template>, um sie selbst zu paginieren), weil
+  // sie eigentlich für "ganze Webseite drucken" gedacht ist. Das hat beim
+  // Testen dazu geführt, dass die App-Oberfläche verschwand und Paged.js
+  // sich mit dem eigenen, gezielten preview()-Aufruf in die Quere kam
+  // (zufällige Hänger). Die reine "paged.js" bietet dieselbe
+  // Paged.Previewer-API ganz ohne diese automatische Übernahme.
+  let pagedJsLoadPromise = null;
+  function ensurePagedJsLoaded() {
+    if (window.Paged && window.Paged.Previewer) return Promise.resolve();
+    if (pagedJsLoadPromise) return pagedJsLoadPromise;
+    pagedJsLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/pagedjs@0.4.3/dist/paged.js";
+      script.onload = () => resolve();
+      script.onerror = () => { pagedJsLoadPromise = null; reject(new Error("Paged.js konnte nicht geladen werden")); };
+      document.head.appendChild(script);
+    });
+    return pagedJsLoadPromise;
+  }
+
+  // Doppelseiten-Ansicht ("Als Buch blättern") - zeigt die ECHTE
+  // Seitenaufteilung mit korrekt wechselndem Bundsteg zwischen linker und
+  // rechter Seite, im Unterschied zur einfachen Bildschirm-Vorschau (die
+  // nur eine vereinfachte Einzelseite zeigt, weil ein normaler Browser
+  // Seitenumbrüche sonst nur beim tatsächlichen Drucken berechnet). Nutzt
+  // dafür Paged.js mit denselben @page-Regeln wie der echte Druck/PDF-
+  // Export (buildBookPageCss), damit beide immer übereinstimmen.
+  async function renderBookSpreadView(book) {
+    const panel = document.getElementById("booksPanel");
+    const spec = bookPrintSpec(book);
+    if (!spec) { renderBookPreview(book); return; }
+
+    removePrintPageStyle();
+    panel.innerHTML = `
+      <div class="book-preview-toolbar">
+        <button class="btn btn-ghost" id="backToPreviewBtn">← Zurück zur Vorschau</button>
+      </div>
+      <p class="spread-status">📖 Seiten werden berechnet … das kann bei längeren Büchern einen Moment dauern.</p>`;
+    panel.querySelector("#backToPreviewBtn").addEventListener("click", () => renderBookPreview(book));
+
+    try {
+      await ensurePagedJsLoaded();
+    } catch (e) {
+      const statusEl = panel.querySelector(".spread-status");
+      if (statusEl) statusEl.textContent = 'Die Doppelseiten-Ansicht konnte nicht geladen werden (evtl. keine Internetverbindung gerade). Bitte später erneut versuchen, oder "🖨️ Drucken / Als PDF speichern" nutzen.';
+      return;
+    }
+
+    const contentHtml = buildBookContentHtml(book, spec);
+    const cssText = buildBookPageCss(spec, { mediaPrint: false });
+    const cssBlobUrl = URL.createObjectURL(new Blob([cssText], { type: "text/css" }));
+
+    // Paged.js braucht einen echten, im Dokument eingehängten Container,
+    // um die Seiten zu berechnen - unsichtbar weit außerhalb des
+    // Bildschirms platziert, statt display:none (das würde bei manchen
+    // Layoutberechnungen 0 ergeben, siehe schon frühere Erfahrung damit
+    // in dieser App).
+    const pagesHolder = document.createElement("div");
+    pagesHolder.style.cssText = "position:absolute;left:-99999px;top:0;";
+    document.body.appendChild(pagesHolder);
+
+    // Falls die Nutzerin währenddessen wegnavigiert (z. B. "← Alle Bücher"),
+    // brechen wir sauber ab, statt später einen nicht mehr vorhandenen
+    // Knopf verkabeln zu wollen (das würde sonst zu einem Fehler führen).
+    function stillOnThisPanel() { return document.getElementById("booksPanel") === panel; }
+
+    let pageEls;
+    try {
+      const previewer = new Paged.Previewer();
+      // Sicherheitsnetz: falls Paged.js sich bei ungewöhnlichem Inhalt
+      // verhakt (beobachtet bei einem extrem langen, ungegliederten
+      // Textblock ohne Absätze), soll die Ansicht nach einer Weile mit
+      // einer verständlichen Meldung abbrechen statt endlos zu laden.
+      const timeoutMs = 45000;
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs));
+      await Promise.race([previewer.preview(contentHtml, [cssBlobUrl], pagesHolder), timeoutPromise]);
+      pageEls = Array.from(pagesHolder.querySelectorAll(".pagedjs_page"));
+    } catch (e) {
+      URL.revokeObjectURL(cssBlobUrl);
+      pagesHolder.remove();
+      if (!stillOnThisPanel()) return;
+      const statusEl = panel.querySelector(".spread-status");
+      if (statusEl) statusEl.textContent = 'Die Seiten konnten nicht berechnet werden (bei sehr langen Geschichten ohne Absätze kann das vorkommen). Bitte „🖨️ Drucken / Als PDF speichern" nutzen, um die echte Seitenaufteilung zu sehen.';
+      return;
+    }
+    URL.revokeObjectURL(cssBlobUrl);
+
+    if (!stillOnThisPanel()) { pagesHolder.remove(); return; }
+
+    if (pageEls.length === 0) {
+      pagesHolder.remove();
+      const statusEl = panel.querySelector(".spread-status");
+      if (statusEl) statusEl.textContent = "Für dieses Buch gibt es noch keine Seiten - erst ein Kapitel mit Geschichten anlegen.";
+      return;
+    }
+
+    // Doppelseiten wie bei einem echten Buch: Seite 1 steht allein (rechte
+    // Seite ohne vorausgehende linke Seite), danach immer eine gerade und
+    // die folgende ungerade Seite zusammen (2+3, 4+5, ...).
+    const spreads = [[pageEls[0]]];
+    for (let i = 1; i < pageEls.length; i += 2) {
+      spreads.push(pageEls[i + 1] ? [pageEls[i], pageEls[i + 1]] : [pageEls[i]]);
+    }
+    let spreadIndex = 0;
+
+    panel.innerHTML = `
+      <div class="book-preview-toolbar">
+        <button class="btn btn-ghost" id="backToPreviewBtn">← Zurück zur Vorschau</button>
+        <div class="spread-nav">
+          <button class="btn btn-ghost" id="spreadPrevBtn">← Zurückblättern</button>
+          <span class="spread-indicator" id="spreadIndicator"></span>
+          <button class="btn btn-ghost" id="spreadNextBtn">Weiterblättern →</button>
+        </div>
+      </div>
+      <div class="spread-stage" id="spreadStage"></div>`;
+    panel.querySelector("#backToPreviewBtn").addEventListener("click", () => { pagesHolder.remove(); renderBookPreview(book); });
+
+    const stage = panel.querySelector("#spreadStage");
+    const indicator = panel.querySelector("#spreadIndicator");
+    const prevBtn = panel.querySelector("#spreadPrevBtn");
+    const nextBtn = panel.querySelector("#spreadNextBtn");
+
+    function showSpread(index) {
+      stage.innerHTML = "";
+      const pages = spreads[index];
+      pages.forEach((p) => {
+        const frame = document.createElement("div");
+        frame.className = "spread-page-frame" + (p.classList.contains("pagedjs_left_page") ? " spread-page-left" : " spread-page-right");
+        frame.appendChild(p);
+        stage.appendChild(frame);
+      });
+      const first = pages[0].getAttribute("data-page-number");
+      const last = pages[pages.length - 1].getAttribute("data-page-number");
+      indicator.textContent = first === last ? `Seite ${first} von ${pageEls.length}` : `Seite ${first}–${last} von ${pageEls.length}`;
+      prevBtn.disabled = index === 0;
+      nextBtn.disabled = index === spreads.length - 1;
+      // Bei schmalerem Fenster reicht die Doppelseite nicht ganz nebeneinander
+      // (siehe .spread-stage overflow-x) - mittig scrollen statt am linken
+      // Rand anfangen, damit man nicht erst selbst hinscrollen muss.
+      stage.scrollLeft = (stage.scrollWidth - stage.clientWidth) / 2;
+    }
+
+    prevBtn.addEventListener("click", () => { if (spreadIndex > 0) { spreadIndex--; showSpread(spreadIndex); } });
+    nextBtn.addEventListener("click", () => { if (spreadIndex < spreads.length - 1) { spreadIndex++; showSpread(spreadIndex); } });
+
+    showSpread(0);
   }
 
   function pickStoryModal(excludeIds) {

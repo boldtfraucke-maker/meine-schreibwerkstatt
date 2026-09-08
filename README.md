@@ -244,9 +244,10 @@ die App übernimmt Zuschnitt und exakte Platzierung.
 **Stufe 1 (umgesetzt):** In der Buch-Bearbeitung zeigt „🎨 Umschlag (Cover)
 für den Druck" die fertige Gesamtgröße des durchgehenden Covers (Rückseite
 + Buchrücken + Vorderseite + Beschnitt) als Maß in mm und als Pixelgröße
-bei 300dpi (mit Kopieren-Button, direkt einsetzbar als „Eigene Größe" in
-Canva) - abhängig vom gewählten Anbieter/Format und der geschätzten
-Seitenzahl des Buchs.
+bei 300dpi - abhängig vom gewählten Anbieter/Format und der geschätzten
+Seitenzahl des Buchs. Breite und Höhe haben je einen eigenen
+Kopieren-Knopf (nicht gemeinsam als ein Text), weil Canvas „Eigene
+Größe"-Dialog dafür zwei getrennte Eingabefelder hat.
 
 - **Rückenbreite:** Bei KDP offiziell bestätigte, papierabhängige Formel
   (Seitenzahl × Papierstärke-Faktor; wählbar zwischen Weiß/Cream/Farbe

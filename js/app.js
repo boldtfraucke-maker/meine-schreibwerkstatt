@@ -1860,15 +1860,25 @@
     const isbnNote = book.printProvider === "kdp"
       ? "eine Fläche von 5,1 × 3,1 cm unten rechts hell und frei von wichtigen Inhalten lassen (druckt Amazon automatisch den Barcode hinein)."
       : "unten rechts eine helle, unwichtige Fläche freihalten (Größe je nach Anbieter unterschiedlich - siehe deren Cover-Vorlage).";
+    // Canva hat für "Eigene Größe" getrennte Felder für Breite und Höhe -
+    // ein gemeinsamer "1234 x 5678 px"-Text lässt sich dort nirgends
+    // sinnvoll einfügen. Deshalb zwei eigene Kopieren-Knöpfe, jeder mit nur
+    // der reinen Zahl (ohne Einheit), passend zum jeweiligen Eingabefeld.
     panel.innerHTML = `
       ${paperSelectHtml}
       <div class="cover-wrap-result">
         <div><strong>Rückenbreite:</strong> ${wrap.spineWidthMm.toFixed(1)} mm${spineNote}</div>
         <div style="margin-top:6px;"><strong>Gesamtgröße Umschlag</strong> (Rückseite + Rücken + Vorderseite, inkl. Beschnitt${bleedNote}):<br>
-          ${wrap.widthMm.toFixed(0)} × ${wrap.heightMm.toFixed(0)} mm &nbsp;=&nbsp; ${wrap.widthPx} × ${wrap.heightPx} px bei ${wrap.dpi}dpi
+          ${wrap.widthMm.toFixed(0)} × ${wrap.heightMm.toFixed(0)} mm bei ${wrap.dpi}dpi
         </div>
-        <button class="btn btn-ghost" id="copyCoverSizeBtn" type="button" style="margin-top:8px;">📋 Pixelgröße kopieren</button>
-        <span id="copyCoverSizeStatus" class="copy-status" hidden>Kopiert!</span>
+        <div class="copy-value-row">
+          <span>Breite: <strong>${wrap.widthPx} px</strong></span>
+          <button class="btn btn-ghost copy-value-btn" type="button" data-value="${wrap.widthPx}">📋 Kopieren</button>
+        </div>
+        <div class="copy-value-row">
+          <span>Höhe: <strong>${wrap.heightPx} px</strong></span>
+          <button class="btn btn-ghost copy-value-btn" type="button" data-value="${wrap.heightPx}">📋 Kopieren</button>
+        </div>
       </div>
       ${spineTextNote}
       <div class="ai-suggestion-note">Für den Barcode/ISBN ${isbnNote}</div>`;
@@ -1878,13 +1888,15 @@
       scheduleBookSave(book);
       renderCoverWrapPanel(book);
     });
-    document.getElementById("copyCoverSizeBtn")?.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(`${wrap.widthPx} x ${wrap.heightPx} px`);
-        const status = document.getElementById("copyCoverSizeStatus");
-        status.hidden = false;
-        setTimeout(() => { status.hidden = true; }, 1800);
-      } catch (e) { /* Zwischenablage evtl. ohne Berechtigung - Wert steht ja trotzdem da */ }
+    panel.querySelectorAll(".copy-value-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(btn.dataset.value);
+          const original = btn.textContent;
+          btn.textContent = "✓ Kopiert";
+          setTimeout(() => { btn.textContent = original; }, 1500);
+        } catch (e) { /* Zwischenablage evtl. ohne Berechtigung - Wert steht ja trotzdem da */ }
+      });
     });
   }
 

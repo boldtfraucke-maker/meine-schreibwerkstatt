@@ -710,7 +710,16 @@ select.status-select {
   font-size: 0.88rem;
   line-height: 1.6;
 }
-.copy-status { margin-left: 8px; font-size: 0.82rem; color: var(--positive); }
+.copy-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.copy-value-row + .copy-value-row { border-top: 1px dashed var(--border); }
+.copy-value-btn { flex-shrink: 0; font-size: 0.82rem; padding: 6px 10px; }
 
 .chapter-block {
   background: var(--bg-card);

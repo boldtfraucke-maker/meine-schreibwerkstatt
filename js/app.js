@@ -1877,13 +1877,35 @@
     const spineLeftPercent = (wrap.bleedMm + wrap.formatWidthMm) / wrap.widthMm * 100;
     const spineWidthPercent = wrap.spineWidthMm / wrap.widthMm * 100;
     // Titel/Autor auf dem Rücken setzt die App selbst (nicht Canva) - lesbar
-    // wird das erst ab einer gewissen Rückenbreite, deshalb derselbe
-    // Mindest-Seitenumfang wie bei der Hinweis-Notiz oben (KDP: ~100 Seiten;
-    // bei anderen Anbietern ein genereller Mindest-Richtwert für die Breite).
-    const canShowSpineText = book.printProvider === "kdp" ? wrap.pages >= 100 : wrap.spineWidthMm >= 8;
-    const spineText = book.title ? (book.author ? `${book.title} · ${book.author}` : book.title) : "";
+    // und hochwertig wirkt das erst ab einer gewissen Rückenbreite. KDP
+    // druckt technisch schon ab ca. 100 Seiten (siehe spineTextNote unten),
+    // wirkt dabei aber noch gedrängt/unprofessionell - deshalb hier bewusst
+    // eine höhere, optische Schwelle von 200 Seiten für die Vorschau.
+    const canShowSpineText = book.printProvider === "kdp" ? wrap.pages >= 200 : wrap.spineWidthMm >= 8;
+    // Reihenfolge Autor/in vor Titel, weil nach der Drehung der Anfang des
+    // Texts unten landet - bei deutschen Taschenbüchern steht unten meist
+    // der Name, darüber der Titel (siehe Vorlage/Foto der Autorin).
+    const spineText = book.title ? (book.author ? `${book.author} · ${book.title}` : book.title) : "";
+    const spineTextColor = book.coverWrapSpineTextColor || "#FFFFFF";
+    // Läuft von unten nach oben (Kopf zum Lesen nach links neigen) - so wie
+    // bei den meisten deutschen Taschenbüchern im Regal üblich, nicht von
+    // oben nach unten (wirkt sonst amateurhaft). Die Breitenbegrenzung (wird
+    // durch die Drehung zur sichtbaren Höhe) rechnet direkt in Prozent vom
+    // eigenen (schmalen) Rücken-Streifen statt sie per JS aus der
+    // gerenderten Höhe zu messen - eine DOM-Messung wäre 0, solange der
+    // "Für den Druck"-Reiter gerade nicht aktiv/sichtbar ist.
+    const spineTextWidthPercent = Math.min(3000, (wrap.heightMm / wrap.spineWidthMm) * 90);
     const spineTextHtml = (canShowSpineText && spineText)
-      ? `<div class="cover-wrap-spine-text">${escapeHtml(spineText)}</div>`
+      ? `<div class="cover-wrap-spine-text" style="color:${escapeAttr(spineTextColor)};width:${spineTextWidthPercent}%;">${escapeHtml(spineText)}</div>`
+      : "";
+    const spineColorPickerHtml = (canShowSpineText && spineText)
+      ? `<div class="settings-field" style="max-width:260px;margin-top:10px;">
+          <label for="coverSpineTextColorHex">Textfarbe auf dem Rücken</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="color" id="coverSpineTextColorSwatch" value="${escapeAttr(spineTextColor)}" style="width:40px;height:36px;padding:2px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);cursor:pointer;">
+            <input type="text" id="coverSpineTextColorHex" value="${escapeAttr(spineTextColor)}" placeholder="#FFFFFF" style="flex:1;">
+          </div>
+        </div>`
       : "";
     const previewHtml = book.coverWrapImage
       ? `<div class="cover-wrap-preview" style="aspect-ratio:${wrap.widthMm}/${wrap.heightMm};">
@@ -1910,12 +1932,31 @@
       </div>
       ${spineTextNote}
       <div class="ai-suggestion-note">Für den Barcode/ISBN ${isbnNote}</div>
+      ${spineColorPickerHtml}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <button class="btn btn-ghost" id="coverWrapImageBtn" type="button">🖼️ ${book.coverWrapImage ? "Umschlagbild ändern" : "Umschlagbild hochladen"}</button>
         <input type="file" id="coverWrapImageInput" accept="image/*" style="display:none;">
         ${book.coverWrapImage ? '<button class="btn btn-ghost" id="coverWrapImageRemoveBtn" type="button">Bild entfernen</button>' : ""}
       </div>
       ${previewHtml}`;
+
+    document.getElementById("coverSpineTextColorSwatch")?.addEventListener("input", (e) => {
+      document.getElementById("coverSpineTextColorHex").value = e.target.value;
+      book.coverWrapSpineTextColor = e.target.value;
+      scheduleBookSave(book);
+      renderCoverWrapPanel(book);
+    });
+    document.getElementById("coverSpineTextColorHex")?.addEventListener("change", (e) => {
+      let value = e.target.value.trim();
+      if (value && !value.startsWith("#")) value = "#" + value;
+      if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+        book.coverWrapSpineTextColor = value;
+        scheduleBookSave(book);
+        renderCoverWrapPanel(book);
+      } else {
+        e.target.value = book.coverWrapSpineTextColor || "#FFFFFF";
+      }
+    });
 
     document.getElementById("coverPaperSelect")?.addEventListener("change", (e) => {
       book.paperType = e.target.value;

@@ -770,17 +770,21 @@ select.status-select {
   border-right: 1px dashed rgba(255, 255, 255, 0.85);
   pointer-events: none;
 }
-/* Titel/Autor auf dem Rücken (Phase 7, Stufe 3) - läuft senkrecht wie bei
-   echten Buchrücken; die App setzt den Text selbst, die Autorin muss dafür
-   nichts in Canva gestalten. */
+/* Titel/Autor auf dem Rücken (Phase 7, Stufe 3) - läuft von unten nach
+   oben (Kopf zum Lesen nach links geneigt), wie bei den meisten deutschen
+   Taschenbüchern im Regal üblich - von oben nach unten wirkt amateurhaft.
+   transform:rotate() statt writing-mode, weil sich damit die Leserichtung
+   eindeutig festlegen lässt (rotate(-90deg) = gegen den Uhrzeigersinn); die
+   Breite (wird durch die Drehung zur sichtbaren Höhe) setzt app.js inline
+   in Prozent vom eigenen Rücken-Streifen, damit sie unabhängig davon
+   stimmt, ob der "Für den Druck"-Reiter beim Rendern gerade sichtbar ist. */
 .cover-wrap-spine-text {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  max-height: 92%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
+  box-sizing: border-box;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

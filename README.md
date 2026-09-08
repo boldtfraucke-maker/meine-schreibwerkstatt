@@ -287,17 +287,20 @@ eingepasste Bild sowie einen markierten Streifen für den Buchrücken, damit
 dort nichts Wichtiges (z. B. Gesichter) landet. Das Bild kann jederzeit
 ausgetauscht oder entfernt werden.
 
-**Stufe 3 (umgesetzt):** Titel und Autor/in erscheinen automatisch (senkrecht,
-wie bei echten Buchrücken üblich) im Buchrücken-Streifen der Vorschau - die
-App setzt den Text selbst, dafür ist in Canva nichts zu gestalten. Das
-erscheint erst, sobald der Rücken breit genug für lesbaren Text ist
-(bei KDP ab ca. 100 Seiten, bei anderen Anbietern ab einer generischen
-Mindestbreite) - passend zum Hinweis, dass KDP bei sehr dünnen Büchern
-sonst gar keinen Text auf den Rücken druckt. Ein zu langer Titel wird in
-der Vorschau abgeschnitten (…) statt überzulaufen - ein Hinweis, ihn ggf.
-zu kürzen. Aktuell ist das eine reine Bildschirm-Vorschau, noch keine
-herunterladbare fertige Umschlag-Datei - das kommt mit einer späteren
-Stufe.
+**Stufe 3 (umgesetzt):** Autor/in und Titel erscheinen automatisch (senkrecht,
+von unten nach oben lesbar - Kopf zum Lesen nach links geneigt, wie bei den
+meisten deutschen Taschenbüchern im Regal üblich, unten der Name, darüber
+der Titel) im Buchrücken-Streifen der Vorschau - die App setzt den Text
+selbst, dafür ist in Canva nichts zu gestalten. Das erscheint erst, sobald
+der Rücken auch optisch breit genug für einen hochwertig wirkenden Text ist
+(bei KDP ab 200 Seiten - technisch druckt KDP zwar oft schon ab ca. 100
+Seiten, siehe Hinweis dort, wirkt bei so wenig Rückenbreite aber gedrängt;
+bei anderen Anbietern ab einer generischen Mindestbreite). Ein zu langer
+Titel wird in der Vorschau abgeschnitten (…) statt überzulaufen - ein
+Hinweis, ihn ggf. zu kürzen. Die Textfarbe lässt sich frei wählen (Farbwahl
+plus Hexcode-Eingabefeld), da Weiß nicht zu jedem Umschlagbild passt.
+Aktuell ist das eine reine Bildschirm-Vorschau, noch keine herunterladbare
+fertige Umschlag-Datei - das kommt mit einer späteren Stufe.
 
 Weitere Stufen (Innenbild-Platzhalter mit Layout-Auswahl,
 Formatwechsel-Schutz) folgen.

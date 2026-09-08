@@ -2028,8 +2028,8 @@
       </div>
 
       <div class="book-detail-tabs pc-only-flex">
-        <button type="button" class="book-detail-tab active" id="tabInhaltBtn">Inhalt</button>
-        <button type="button" class="book-detail-tab" id="tabDruckBtn">Für den Druck</button>
+        <button type="button" class="book-detail-tab active" id="tabInhaltBtn">📝 Inhalt</button>
+        <button type="button" class="book-detail-tab" id="tabDruckBtn">🖨️ Für den Druck</button>
       </div>
 
       <div id="bookTabInhalt">

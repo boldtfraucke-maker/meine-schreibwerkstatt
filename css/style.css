@@ -703,19 +703,20 @@ select.status-select {
    dort zuverlässig übersteuert) - sonst würde bei einer Fensterverkleinerung
    unterhalb der PC-Breite plötzlich gar nichts mehr angezeigt, falls gerade
    der Druck-Reiter aktiv war. */
-.book-detail-tabs { border-bottom: 1px solid var(--border); margin-bottom: 20px; gap: 4px; }
+.book-detail-tabs { border-bottom: 1px solid var(--border); margin-bottom: 20px; gap: 6px; }
 .book-detail-tab {
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  padding: 10px 14px;
-  font-size: 0.95rem;
+  border-bottom: 3px solid transparent;
+  padding: 12px 16px;
+  font-size: 1.02rem;
+  font-weight: 500;
   font-family: inherit;
-  color: var(--ink-soft);
+  color: var(--ink);
   cursor: pointer;
 }
-.book-detail-tab:hover { color: var(--ink); }
-.book-detail-tab.active { color: var(--clay); border-bottom-color: var(--clay); font-weight: 600; }
+.book-detail-tab:hover { color: var(--clay); background: var(--bg-card); border-radius: 8px 8px 0 0; }
+.book-detail-tab.active { color: var(--clay); border-bottom-color: var(--clay); font-weight: 700; }
 @media (min-width: 821px) {
   .tab-panel-hidden { display: none; }
 }

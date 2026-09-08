@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download. Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt) und Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) sind umgesetzt.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download. Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt), Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) und Stufe 4 (ISBN-Fläche markieren) sind umgesetzt.
 
 ## Lokal testen
 
@@ -301,10 +301,17 @@ Titel wird in der Vorschau abgeschnitten (…) statt überzulaufen - ein
 Hinweis, ihn ggf. zu kürzen. Die Textfarbe lässt sich frei wählen (Farbwahl
 plus Hexcode-Eingabefeld), da Weiß nicht zu jedem Umschlagbild passt.
 Aktuell ist das eine reine Bildschirm-Vorschau, noch keine herunterladbare
-fertige Umschlag-Datei - das kommt mit einer späteren Stufe.
+fertige Umschlag-Datei - das kommt mit einer späteren Stufe. Ein Klick auf
+die Vorschau öffnet sie vergrößert.
+
+**Stufe 4 (umgesetzt):** Die ISBN-/Barcode-Fläche wird bei Amazon KDP direkt
+in der Vorschau als gestricheltes Feld unten rechts auf der Rückseite
+markiert (5,1 × 3,1 cm, offiziell bestätigt). Bei anderen Anbietern gibt es
+dafür keinen öffentlich bestätigten Wert - dort bleibt es bewusst beim
+allgemeinen Text-Hinweis, statt eine falsche Genauigkeit vorzugaukeln.
 
 Weitere Stufen (Innenbild-Platzhalter mit Layout-Auswahl,
-Formatwechsel-Schutz) folgen.
+Formatwechsel-Schutz, Umschlag als fertige Datei herunterladen) folgen.
 
 ### Kosten im Blick behalten
 

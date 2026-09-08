@@ -1859,8 +1859,8 @@
       ? '<div class="ai-suggestion-note">Bei so wenigen Seiten druckt Amazon evtl. keinen Text auf den schmalen Rücken (KDP verlangt dafür meist mindestens ca. 100 Seiten).</div>'
       : "";
     const isbnNote = book.printProvider === "kdp"
-      ? "eine Fläche von 5,1 × 3,1 cm unten rechts hell und frei von wichtigen Inhalten lassen (druckt Amazon automatisch den Barcode hinein)."
-      : "unten rechts eine helle, unwichtige Fläche freihalten (Größe je nach Anbieter unterschiedlich - siehe deren Cover-Vorlage).";
+      ? "eine Fläche von 5,1 × 3,1 cm unten rechts auf der Rückseite hell und frei von wichtigen Inhalten lassen (druckt Amazon automatisch den Barcode hinein) - unten in der Vorschau markiert."
+      : "unten rechts auf der Rückseite eine helle, unwichtige Fläche freihalten (Größe je nach Anbieter unterschiedlich - siehe deren Cover-Vorlage).";
     // Canva hat für "Eigene Größe" getrennte Felder für Breite und Höhe -
     // ein gemeinsamer "1234 x 5678 px"-Text lässt sich dort nirgends
     // sinnvoll einfügen. Deshalb zwei eigene Kopieren-Knöpfe, jeder mit nur
@@ -1876,6 +1876,19 @@
     // (z. B. ein Gesicht) genau dort landet.
     const spineLeftPercent = (wrap.bleedMm + wrap.formatWidthMm) / wrap.widthMm * 100;
     const spineWidthPercent = wrap.spineWidthMm / wrap.widthMm * 100;
+    // ISBN/Barcode-Fläche (Phase 7, Stufe 4) - nur bei KDP mit offiziell
+    // bestätigter Größe (5,1 × 3,1 cm) visuell markiert; bei anderen
+    // Anbietern gibt es keinen öffentlich bestätigten Wert, deshalb dort
+    // bewusst kein Kästchen (nur der allgemeine Text-Hinweis oben), um keine
+    // falsche Genauigkeit vorzugaukeln. Sitzt unten rechts auf der
+    // Rückseite (rechter Rand = linker Rand des Buchrückens), mit
+    // Bodenabstand = Beschnitt, damit die Fläche ab der Schnittkante
+    // (nicht ab der Bild-Außenkante) gemessen ist.
+    const ISBN_WIDTH_MM = 51;
+    const ISBN_HEIGHT_MM = 31;
+    const isbnBoxHtml = book.printProvider === "kdp"
+      ? `<div class="cover-wrap-isbn-marker" style="width:${(ISBN_WIDTH_MM / wrap.widthMm * 100)}%;height:${(ISBN_HEIGHT_MM / wrap.heightMm * 100)}%;right:${(100 - spineLeftPercent)}%;bottom:${(wrap.bleedMm / wrap.heightMm * 100)}%;" title="ISBN/Barcode-Fläche (5,1 × 3,1 cm, KDP)">ISBN</div>`
+      : "";
     // Titel/Autor auf dem Rücken setzt die App selbst (nicht Canva) - lesbar
     // und hochwertig wirkt das erst ab einer gewissen Rückenbreite. KDP
     // druckt technisch schon ab ca. 100 Seiten (siehe spineTextNote unten),
@@ -1911,9 +1924,10 @@
       ? `<div class="cover-wrap-preview" id="coverWrapPreviewBox" style="aspect-ratio:${wrap.widthMm}/${wrap.heightMm};" title="Zum Vergrößern anklicken">
           <img src="${book.coverWrapImage}" alt="">
           <div class="cover-wrap-spine-marker" style="left:${spineLeftPercent}%;width:${spineWidthPercent}%;" title="Buchrücken">${spineTextHtml}</div>
+          ${isbnBoxHtml}
           <div class="cover-wrap-zoom-hint">🔍</div>
         </div>
-        <p class="ai-suggestion-note">So wird dein Bild randlos eingepasst (Vorschau, zum Vergrößern anklicken) - der markierte, schmale Streifen ist der Buchrücken, dort später möglichst nichts Wichtiges wie Gesichter platzieren.${canShowSpineText && spineText ? " Titel/Autor setzt die App automatisch dort hin." : ""}</p>`
+        <p class="ai-suggestion-note">So wird dein Bild randlos eingepasst (Vorschau, zum Vergrößern anklicken) - der markierte, schmale Streifen ist der Buchrücken, dort später möglichst nichts Wichtiges wie Gesichter platzieren.${canShowSpineText && spineText ? " Titel/Autor setzt die App automatisch dort hin." : ""}${book.printProvider === "kdp" ? " Das gestrichelte Feld unten rechts ist die ISBN/Barcode-Fläche." : ""}</p>`
       : "";
     panel.innerHTML = `
       ${paperSelectHtml}

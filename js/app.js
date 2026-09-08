@@ -1876,12 +1876,21 @@
     // (z. B. ein Gesicht) genau dort landet.
     const spineLeftPercent = (wrap.bleedMm + wrap.formatWidthMm) / wrap.widthMm * 100;
     const spineWidthPercent = wrap.spineWidthMm / wrap.widthMm * 100;
+    // Titel/Autor auf dem Rücken setzt die App selbst (nicht Canva) - lesbar
+    // wird das erst ab einer gewissen Rückenbreite, deshalb derselbe
+    // Mindest-Seitenumfang wie bei der Hinweis-Notiz oben (KDP: ~100 Seiten;
+    // bei anderen Anbietern ein genereller Mindest-Richtwert für die Breite).
+    const canShowSpineText = book.printProvider === "kdp" ? wrap.pages >= 100 : wrap.spineWidthMm >= 8;
+    const spineText = book.title ? (book.author ? `${book.title} · ${book.author}` : book.title) : "";
+    const spineTextHtml = (canShowSpineText && spineText)
+      ? `<div class="cover-wrap-spine-text">${escapeHtml(spineText)}</div>`
+      : "";
     const previewHtml = book.coverWrapImage
       ? `<div class="cover-wrap-preview" style="aspect-ratio:${wrap.widthMm}/${wrap.heightMm};">
           <img src="${book.coverWrapImage}" alt="">
-          <div class="cover-wrap-spine-marker" style="left:${spineLeftPercent}%;width:${spineWidthPercent}%;" title="Buchrücken"></div>
+          <div class="cover-wrap-spine-marker" style="left:${spineLeftPercent}%;width:${spineWidthPercent}%;" title="Buchrücken">${spineTextHtml}</div>
         </div>
-        <p class="ai-suggestion-note">So wird dein Bild randlos eingepasst (Vorschau) - der markierte, schmale Streifen ist der Buchrücken, dort später möglichst nichts Wichtiges wie Gesichter platzieren.</p>`
+        <p class="ai-suggestion-note">So wird dein Bild randlos eingepasst (Vorschau) - der markierte, schmale Streifen ist der Buchrücken, dort später möglichst nichts Wichtiges wie Gesichter platzieren.${canShowSpineText && spineText ? " Titel/Autor setzt die App automatisch dort hin." : ""}</p>`
       : "";
     panel.innerHTML = `
       ${paperSelectHtml}

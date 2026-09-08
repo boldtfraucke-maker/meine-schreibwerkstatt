@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download. Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen) und Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt) sind umgesetzt.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download. Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt) und Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) sind umgesetzt.
 
 ## Lokal testen
 
@@ -287,8 +287,20 @@ eingepasste Bild sowie einen markierten Streifen für den Buchrücken, damit
 dort nichts Wichtiges (z. B. Gesichter) landet. Das Bild kann jederzeit
 ausgetauscht oder entfernt werden.
 
-Weitere Stufen (Titel/Autor automatisch auf den Rücken setzen,
-Innenbild-Platzhalter mit Layout-Auswahl, Formatwechsel-Schutz) folgen.
+**Stufe 3 (umgesetzt):** Titel und Autor/in erscheinen automatisch (senkrecht,
+wie bei echten Buchrücken üblich) im Buchrücken-Streifen der Vorschau - die
+App setzt den Text selbst, dafür ist in Canva nichts zu gestalten. Das
+erscheint erst, sobald der Rücken breit genug für lesbaren Text ist
+(bei KDP ab ca. 100 Seiten, bei anderen Anbietern ab einer generischen
+Mindestbreite) - passend zum Hinweis, dass KDP bei sehr dünnen Büchern
+sonst gar keinen Text auf den Rücken druckt. Ein zu langer Titel wird in
+der Vorschau abgeschnitten (…) statt überzulaufen - ein Hinweis, ihn ggf.
+zu kürzen. Aktuell ist das eine reine Bildschirm-Vorschau, noch keine
+herunterladbare fertige Umschlag-Datei - das kommt mit einer späteren
+Stufe.
+
+Weitere Stufen (Innenbild-Platzhalter mit Layout-Auswahl,
+Formatwechsel-Schutz) folgen.
 
 ### Kosten im Blick behalten
 

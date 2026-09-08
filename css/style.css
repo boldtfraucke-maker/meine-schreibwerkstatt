@@ -770,6 +770,27 @@ select.status-select {
   border-right: 1px dashed rgba(255, 255, 255, 0.85);
   pointer-events: none;
 }
+/* Titel/Autor auf dem Rücken (Phase 7, Stufe 3) - läuft senkrecht wie bei
+   echten Buchrücken; die App setzt den Text selbst, die Autorin muss dafür
+   nichts in Canva gestalten. */
+.cover-wrap-spine-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  max-height: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75), 0 0 6px rgba(0, 0, 0, 0.5);
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(9px, 2vw, 14px);
+  letter-spacing: 0.02em;
+}
 
 .chapter-block {
   background: var(--bg-card);

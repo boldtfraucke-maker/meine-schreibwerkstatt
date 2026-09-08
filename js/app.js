@@ -1821,6 +1821,7 @@
       bleedMm, bleedConfirmed,
       widthMm, heightMm,
       widthPx: mmToPx(widthMm), heightPx: mmToPx(heightMm),
+      formatWidthMm: spec.format.widthMm,
       pages, dpi
     };
   }
@@ -1864,6 +1865,24 @@
     // ein gemeinsamer "1234 x 5678 px"-Text lässt sich dort nirgends
     // sinnvoll einfügen. Deshalb zwei eigene Kopieren-Knöpfe, jeder mit nur
     // der reinen Zahl (ohne Einheit), passend zum jeweiligen Eingabefeld.
+    //
+    // Statt zu verlangen, dass das hochgeladene Bild pixelgenau stimmt,
+    // füllt die App es per object-fit:cover randlos in die Umschlagfläche
+    // ein (wie z. B. bei Instagram) - überschüssiges wird automatisch
+    // weggeschnitten, kein Verzerren, keine Lücken/"Blitzer". Die Autorin
+    // muss dafür in Canva nicht pixelgenau arbeiten, nur ungefähr in der
+    // richtigen Größe/Seitenverhältnis gestalten. Die Vorschau markiert
+    // zusätzlich, wo der schmale Buchrücken liegt, damit nichts Wichtiges
+    // (z. B. ein Gesicht) genau dort landet.
+    const spineLeftPercent = (wrap.bleedMm + wrap.formatWidthMm) / wrap.widthMm * 100;
+    const spineWidthPercent = wrap.spineWidthMm / wrap.widthMm * 100;
+    const previewHtml = book.coverWrapImage
+      ? `<div class="cover-wrap-preview" style="aspect-ratio:${wrap.widthMm}/${wrap.heightMm};">
+          <img src="${book.coverWrapImage}" alt="">
+          <div class="cover-wrap-spine-marker" style="left:${spineLeftPercent}%;width:${spineWidthPercent}%;" title="Buchrücken"></div>
+        </div>
+        <p class="ai-suggestion-note">So wird dein Bild randlos eingepasst (Vorschau) - der markierte, schmale Streifen ist der Buchrücken, dort später möglichst nichts Wichtiges wie Gesichter platzieren.</p>`
+      : "";
     panel.innerHTML = `
       ${paperSelectHtml}
       <div class="cover-wrap-result">
@@ -1881,7 +1900,13 @@
         </div>
       </div>
       ${spineTextNote}
-      <div class="ai-suggestion-note">Für den Barcode/ISBN ${isbnNote}</div>`;
+      <div class="ai-suggestion-note">Für den Barcode/ISBN ${isbnNote}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn btn-ghost" id="coverWrapImageBtn" type="button">🖼️ ${book.coverWrapImage ? "Umschlagbild ändern" : "Umschlagbild hochladen"}</button>
+        <input type="file" id="coverWrapImageInput" accept="image/*" style="display:none;">
+        ${book.coverWrapImage ? '<button class="btn btn-ghost" id="coverWrapImageRemoveBtn" type="button">Bild entfernen</button>' : ""}
+      </div>
+      ${previewHtml}`;
 
     document.getElementById("coverPaperSelect")?.addEventListener("change", (e) => {
       book.paperType = e.target.value;
@@ -1897,6 +1922,24 @@
           setTimeout(() => { btn.textContent = original; }, 1500);
         } catch (e) { /* Zwischenablage evtl. ohne Berechtigung - Wert steht ja trotzdem da */ }
       });
+    });
+    document.getElementById("coverWrapImageBtn").addEventListener("click", () => document.getElementById("coverWrapImageInput").click());
+    document.getElementById("coverWrapImageInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        book.coverWrapImage = reader.result;
+        await saveBook(book);
+        renderCoverWrapPanel(book);
+      };
+      reader.readAsDataURL(file);
+      e.target.value = "";
+    });
+    document.getElementById("coverWrapImageRemoveBtn")?.addEventListener("click", async () => {
+      delete book.coverWrapImage;
+      await saveBook(book);
+      renderCoverWrapPanel(book);
     });
   }
 

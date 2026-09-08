@@ -720,6 +720,26 @@ select.status-select {
 }
 .copy-value-row + .copy-value-row { border-top: 1px dashed var(--border); }
 .copy-value-btn { flex-shrink: 0; font-size: 0.82rem; padding: 6px 10px; }
+.cover-wrap-preview {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 12px auto 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+.cover-wrap-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cover-wrap-spine-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.18);
+  border-left: 1px dashed rgba(255, 255, 255, 0.85);
+  border-right: 1px dashed rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+}
 
 .chapter-block {
   background: var(--bg-card);

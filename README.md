@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download. Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen) ist umgesetzt.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export und Cover-Download. Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen) und Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt) sind umgesetzt.
 
 ## Lokal testen
 
@@ -264,8 +264,15 @@ Größe"-Dialog dafür zwei getrennte Eingabefelder hat.
   keinen Text auf den schmalen Buchrücken - die App weist bei Bedarf
   entsprechend darauf hin.
 
-Weitere Stufen (Cover-Hintergrundbild hochladen mit automatischem
-randlosem Zuschnitt, Titel/Autor automatisch auf den Rücken setzen,
+**Stufe 2 (umgesetzt):** Direkt darunter kann ein Umschlag-Hintergrundbild
+hochgeladen werden. Die App schneidet es automatisch randlos auf die
+berechnete Gesamtgröße zu (per `object-fit: cover`) - die Autorin muss das
+Bild nicht selbst pixelgenau zurechtschneiden. Eine Vorschau zeigt das
+eingepasste Bild sowie einen markierten Streifen für den Buchrücken, damit
+dort nichts Wichtiges (z. B. Gesichter) landet. Das Bild kann jederzeit
+ausgetauscht oder entfernt werden.
+
+Weitere Stufen (Titel/Autor automatisch auf den Rücken setzen,
 Innenbild-Platzhalter mit Layout-Auswahl, Formatwechsel-Schutz) folgen.
 
 ### Kosten im Blick behalten

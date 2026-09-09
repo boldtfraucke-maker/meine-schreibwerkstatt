@@ -402,9 +402,22 @@ reichen), weil sie unabhängig vom Buchformat immer klein gedruckt werden
 (die Schieberegler-Werte 24–160px entsprechen bei 300dpi echten
 6–42mm Druckgröße).
 
-Noch offen: wiederverwendbare Icons/Trennlinien pro Buch (einmal hochladen,
-mehrfach einfügen statt jedes Mal neu hochzuladen) sowie eine Warnung beim
-nachträglichen Formatwechsel, falls schon Bilder im Buch stecken.
+**Wiederverwendbare Icons pro Buch:** Lädt man ein Icon hoch, merkt sich die
+App es automatisch für das Buch, dem die aktuelle Geschichte zugeordnet ist
+(über die Kapitel ermittelt - eine Geschichte muss dafür schon in einem Buch
+stecken). Ab dem zweiten Mal erscheint dafür ein eigener „🔖 Icon"-Knopf in
+der Werkzeugleiste: zeigt alle bisher für dieses Buch hochgeladenen Icons
+als Vorschaubilder zum Anklicken (kein erneuter Upload nötig) plus eine
+„+"-Kachel für ein weiteres neues Icon. So bekommt z. B. ein wiederkehrendes
+Logbuch-Symbol in jedem Tagebucheintrag dieselbe Datei, statt bei jedem
+Einfügen neu hochgeladen zu werden. Eine Übersicht mit alle gespeicherten
+Icons eines Buchs (zum Entfernen nicht mehr gebrauchter) steht im
+„Inhalt"-Reiter des Buchs, unterhalb der Kapitel - Entfernen dort betrifft
+nur die Auswahlliste, bereits in Geschichten eingefügte Icons bleiben
+unangetastet.
+
+Noch offen: eine Warnung beim nachträglichen Formatwechsel, falls schon
+Bilder im Buch stecken.
 
 ### Kosten im Blick behalten
 

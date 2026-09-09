@@ -529,6 +529,11 @@
       panel.innerHTML = '<div class="editor-empty">Wähle auf der Startseite eine Geschichte aus oder beginne dort eine neue.</div>';
       return;
     }
+    // Wiederverwendbare Icons (z. B. ein Logbuch-Symbol, das in jedem
+    // Tagebucheintrag wiederkehren soll) hängen am Buch, nicht an der
+    // einzelnen Geschichte - eine Geschichte kennt "ihr" Buch nicht direkt,
+    // deshalb hier einmal rückwärts über die Kapitel gesucht.
+    const bookForStory = books.find(b => (b.chapters || []).some(c => (c.storyIds || []).includes(story.id)));
     panel.innerHTML = `
       <div class="editor-top">
         <input type="text" class="title-input" id="titleInput" placeholder="Titel der Geschichte" autocomplete="off" autocapitalize="sentences" value="${escapeAttr(story.title)}">
@@ -552,6 +557,7 @@
           <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
           <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
           <input type="file" id="imageInput" accept="image/*" multiple style="display:none;">
+          ${bookForStory && (bookForStory.iconLibrary || []).length > 0 ? '<button class="tool-btn" id="iconLibraryBtn" title="Gespeichertes Icon aus diesem Buch einfügen">🔖 Icon</button>' : ""}
         </div>
         <div class="editor-actions-top">
           <span class="toolbar-divider"></span>
@@ -812,6 +818,16 @@
           restoreSelection();
           insertHtmlAtSelection(buildImageFigureHtml(dataUrl, size));
           scheduleSave();
+          // Ein neu hochgeladenes Icon merkt sich die App automatisch für
+          // dieses Buch (falls die Geschichte schon einem zugeordnet ist) -
+          // dadurch taucht es beim nächsten Mal in der Wiederverwenden-
+          // Auswahl auf, ohne dass man es erneut hochladen müsste.
+          if (size === "icon" && bookForStory) {
+            bookForStory.iconLibrary = bookForStory.iconLibrary || [];
+            bookForStory.iconLibrary.push({ id: uid(), dataUrl });
+            await saveBook(bookForStory);
+            ensureIconLibraryBtn();
+          }
         }
       } else {
         // Auf 4 begrenzt - eine Reihe soll übersichtlich bleiben, mehr
@@ -822,6 +838,38 @@
       }
       e.target.value = "";
     });
+
+    async function openIconLibraryPicker() {
+      saveSelection();
+      const library = bookForStory?.iconLibrary || [];
+      const result = await pickLibraryIcon(library);
+      if (!result) return;
+      if (result.upload) {
+        document.getElementById("imageInput").click();
+        return;
+      }
+      editorPage.focus();
+      restoreSelection();
+      insertHtmlAtSelection(buildImageFigureHtml(result.dataUrl, "icon"));
+      scheduleSave();
+    }
+    // Erscheint erst, sobald mindestens ein Icon für dieses Buch gespeichert
+    // ist - direkt nach dem allerersten Icon-Upload sonst noch nicht im
+    // gerenderten Markup vorhanden, deshalb hier bei Bedarf live ergänzt
+    // (statt erst nach einem Neuladen sichtbar zu werden).
+    function ensureIconLibraryBtn() {
+      if (document.getElementById("iconLibraryBtn")) return;
+      const btn = document.createElement("button");
+      btn.className = "tool-btn";
+      btn.id = "iconLibraryBtn";
+      btn.type = "button";
+      btn.title = "Gespeichertes Icon aus diesem Buch einfügen";
+      btn.textContent = "🔖 Icon";
+      btn.addEventListener("mousedown", (e) => e.preventDefault());
+      btn.addEventListener("click", openIconLibraryPicker);
+      document.querySelector(".toolbar-group-format").appendChild(btn);
+    }
+    document.getElementById("iconLibraryBtn")?.addEventListener("click", openIconLibraryPicker);
 
     // Löschen und Ausrichten per Klick, Größe per Schieberegler - beides per
     // Event-Delegation, weil Bilder erst nachträglich (nicht beim Rendern
@@ -2512,6 +2560,19 @@
         <div id="chapterAssistantPanel"></div>
         <button class="btn btn-outline" id="addChapterBtn">+ Kapitel hinzufügen</button>
 
+        ${(book.iconLibrary || []).length > 0 ? `
+        <div style="margin-top:28px;">
+          <p class="section-label">🔖 Wiederverwendbare Icons dieses Buchs</p>
+          <div class="icon-library-grid" id="iconLibraryManageGrid">
+            ${book.iconLibrary.map((icon) => `
+              <div class="icon-library-item" data-id="${escapeAttr(icon.id)}">
+                <img src="${icon.dataUrl}" alt="">
+                <button type="button" class="icon-library-item-remove" title="Icon aus der Bibliothek entfernen" aria-label="Icon aus der Bibliothek entfernen">×</button>
+              </div>`).join("")}
+          </div>
+          <p class="ai-suggestion-note">Entfernt nur aus dieser Auswahlliste - bereits in Geschichten eingefügte Icons bleiben dort erhalten.</p>
+        </div>` : ""}
+
         <div style="margin-top:28px;">
           <button class="btn btn-danger" id="deleteBookBtn">Löschen</button>
         </div>
@@ -2648,6 +2709,15 @@
       "Schaut sich die Geschichten in deinen Kapiteln an und schlägt dazu passende, stimmungsvolle Titel vor - statt nur \"Kapitel 1, 2, 3\". " +
       "Übernimmt nie automatisch, du entscheidest bei jedem Vorschlag selbst. Am besten nutzen, wenn die Kapitel-Einteilung schon steht, nicht nach jeder kleinen Änderung."
     ));
+
+    document.getElementById("iconLibraryManageGrid")?.addEventListener("click", async (e) => {
+      const removeBtn = e.target.closest(".icon-library-item-remove");
+      if (!removeBtn) return;
+      const id = removeBtn.closest(".icon-library-item")?.dataset.id;
+      book.iconLibrary = (book.iconLibrary || []).filter((icon) => icon.id !== id);
+      await saveBook(book);
+      renderBookDetail(book);
+    });
 
     document.getElementById("deleteBookBtn").addEventListener("click", () => {
       showConfirm(
@@ -3546,6 +3616,43 @@
       modalActions.append(cancelBtn);
       modalBody.querySelectorAll("button[data-size]").forEach((btn) => {
         btn.addEventListener("click", () => { closeModal(); resolve(btn.dataset.size); });
+      });
+      modalOverlay.hidden = false;
+    });
+  }
+
+  // Auswahl aus bereits für dieses Buch gespeicherten Icons (z. B. das
+  // wiederkehrende Logbuch-Symbol) - erscheint nur, wenn es welche gibt
+  // (siehe "🔖 Icon"-Knopf, nur dann sichtbar). Gibt entweder ein
+  // gewähltes Icon oder den Wunsch nach einem neuen Upload zurück.
+  function pickLibraryIcon(iconLibrary) {
+    return new Promise((resolve) => {
+      const thumbsHtml = iconLibrary.map((icon) => `
+          <button type="button" class="icon-library-pick" data-id="${escapeAttr(icon.id)}" title="Dieses Icon einfügen">
+            <img src="${icon.dataUrl}" alt="">
+          </button>`).join("");
+      modalBody.innerHTML = `
+        <p style="font-weight:600;margin:0 0 12px;">Welches Icon einfügen?</p>
+        <div class="icon-library-grid">
+          ${thumbsHtml}
+          <button type="button" class="icon-library-pick icon-library-upload" title="Neues Icon hochladen">+</button>
+        </div>`;
+      modalActions.innerHTML = "";
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "btn btn-ghost";
+      cancelBtn.textContent = "Abbrechen";
+      cancelBtn.addEventListener("click", () => { closeModal(); resolve(null); });
+      modalActions.append(cancelBtn);
+      modalBody.querySelectorAll(".icon-library-pick").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          closeModal();
+          if (btn.classList.contains("icon-library-upload")) {
+            resolve({ upload: true });
+          } else {
+            const icon = iconLibrary.find((i) => i.id === btn.dataset.id);
+            resolve(icon ? { dataUrl: icon.dataUrl } : null);
+          }
+        });
       });
       modalOverlay.hidden = false;
     });

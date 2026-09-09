@@ -571,6 +571,53 @@ figure.story-image img { margin: 0; }
    ein Bild ganz am Ende einer Geschichte optisch in die nächste
    hineinragen. */
 .preview-story, .editor-page { display: flow-root; }
+/* Auswahl-Raster für wiederverwendbare Icons (Phase 7, Stufe 5b) - eigenes
+   Buch-weites Icon anklicken statt es erneut hochzuladen. */
+.icon-library-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.icon-library-pick {
+  width: 64px;
+  height: 64px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  cursor: pointer;
+}
+.icon-library-pick:hover { border-color: var(--sky); }
+.icon-library-pick img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.icon-library-upload { font-size: 1.6rem; color: var(--ink-soft); border-style: dashed; }
+/* Verwaltungsansicht der Icon-Bibliothek im "Inhalt"-Reiter des Buchs. */
+.icon-library-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+.icon-library-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.icon-library-item-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  color: #fff;
+  background: rgba(190, 60, 50, 0.85);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-library-item-remove:hover { background: rgba(190, 60, 50, 1); }
 .editor-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 0.8rem; color: var(--ink-faint); }
 .save-status { display: flex; align-items: center; gap: 6px; }
 .editor-footer-actions { display: none; gap: 14px; align-items: center; flex-wrap: wrap; }

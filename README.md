@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export, Cover-Download und eine Doppelseiten-Ansicht („Als Buch blättern"). Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt), Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) und Stufe 4 (ISBN-Fläche markieren) sind umgesetzt; Stufe 5 (Innenbild-Platzhalter) ist gestartet (Bilder/Icons mit Größenauswahl einfügen).
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export, Cover-Download und eine Doppelseiten-Ansicht („Als Buch blättern"). Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt), Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) und Stufe 4 (ISBN-Fläche markieren) sind umgesetzt; Stufe 5 (Innenbild-Platzhalter: Bilder/Icons mit Größenauswahl, Ausrichtung, Bilderreihen, wiederverwendbare Icon-Bibliothek) und Stufe 6 (Formatwechsel-Schutz) sind abgeschlossen.
 
 ## Lokal testen
 
@@ -425,8 +425,16 @@ gebrauchter) steht im „Inhalt"-Reiter des Buchs, unterhalb der Kapitel -
 Entfernen dort betrifft nur die Auswahlliste, bereits in Geschichten
 eingefügte Icons bleiben unangetastet.
 
-Noch offen: eine Warnung beim nachträglichen Formatwechsel, falls schon
-Bilder im Buch stecken.
+**Formatwechsel-Schutz:** Ändert man nachträglich Anbieter oder Format eines
+Buchs, in dem schon Fotos (volle/halbe Breite) eingefügt sind, erscheint vor
+der Umstellung eine Warnung - die Breite der Fotos ist prozentual auf die
+bisherige Textspalte abgestimmt, bei einem schmaleren/breiteren Format kann
+das ungünstig wirken. Bestätigt man, wird gewechselt und man weiß, dass die
+betroffenen Geschichten noch einmal geprüft werden sollten; bricht man ab,
+bleibt alles unverändert. Bei der allerersten Anbieter-/Formatwahl (noch
+kein vorheriges Format gesetzt) sowie bei Büchern ohne Fotos (nur Icons oder
+noch gar keine Bilder) erscheint keine Warnung, da Icons unabhängig vom
+Buchformat immer gleich klein bleiben.
 
 ### Kosten im Blick behalten
 

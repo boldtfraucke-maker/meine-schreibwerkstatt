@@ -1879,6 +1879,17 @@
     return ids;
   }
 
+  // Nur Fotos (volle/halbe Breite) sind vom Formatwechsel betroffen - ihre
+  // Breite ist prozentual auf die bisherige Textspalte abgestimmt. Icons
+  // haben eine feste Pixelgröße und bleiben unabhängig vom Buchformat
+  // gleich klein, deshalb zählen sie hier bewusst nicht mit.
+  function bookHasPhotoImages(book) {
+    const ids = new Set(allUsedStoryIds(book));
+    return stories.some(s => ids.has(s.id) && /data-kind="photo"/.test(s.content || ""));
+  }
+
+  const FORMAT_CHANGE_WARNING = 'In diesem Buch sind bereits Fotos eingefügt, deren Breite auf das bisherige Format abgestimmt ist. Nach einem Formatwechsel kann die Textspalte schmaler oder breiter werden - schau dir die betroffenen Geschichten danach noch einmal an und passe die Bildgröße bei Bedarf über den Schieberegler an. Trotzdem wechseln?';
+
   async function saveBook(book) {
     book.updatedAt = new Date().toISOString();
     await BookStorage.save(book);
@@ -2640,21 +2651,44 @@
       if (currentFormat) { book.printFormat = currentFormat; scheduleBookSave(book); }
     }
     document.getElementById("printProviderSelect").addEventListener("change", (e) => {
-      book.printProvider = e.target.value;
-      populatePrintFormatSelect(book.printProvider, "");
-      // Ein <select> ohne "selected"-Option zeigt automatisch die erste
-      // Option an (Browser-Standardverhalten) - book.printFormat muss das
-      // widerspiegeln, sonst zeigt das Dropdown z. B. bei BoD (nur ein
-      // Format) scheinbar eine Auswahl, obwohl intern noch nichts gewählt
-      // ist und die Vorschau fälschlich "kein Format gewählt" meldet.
-      book.printFormat = document.getElementById("printFormatSelect").value;
-      scheduleBookSave(book);
-      renderCoverWrapPanel(book);
+      const previousProvider = book.printProvider;
+      const hadFormat = !!book.printFormat;
+      const newProvider = e.target.value;
+      const applyChange = () => {
+        document.getElementById("printProviderSelect").value = newProvider;
+        book.printProvider = newProvider;
+        populatePrintFormatSelect(book.printProvider, "");
+        // Ein <select> ohne "selected"-Option zeigt automatisch die erste
+        // Option an (Browser-Standardverhalten) - book.printFormat muss das
+        // widerspiegeln, sonst zeigt das Dropdown z. B. bei BoD (nur ein
+        // Format) scheinbar eine Auswahl, obwohl intern noch nichts gewählt
+        // ist und die Vorschau fälschlich "kein Format gewählt" meldet.
+        book.printFormat = document.getElementById("printFormatSelect").value;
+        scheduleBookSave(book);
+        renderCoverWrapPanel(book);
+      };
+      if (hadFormat && newProvider !== previousProvider && bookHasPhotoImages(book)) {
+        e.target.value = previousProvider;
+        showConfirm(FORMAT_CHANGE_WARNING, "Format trotzdem wechseln", applyChange);
+      } else {
+        applyChange();
+      }
     });
     document.getElementById("printFormatSelect").addEventListener("change", (e) => {
-      book.printFormat = e.target.value;
-      scheduleBookSave(book);
-      renderCoverWrapPanel(book);
+      const previousFormat = book.printFormat;
+      const newFormat = e.target.value;
+      const applyChange = () => {
+        document.getElementById("printFormatSelect").value = newFormat;
+        book.printFormat = newFormat;
+        scheduleBookSave(book);
+        renderCoverWrapPanel(book);
+      };
+      if (previousFormat && newFormat !== previousFormat && bookHasPhotoImages(book)) {
+        e.target.value = previousFormat;
+        showConfirm(FORMAT_CHANGE_WARNING, "Format trotzdem wechseln", applyChange);
+      } else {
+        applyChange();
+      }
     });
     renderCoverWrapPanel(book);
     document.getElementById("coverWrapInfoBtn").addEventListener("click", () => showAlert(coverWrapInfoText(book)));

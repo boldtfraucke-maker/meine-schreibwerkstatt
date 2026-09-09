@@ -2,7 +2,7 @@
 
 Eine persönliche Autoren-App für Kurzgeschichten – siehe `MASTERANWEISUNG.md` (nicht Teil dieses Repos) für das vollständige Konzept.
 
-**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export, Cover-Download und eine Doppelseiten-Ansicht („Als Buch blättern"). Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt), Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) und Stufe 4 (ISBN-Fläche markieren) sind umgesetzt.
+**Status:** Phase 5 abgeschlossen – KI-Vorschläge (Korrektorat/Lektorat/Stil) und eine Aufbau & Wirkung-Einschätzung (Spannungsbogen, Emotion, Beschreibungen) für einzelne Geschichten, eine kostenbewusste Konsistenzprüfung über mehrere Geschichten hinweg sowie ein Buch-Assistent, der stimmungsvolle Kapitel-Titel vorschlägt. Phase 6 (Buchproduktion fürs Drucken) ist abgeschlossen: Anbieter & Format wählen, druckgenaues Layout, Titelei mit Impressum, Seitenzahlen, PDF-Export, Cover-Download und eine Doppelseiten-Ansicht („Als Buch blättern"). Phase 7 (Bilder im Buch & Cover-Wrap) läuft, Stufe 1 (Umschlag-Größe berechnen), Stufe 2 (Umschlagbild hochladen mit automatischem Zuschnitt), Stufe 3 (Titel/Autor automatisch auf den Rücken setzen) und Stufe 4 (ISBN-Fläche markieren) sind umgesetzt; Stufe 5 (Innenbild-Platzhalter) ist gestartet (Bilder/Icons mit Größenauswahl einfügen).
 
 ## Lokal testen
 
@@ -341,8 +341,24 @@ entfernen. Braucht kein hochgeladenes Umschlagbild in der App, ist also
 unabhängig von „Umschlag herunterladen" nutzbar - beide Wege stehen parallel
 zur Verfügung.
 
-Weitere Stufen (Innenbild-Platzhalter mit Layout-Auswahl,
-Formatwechsel-Schutz) folgen.
+**Stufe 5 (Innenbild-Platzhalter, gestartet):** In der Schreib-Werkstatt lässt
+sich über „🖼 Bild" jetzt ein Bild oder Icon direkt an der Cursor-Position
+einfügen, mit Größenauswahl (Volle Breite / Halbe Breite / Icon). Fotos/
+Illustrationen skalieren relativ zur Seitenbreite, damit dasselbe Bild bei
+jedem Buchformat automatisch passend erscheint - ein Icon bleibt bewusst
+immer gleich klein, unabhängig vom Format, damit wiederkehrende Symbole
+(wie bei einem Logbuch-Icon) überall gleich wirken. Jedes eingefügte Bild
+hat einen eigenen ×-Knopf zum Entfernen (Text fließt danach automatisch
+nach) - der erscheint nur beim Bearbeiten, nie in Vorschau/Doppelseiten-
+Ansicht/Ausdruck. Bilder bleiben bewusst im normalen Textfluss (kein
+Umfließen, kein randabfallendes Bild) - dadurch profitieren sie automatisch
+vom bereits vorhandenen, seitenabhängigen Bundsteg-Rand, ohne dass die App
+gesondert wissen müsste, ob ein Bild auf einer linken oder rechten Seite
+landet.
+
+Noch offen: wiederverwendbare Icons/Trennlinien pro Buch (einmal hochladen,
+mehrfach einfügen statt jedes Mal neu hochzuladen) sowie eine Warnung beim
+nachträglichen Formatwechsel, falls schon Bilder im Buch stecken.
 
 ### Kosten im Blick behalten
 

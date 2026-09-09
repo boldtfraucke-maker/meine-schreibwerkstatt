@@ -484,6 +484,38 @@ select.status-select {
 .editor-page i, .editor-page em { font-style: italic; }
 .editor-page img { max-width: 100%; border-radius: 8px; margin: 10px 0; }
 .editor-page p { margin: 0 0 0.9em; }
+
+/* Bilder/Icons im Fließtext (Phase 7, Stufe 5) - relative Breiten statt
+   fester Pixelmaße, damit dasselbe Bild bei jedem Buchformat automatisch
+   passend skaliert. Bleibt bewusst im normalen Textfluss (kein Umfließen
+   per float, kein randabfallendes Bild) - das hält es auf allen Formaten
+   sicher innerhalb des ohnehin schon randsicheren Satzspiegels. */
+.story-image { position: relative; display: block; text-align: center; margin: 16px 0; }
+.story-image img { display: block; margin: 0 auto; border-radius: 8px; }
+.story-image-full img { width: 100%; }
+.story-image-half img { width: 50%; min-width: 140px; }
+.story-image-icon img { width: 64px; height: auto; }
+.story-image-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.story-image-remove:hover { background: rgba(0, 0, 0, 0.75); }
+/* Der Lösch-Knopf ist nur eine Editor-Bedienhilfe - er darf nie in der
+   Vorschau, der Doppelseiten-Ansicht oder im echten Ausdruck erscheinen. */
+.preview-story-content .story-image-remove { display: none; }
 .editor-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 0.8rem; color: var(--ink-faint); }
 .save-status { display: flex; align-items: center; gap: 6px; }
 .editor-footer-actions { display: none; gap: 14px; align-items: center; flex-wrap: wrap; }

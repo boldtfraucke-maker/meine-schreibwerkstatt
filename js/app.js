@@ -663,7 +663,7 @@
       btn.addEventListener("mousedown", (e) => e.preventDefault());
       btn.addEventListener("click", () => {
         const cmd = btn.dataset.cmd;
-        if (cmd === "image") { document.getElementById("imageInput").click(); return; }
+        if (cmd === "image") { saveSelection(); document.getElementById("imageInput").click(); return; }
         document.execCommand(cmd, false, null);
         scheduleSave();
       });
@@ -709,13 +709,32 @@
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
-        editorPage.focus();
-        document.execCommand("insertImage", false, reader.result);
-        scheduleSave();
+      reader.onload = async () => {
+        const size = await pickImageSize();
+        if (size) {
+          editorPage.focus();
+          restoreSelection();
+          const html = `<figure class="story-image story-image-${size}" contenteditable="false"><img src="${reader.result}" alt="">`
+            + `<button type="button" class="story-image-remove" title="Bild entfernen" aria-label="Bild entfernen">×</button></figure>`;
+          document.execCommand("insertHTML", false, html);
+          scheduleSave();
+        }
       };
       reader.readAsDataURL(file);
       e.target.value = "";
+    });
+
+    // Löschen per Klick auf das ×, das jedes eingefügte Bild trägt - per
+    // Event-Delegation, weil Bilder erst nachträglich (nicht beim Rendern
+    // des Editors) eingefügt werden. contenteditable="false" auf <figure>
+    // sorgt zusätzlich dafür, dass es sich auch per Markieren+Entf als
+    // Ganzes löschen lässt (kein halb-editiertes Bild-Fragment möglich).
+    editorPage.addEventListener("click", (e) => {
+      const removeBtn = e.target.closest(".story-image-remove");
+      if (!removeBtn) return;
+      e.preventDefault();
+      removeBtn.closest(".story-image")?.remove();
+      scheduleSave();
     });
 
     // Diese drei Aktionen gibt es doppelt im Markup (einmal oben für den
@@ -3334,6 +3353,35 @@
     okBtn.addEventListener("click", closeModal);
     modalActions.append(okBtn);
     modalOverlay.hidden = false;
+  }
+
+  // Größenauswahl beim Bild-Einfügen im Editor (Phase 7, Stufe 5) - relativ
+  // statt fester Pixelgröße, damit dasselbe Bild bei jedem Buchformat und
+  // jedem Anbieter automatisch passend skaliert erscheint, ohne dass die
+  // Autorin selbst etwas nachrechnen müsste. "Icon" ist bewusst eine feste,
+  // kleine Größe (statt relativ), weil wiederkehrende Symbole wie bei
+  // Nellys Logbuch überall gleich klein wirken sollen, unabhängig vom
+  // Buchformat.
+  function pickImageSize() {
+    return new Promise((resolve) => {
+      modalBody.innerHTML = `
+        <p style="font-weight:600;margin:0 0 12px;">Wie groß soll das Bild erscheinen?</p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn btn-outline" data-size="full" style="text-align:left;">🖼️ Volle Breite – für Fotos/Illustrationen</button>
+          <button class="btn btn-outline" data-size="half" style="text-align:left;">🖼️ Halbe Breite – kleineres Bild</button>
+          <button class="btn btn-outline" data-size="icon" style="text-align:left;">🔖 Icon – kleines, wiederkehrendes Symbol</button>
+        </div>`;
+      modalActions.innerHTML = "";
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "btn btn-ghost";
+      cancelBtn.textContent = "Abbrechen";
+      cancelBtn.addEventListener("click", () => { closeModal(); resolve(null); });
+      modalActions.append(cancelBtn);
+      modalBody.querySelectorAll("button[data-size]").forEach((btn) => {
+        btn.addEventListener("click", () => { closeModal(); resolve(btn.dataset.size); });
+      });
+      modalOverlay.hidden = false;
+    });
   }
 
   function showConfirm(message, confirmLabel, onConfirm) {

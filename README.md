@@ -345,22 +345,33 @@ zur Verfügung.
 sich über „🖼 Bild" jetzt ein Bild oder Icon direkt an der Cursor-Position
 einfügen, mit Größenauswahl (Volle Breite / Halbe Breite / Icon). Fotos/
 Illustrationen skalieren relativ zur Seitenbreite, damit dasselbe Bild bei
-jedem Buchformat automatisch passend erscheint - ein Icon bleibt bewusst
-immer gleich klein, unabhängig vom Format, damit wiederkehrende Symbole
-(wie bei einem Logbuch-Icon) überall gleich wirken. Jedes eingefügte Bild
-hat eine eigene kleine Bedienleiste darunter: links/mittig/rechts
-ausrichten, per Schieberegler nachträglich größer/kleiner ziehen (nur die
-Breite - die Höhe folgt automatisch proportional, keine Verzerrung
-möglich) und ein ×-Knopf zum Entfernen (Text fließt danach automatisch
-nach). Die Bedienleiste erscheint nur beim Bearbeiten, nie in Vorschau/
-Doppelseiten-Ansicht/Ausdruck. Bilder bleiben bewusst im normalen
-Textfluss (kein Umfließen, kein randabfallendes Bild) und die Ausrichtung
-bleibt innerhalb des ohnehin schon randsicheren Satzspiegels - dadurch
-profitieren sie automatisch vom bereits vorhandenen, seitenabhängigen
-Bundsteg-Rand, ohne dass die App gesondert wissen müsste, ob ein Bild auf
-einer linken oder rechten Seite landet. Die Werkzeugleiste über der
-Geschichte bleibt beim Scrollen durch lange Texte oben sichtbar (sticky),
-damit man für „🖼 Bild" nicht immer erst nach oben scrollen muss.
+jedem Buchformat automatisch passend erscheint. Icons laufen bewusst
+inline im Text mit (z. B. direkt vor „Datum: ..." gesetzt, der Text geht in
+derselben Zeile weiter) und bleiben unabhängig vom Buchformat immer gleich
+klein, damit wiederkehrende Symbole (wie bei einem Logbuch-Icon) überall
+gleich wirken.
+
+Fotos haben eine eigene kleine Bedienleiste darunter: links/mittig/rechts
+ausrichten und per Schieberegler nachträglich größer/kleiner ziehen (nur
+die Breite - die Höhe folgt automatisch proportional, keine Verzerrung
+möglich). Links/rechts ausgerichtete Fotos laufen text-umflossen (der Text
+setzt sich daneben fort, wie bei einem eingerückten Zeitungsbild) - bleiben
+dabei aber innerhalb der Textspalte, weil ihre Breite relativ dazu bleibt.
+Mittig ausgerichtete Fotos und Icons stehen dagegen als eigener Absatz.
+Wählt man beim Hochladen mehrere Dateien auf einmal aus (z. B. 2-3
+Urlaubsfotos), werden sie automatisch als Reihe nebeneinander eingefügt,
+alle exakt gleich breit - kein Schieberegler-Abgleich von Hand nötig.
+Jedes Bild hat einen ×-Knopf zum Entfernen (Text fließt danach automatisch
+nach). Alle Bedienelemente erscheinen nur beim Bearbeiten, nie in Vorschau/
+Doppelseiten-Ansicht/Ausdruck.
+
+Bilder bleiben dabei immer innerhalb des ohnehin schon randsicheren
+Satzspiegels (kein randabfallendes Bild) - dadurch profitieren sie
+automatisch vom bereits vorhandenen, seitenabhängigen Bundsteg-Rand, ohne
+dass die App gesondert wissen müsste, ob ein Bild auf einer linken oder
+rechten Seite landet. Die Werkzeugleiste über der Geschichte bleibt beim
+Scrollen durch lange Texte oben sichtbar (sticky), damit man für „🖼 Bild"
+nicht immer erst nach oben scrollen muss.
 
 Browser bieten für Bilder in einem Bearbeitungsbereich eigentlich eigene
 Ziehpunkte zum Verzerren/Skalieren an - die sind hier bewusst abgeschaltet

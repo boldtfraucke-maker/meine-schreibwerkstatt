@@ -488,25 +488,49 @@ select.status-select {
 .editor-page p { margin: 0 0 0.9em; }
 
 /* Bilder/Icons im Fließtext (Phase 7, Stufe 5) - relative Breiten (%) bei
-   Fotos/Illustrationen, feste Pixelbreite bei Icons; die Höhe wird nie
-   separat gesetzt, das Bild bleibt dadurch immer unverzerrt. Bleibt bewusst
-   im normalen Textfluss (kein Umfließen per float, kein randabfallendes
-   Bild) - das hält es auf allen Formaten sicher innerhalb des ohnehin
-   schon randsicheren Satzspiegels, auch wenn die Ausrichtung (links/
-   mittig/rechts) wechselt. */
-.story-image { position: relative; display: block; margin: 16px 0; }
-.story-image img { display: block; border-radius: 8px; }
-/* Zwei Klassen im Selektor statt einer - höhere Spezifität als das
+   Fotos/Illustrationen, feste Pixelbreite bei Icons; die Breite steht auf
+   der <figure>, das <img> füllt sie zu 100% - die Höhe wird nie separat
+   gesetzt, das Bild bleibt dadurch immer unverzerrt. Zentrierte Bilder und
+   Bild-Reihen bleiben im normalen Textfluss (kein randabfallendes Bild,
+   randsicher wie der Text) - links/rechts ausgerichtete Fotos "schwimmen"
+   (float), damit der Text seitlich weiterläuft, bleiben dabei aber genauso
+   innerhalb der Textspalte, weil ihre Breite relativ dazu bleibt. */
+.story-image { position: relative; margin: 16px 0; }
+.story-image img { display: block; width: 100%; height: auto; border-radius: 8px; }
+/* figure.story-image (statt nur .story-image) ist spezifischer als das
    allgemeine ".preview-story-content img { margin: 10px 0 }" weiter unten,
-   das sonst die Ausrichtung in Vorschau/Doppelseiten-Ansicht überschreibt
-   (beide Regeln träfen sonst mit gleicher Spezifität zu, dann gewinnt nur
-   die spätere Quellreihenfolge). */
-.story-image.story-image-align-center img { margin-left: auto; margin-right: auto; }
-.story-image.story-image-align-left img { margin-left: 0; margin-right: auto; }
-.story-image.story-image-align-right img { margin-left: auto; margin-right: 0; }
-/* Bedienleiste unter jedem Bild (Ausrichtung, Größe, Löschen) - bewusst
-   fest sichtbar statt nur bei Hover, damit man sie beim Bearbeiten immer
-   sofort findet, auch nachdem ein Bild größer gezogen wurde. */
+   das die Bild-Ränder sonst in Vorschau/Doppelseiten-Ansicht überschreiben
+   würde (gleiche Spezifität, aber spätere Quellreihenfolge). */
+figure.story-image img { margin: 0; }
+.story-image.story-image-align-center { margin-left: auto; margin-right: auto; clear: both; }
+.story-image[data-kind="photo"].story-image-align-left { float: left; margin: 4px 18px 12px 0; }
+.story-image[data-kind="photo"].story-image-align-right { float: right; margin: 4px 0 12px 18px; }
+/* Icons laufen bewusst inline im Text mit (z. B. direkt vor "Datum: ..." -
+   der Text geht in derselben Zeile weiter), Ausrichtung ergibt für ein
+   Wort mitten im Satz keinen Sinn (siehe fehlende Knöpfe in app.js). */
+.story-image[data-kind="icon"] { display: inline-block; vertical-align: middle; margin: 0 4px; }
+/* Bilder-Reihe (mehrere Dateien auf einmal ausgewählt) - alle Zellen
+   automatisch gleich breit statt den Schieberegler von Hand treffen zu
+   müssen; startet immer unterhalb eines vorherigen schwimmenden Bilds statt
+   eng danebenzurutschen. */
+.story-image-row { display: flex; gap: 10px; margin: 16px 0; clear: both; }
+.story-image-row-cell { position: relative; flex: 1 1 0; min-width: 0; }
+.story-image-row-cell img { display: block; width: 100%; height: auto; border-radius: 8px; }
+.story-image-row-cell .story-image-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  color: #fff;
+  background: rgba(190, 60, 50, 0.85);
+}
+.story-image-row-cell .story-image-remove:hover { background: rgba(190, 60, 50, 1); }
+/* Bedienleiste unter/neben jedem Bild (Ausrichtung, Größe, Löschen) -
+   bewusst fest sichtbar statt nur bei Hover, damit man sie beim Bearbeiten
+   immer sofort findet, auch nachdem ein Bild größer gezogen wurde. */
 .story-image-controls {
   display: flex;
   align-items: center;
@@ -514,6 +538,7 @@ select.status-select {
   justify-content: center;
   margin-top: 6px;
 }
+.story-image[data-kind="icon"] .story-image-controls { display: inline-flex; vertical-align: middle; margin: 0 0 0 6px; }
 .story-image-align-btn, .story-image-remove {
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -527,14 +552,22 @@ select.status-select {
   align-items: center;
   justify-content: center;
   color: var(--ink-soft);
+  flex-shrink: 0;
 }
 .story-image-align-btn:hover { border-color: var(--sky); color: var(--sky); }
 .story-image-remove { color: #fff; background: rgba(190, 60, 50, 0.85); border-color: transparent; }
 .story-image-remove:hover { background: rgba(190, 60, 50, 1); }
 .story-image-size-slider { width: 110px; }
-/* Die Bedienleiste ist eine reine Editor-Bedienhilfe - sie darf nie in der
-   Vorschau, der Doppelseiten-Ansicht oder im echten Ausdruck erscheinen. */
-.preview-story-content .story-image-controls { display: none; }
+/* Die Bedienleisten und Lösch-Knöpfe sind reine Editor-Bedienhilfen - sie
+   dürfen nie in der Vorschau, der Doppelseiten-Ansicht oder im echten
+   Ausdruck erscheinen. */
+.preview-story-content .story-image-controls,
+.preview-story-content .story-image-row-cell .story-image-remove { display: none; }
+/* .preview-story und .editor-page müssen schwimmende Bilder selbst
+   enthalten (flow-root = eigener Block-Formatierungskontext), sonst könnte
+   ein Bild ganz am Ende einer Geschichte optisch in die nächste
+   hineinragen. */
+.preview-story, .editor-page { display: flow-root; }
 .editor-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 0.8rem; color: var(--ink-faint); }
 .save-status { display: flex; align-items: center; gap: 6px; }
 .editor-footer-actions { display: none; gap: 14px; align-items: center; flex-wrap: wrap; }

@@ -551,7 +551,7 @@
           <button class="tool-btn" data-cmd="italic" title="Kursiv"><i>K</i></button>
           <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
           <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
-          <input type="file" id="imageInput" accept="image/*" style="display:none;">
+          <input type="file" id="imageInput" accept="image/*" multiple style="display:none;">
         </div>
         <div class="editor-actions-top">
           <button class="btn btn-outline" id="copyTextBtnTop" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
@@ -717,8 +717,13 @@
     // Buchformat automatisch an), "icon" bleibt bewusst eine feste
     // Pixelgröße (wiederkehrende Symbole sollen überall gleich klein
     // wirken). Der Schieberegler in der Bild-Bedienleiste erlaubt danach
-    // jederzeit ein Nachjustieren innerhalb sinnvoller Grenzen - Höhe wird
-    // nie separat gesetzt, das Bild bleibt dadurch immer unverzerrt.
+    // jederzeit ein Nachjustieren innerhalb sinnvoller Grenzen. Die Breite
+    // steht bewusst auf der <figure> (nicht auf dem <img>) - Höhe wird nie
+    // separat gesetzt, das Bild bleibt dadurch immer unverzerrt, und bei
+    // links/rechts ausgerichteten Fotos (die per float text-umflossen
+    // werden) braucht der Browser eine feste Breite auf dem schwimmenden
+    // Element selbst, sonst ist die Prozentbreite des Bildes darin nicht
+    // eindeutig berechenbar.
     const IMAGE_KIND_BY_SIZE = { full: "photo", half: "photo", icon: "icon" };
     const IMAGE_START_WIDTH = { full: 100, half: 50, icon: 64 };
 
@@ -726,48 +731,114 @@
       const kind = IMAGE_KIND_BY_SIZE[sizeChoice];
       const startWidth = IMAGE_START_WIDTH[sizeChoice];
       const isIcon = kind === "icon";
-      const widthStyle = isIcon ? `${startWidth}px` : `${startWidth}%`;
+      const widthUnit = isIcon ? "px" : "%";
       const sliderMin = isIcon ? 24 : 15;
       const sliderMax = isIcon ? 160 : 100;
-      return `<figure class="story-image story-image-align-center" data-kind="${kind}" contenteditable="false">
-          <img src="${src}" alt="" style="width:${widthStyle};">
-          <div class="story-image-controls" contenteditable="false">
-            <button type="button" class="story-image-align-btn" data-align="left" title="Links ausrichten" aria-label="Links ausrichten">⬅</button>
-            <button type="button" class="story-image-align-btn" data-align="center" title="Mittig ausrichten" aria-label="Mittig ausrichten">◼</button>
-            <button type="button" class="story-image-align-btn" data-align="right" title="Rechts ausrichten" aria-label="Rechts ausrichten">➡</button>
+      // Icons laufen inline im Text mit (z. B. direkt vor "Datum: ..." -
+      // der Text geht in derselben Zeile weiter) - Ausrichtung links/
+      // mittig/rechts ergibt für ein Wort mitten im Satz keinen Sinn,
+      // deshalb hier weggelassen.
+      const alignButtonsHtml = isIcon ? "" : `
+            <button type="button" class="story-image-align-btn" data-align="left" title="Links ausrichten - Text läuft rechts daneben weiter" aria-label="Links ausrichten">⬅</button>
+            <button type="button" class="story-image-align-btn" data-align="center" title="Mittig ausrichten - eigener Absatz" aria-label="Mittig ausrichten">◼</button>
+            <button type="button" class="story-image-align-btn" data-align="right" title="Rechts ausrichten - Text läuft links daneben weiter" aria-label="Rechts ausrichten">➡</button>`;
+      const alignClass = isIcon ? "" : " story-image-align-center";
+      return `<figure class="story-image${alignClass}" data-kind="${kind}" contenteditable="false" style="width:${startWidth}${widthUnit};">
+          <img src="${src}" alt="">
+          <div class="story-image-controls" contenteditable="false">${alignButtonsHtml}
             <input type="range" class="story-image-size-slider" min="${sliderMin}" max="${sliderMax}" value="${startWidth}" title="Größe" aria-label="Bildgröße">
             <button type="button" class="story-image-remove" title="Bild entfernen" aria-label="Bild entfernen">×</button>
           </div>
         </figure>`;
     }
 
-    document.getElementById("imageInput").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async () => {
+    // Mehrere Bilder auf einmal ausgewählt (z. B. 2-3 Urlaubsfotos) - statt
+    // einer Größenabfrage direkt als Reihe nebeneinander einfügen, alle
+    // automatisch gleich breit (flex: 1 je Zelle). Löst gleichzeitig "wie
+    // bekomme ich mehrere Bilder nebeneinander" und "wie sind sie exakt
+    // gleich groß, ohne den Schieberegler von Hand zu treffen".
+    function buildImageRowHtml(srcs) {
+      const cells = srcs.map(src => `<div class="story-image-row-cell">
+            <img src="${src}" alt="">
+            <button type="button" class="story-image-remove" title="Bild entfernen" aria-label="Bild entfernen">×</button>
+          </div>`).join("");
+      return `<div class="story-image-row" contenteditable="false">${cells}</div>`;
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // execCommand("insertHTML") an sich hat eine Eigenheit: steht die
+    // Schreibmarke direkt am Anfang eines Absatzes (z. B. genau vor "Datum:
+    // ..."), schiebt es Eingefügtes als eigenen, neuen Absatz DAVOR statt es
+    // in derselben Zeile einzufügen - genau der Fall, den ein inline
+    // gesetztes Icon (Text soll in derselben Zeile weitergehen) braucht.
+    // Direktes Einfügen über die Range-API trifft die Schreibmarken-Position
+    // exakt, ohne dieses Verhalten.
+    function insertHtmlAtSelection(html) {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      const frag = range.createContextualFragment(html);
+      const lastNode = frag.lastChild;
+      range.insertNode(frag);
+      if (lastNode) {
+        const newRange = document.createRange();
+        newRange.setStartAfter(lastNode);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+      }
+    }
+
+    document.getElementById("imageInput").addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+      editorPage.focus();
+      restoreSelection();
+      if (files.length === 1) {
+        const dataUrl = await readFileAsDataUrl(files[0]);
         const size = await pickImageSize();
         if (size) {
           editorPage.focus();
           restoreSelection();
-          document.execCommand("insertHTML", false, buildImageFigureHtml(reader.result, size));
+          insertHtmlAtSelection(buildImageFigureHtml(dataUrl, size));
           scheduleSave();
         }
-      };
-      reader.readAsDataURL(file);
+      } else {
+        // Auf 4 begrenzt - eine Reihe soll übersichtlich bleiben, mehr
+        // Bilder besser einzeln oder in einer zweiten Reihe einfügen.
+        const dataUrls = await Promise.all(files.slice(0, 4).map(readFileAsDataUrl));
+        insertHtmlAtSelection(buildImageRowHtml(dataUrls));
+        scheduleSave();
+      }
       e.target.value = "";
     });
 
     // Löschen und Ausrichten per Klick, Größe per Schieberegler - beides per
     // Event-Delegation, weil Bilder erst nachträglich (nicht beim Rendern
-    // des Editors) eingefügt werden. contenteditable="false" auf <figure>
-    // sorgt zusätzlich dafür, dass es sich auch per Markieren+Entf als
-    // Ganzes löschen lässt (kein halb-editiertes Bild-Fragment möglich).
+    // des Editors) eingefügt werden. contenteditable="false" auf <figure>/
+    // der Bild-Reihe sorgt zusätzlich dafür, dass sich beides auch per
+    // Markieren+Entf als Ganzes löschen lässt.
     editorPage.addEventListener("click", (e) => {
       const removeBtn = e.target.closest(".story-image-remove");
       if (removeBtn) {
         e.preventDefault();
-        removeBtn.closest(".story-image")?.remove();
+        const rowCell = removeBtn.closest(".story-image-row-cell");
+        if (rowCell) {
+          const row = rowCell.closest(".story-image-row");
+          rowCell.remove();
+          if (row && !row.querySelector(".story-image-row-cell")) row.remove();
+        } else {
+          removeBtn.closest(".story-image")?.remove();
+        }
         scheduleSave();
         return;
       }
@@ -786,9 +857,8 @@
       const slider = e.target.closest(".story-image-size-slider");
       if (!slider) return;
       const figure = slider.closest(".story-image");
-      const img = figure?.querySelector("img");
-      if (!img) return;
-      img.style.width = (figure.dataset.kind === "icon" ? slider.value + "px" : slider.value + "%");
+      if (!figure) return;
+      figure.style.width = (figure.dataset.kind === "icon" ? slider.value + "px" : slider.value + "%");
       scheduleSave();
     });
 

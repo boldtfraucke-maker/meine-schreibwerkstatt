@@ -847,8 +847,32 @@
         e.preventDefault();
         const figure = alignBtn.closest(".story-image");
         if (figure) {
+          const align = alignBtn.dataset.align;
           figure.classList.remove("story-image-align-left", "story-image-align-center", "story-image-align-right");
-          figure.classList.add("story-image-align-" + alignBtn.dataset.align);
+          figure.classList.add("story-image-align-" + align);
+          // Links/rechts ausgerichtete Fotos werden text-umflossen - bei mehr
+          // als ~40% Breite bleibt für den Text daneben kaum noch Platz, das
+          // sieht dann mit sehr vielen, sehr kurzen Zeilen unruhig aus (kein
+          // Fehler, sondern schlicht zu wenig Raum für vernünftigen
+          // Zeilenumbruch). Deshalb hier gedeckelt; bei "Mittig" (kein
+          // Umfließen, eigener Absatz) gilt der Deckel nicht.
+          const slider = figure.querySelector(".story-image-size-slider");
+          if (slider && figure.dataset.kind === "photo") {
+            if (align === "center") {
+              slider.max = 100;
+            } else {
+              // Wert VOR dem Setzen von max merken: der Browser klemmt
+              // slider.value automatisch auf das neue max, sobald man es
+              // setzt - danach wäre "war der Wert zu groß?" nicht mehr
+              // ehrlich zu beantworten.
+              const originalValue = Number(slider.value);
+              slider.max = 40;
+              if (originalValue > 40) {
+                slider.value = 40;
+                figure.style.width = "40%";
+              }
+            }
+          }
           scheduleSave();
         }
       }

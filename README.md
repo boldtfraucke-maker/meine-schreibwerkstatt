@@ -361,7 +361,13 @@ die Breite - die Höhe folgt automatisch proportional, keine Verzerrung
 möglich). Links/rechts ausgerichtete Fotos laufen text-umflossen (der Text
 setzt sich daneben fort, wie bei einem eingerückten Zeitungsbild) - bleiben
 dabei aber innerhalb der Textspalte, weil ihre Breite relativ dazu bleibt.
-Mittig ausgerichtete Fotos und Icons stehen dagegen als eigener Absatz.
+Der Schieberegler ist bei links/rechts auf maximal 40% der Textbreite
+gedeckelt: ist das Foto breiter, bleibt daneben kaum noch Platz für Text,
+was zu sehr vielen, sehr kurzen, unruhig wirkenden Zeilen führt (kein
+Fehler, sondern zu wenig Raum für vernünftigen Zeilenumbruch) - bei
+"Mittig" (kein Umfließen, eigener Absatz) gilt der Deckel nicht, dort sind
+volle 100% möglich. Mittig ausgerichtete Fotos und Icons stehen dagegen als
+eigener Absatz.
 Wählt man beim Hochladen mehrere Dateien auf einmal aus (z. B. 2-3
 Urlaubsfotos), werden sie automatisch als Reihe nebeneinander eingefügt,
 alle exakt gleich breit - kein Schieberegler-Abgleich von Hand nötig.

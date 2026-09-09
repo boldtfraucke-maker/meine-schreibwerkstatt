@@ -555,9 +555,9 @@
           <button class="tool-btn" data-cmd="bold" title="Fett"><b>F</b></button>
           <button class="tool-btn" data-cmd="italic" title="Kursiv"><i>K</i></button>
           <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
-          <button class="tool-btn" data-cmd="image" title="Bild einfügen">🖼 Bild</button>
+          <button class="btn btn-outline tool-btn-image" data-cmd="image" title="Bild einfügen">🖼️ Bild einfügen</button>
           <input type="file" id="imageInput" accept="image/*" multiple style="display:none;">
-          ${bookForStory && (bookForStory.iconLibrary || []).length > 0 ? '<button class="tool-btn" id="iconLibraryBtn" title="Gespeichertes Icon aus diesem Buch einfügen">🔖 Icon</button>' : ""}
+          <button class="btn btn-outline tool-btn-image" id="iconLibraryBtn" title="Gespeichertes Icon wiederverwenden">🔖 Icon wiederverwenden</button>
         </div>
         <div class="editor-actions-top">
           <span class="toolbar-divider"></span>
@@ -826,7 +826,6 @@
             bookForStory.iconLibrary = bookForStory.iconLibrary || [];
             bookForStory.iconLibrary.push({ id: uid(), dataUrl });
             await saveBook(bookForStory);
-            ensureIconLibraryBtn();
           }
         }
       } else {
@@ -839,9 +838,22 @@
       e.target.value = "";
     });
 
-    async function openIconLibraryPicker() {
+    // Der Knopf ist immer sichtbar (nicht erst, wenn schon Icons gespeichert
+    // sind) - sonst bleibt völlig unsichtbar/unerklärt, warum "nichts
+    // passiert" bzw. sich einfach der Datei-Ordner öffnet. Stattdessen
+    // erklärt er in den beiden Fällen, in denen (noch) nichts zur
+    // Wiederverwendung da ist, direkt, woran das liegt.
+    document.getElementById("iconLibraryBtn")?.addEventListener("click", async () => {
+      if (!bookForStory) {
+        showAlert('Diese Geschichte gehört noch keinem Buch. Ordne sie zuerst im Bereich „Bücher" einem Kapitel zu - erst dann kann sich die App Icons für die Wiederverwendung merken. Bis dahin fügst du Icons ganz normal über „🖼️ Bild einfügen" ein.');
+        return;
+      }
+      const library = bookForStory.iconLibrary || [];
+      if (library.length === 0) {
+        showAlert('Für „' + (bookForStory.title || "dieses Buch") + '" sind noch keine wiederverwendbaren Icons gespeichert. Lade einmal über „🖼️ Bild einfügen" ein Bild hoch und wähle dabei „Icon" - danach steht es hier für die Wiederverwendung bereit.');
+        return;
+      }
       saveSelection();
-      const library = bookForStory?.iconLibrary || [];
       const result = await pickLibraryIcon(library);
       if (!result) return;
       if (result.upload) {
@@ -852,24 +864,7 @@
       restoreSelection();
       insertHtmlAtSelection(buildImageFigureHtml(result.dataUrl, "icon"));
       scheduleSave();
-    }
-    // Erscheint erst, sobald mindestens ein Icon für dieses Buch gespeichert
-    // ist - direkt nach dem allerersten Icon-Upload sonst noch nicht im
-    // gerenderten Markup vorhanden, deshalb hier bei Bedarf live ergänzt
-    // (statt erst nach einem Neuladen sichtbar zu werden).
-    function ensureIconLibraryBtn() {
-      if (document.getElementById("iconLibraryBtn")) return;
-      const btn = document.createElement("button");
-      btn.className = "tool-btn";
-      btn.id = "iconLibraryBtn";
-      btn.type = "button";
-      btn.title = "Gespeichertes Icon aus diesem Buch einfügen";
-      btn.textContent = "🔖 Icon";
-      btn.addEventListener("mousedown", (e) => e.preventDefault());
-      btn.addEventListener("click", openIconLibraryPicker);
-      document.querySelector(".toolbar-group-format").appendChild(btn);
-    }
-    document.getElementById("iconLibraryBtn")?.addEventListener("click", openIconLibraryPicker);
+    });
 
     // Löschen und Ausrichten per Klick, Größe per Schieberegler - beides per
     // Event-Delegation, weil Bilder erst nachträglich (nicht beim Rendern

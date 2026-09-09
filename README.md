@@ -259,7 +259,11 @@ zwischen linker und rechter Seite direkt in der App - ohne dafür erst
 „Strg+P" öffnen zu müssen. Dafür wird einmalig
 [Paged.js](https://pagedjs.org/) nachgeladen (kostenlose, quelloffene
 Bibliothek, läuft komplett im Browser, verschickt keine Buchinhalte
-irgendwohin) - nur wenn die Ansicht tatsächlich geöffnet wird.
+irgendwohin) - nur wenn die Ansicht tatsächlich geöffnet wird. Wartet dabei
+bewusst, bis die eigentliche Schrift (Fraunces/EB Garamond) fertig geladen
+ist, bevor die Seiten berechnet werden - sonst könnte Paged.js mit den
+(schmaleren) Maßen einer Ersatzschrift rechnen und Zeilen brechen zu kurz
+um, obwohl noch ein Wort gepasst hätte.
 
 ### Phase 7: Bilder im Buch & Cover-Wrap (nur am PC)
 
@@ -363,7 +367,12 @@ Urlaubsfotos), werden sie automatisch als Reihe nebeneinander eingefügt,
 alle exakt gleich breit - kein Schieberegler-Abgleich von Hand nötig.
 Jedes Bild hat einen ×-Knopf zum Entfernen (Text fließt danach automatisch
 nach). Alle Bedienelemente erscheinen nur beim Bearbeiten, nie in Vorschau/
-Doppelseiten-Ansicht/Ausdruck.
+Doppelseiten-Ansicht/Ausdruck (bei Icons vorher als Bug aufgetreten, jetzt
+behoben - eine Icon-spezifische CSS-Regel hatte Vorrang vor der
+Ausblenden-Regel). Der Schieberegler wendet die neue Größe erst beim
+Loslassen an (nicht mehr bei jedem Pixel während des Ziehens) - vorher
+verschob sich der Regler durch die ständige Neuberechnung des Textumflusses
+unter dem Mauszeiger weg und sprang auf Minimum/Maximum.
 
 Bilder bleiben dabei immer innerhalb des ohnehin schon randsicheren
 Satzspiegels (kein randabfallendes Bild) - dadurch profitieren sie

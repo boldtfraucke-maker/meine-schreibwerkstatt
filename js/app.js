@@ -853,7 +853,14 @@
         }
       }
     });
-    editorPage.addEventListener("input", (e) => {
+    // "change" statt "input": Der Schieberegler sitzt direkt unter/neben dem
+    // Bild, das er selbst in der Größe verändert - bei jedem einzelnen
+    // Zwischenschritt während des Ziehens (input-Event) sofort das ganze
+    // Textumfließen (float) neu zu berechnen, lässt den Regler unter dem
+    // Mauszeiger wegrutschen (ruckelt, springt auf Minimum/Maximum). Mit
+    // "change" passiert die Größenänderung erst einmalig beim Loslassen -
+    // dafür ruhig und zuverlässig, ohne Reglern hinterherzujagen.
+    editorPage.addEventListener("change", (e) => {
       const slider = e.target.closest(".story-image-size-slider");
       if (!slider) return;
       const figure = slider.closest(".story-image");
@@ -3027,6 +3034,16 @@
     // brechen wir sauber ab, statt später einen nicht mehr vorhandenen
     // Knopf verkabeln zu wollen (das würde sonst zu einem Fehler führen).
     function stillOnThisPanel() { return document.getElementById("booksPanel") === panel; }
+
+    // Paged.js misst die Textbreiten für die Zeilenumbrüche direkt beim
+    // Aufruf - ist die eigentliche Schrift (Fraunces/EB Garamond) da noch
+    // nicht fertig geladen, rechnet es mit den (schmaleren) Maßen der
+    // Ersatzschrift. Sobald die echte Schrift dann doch noch nachlädt,
+    // passen die vorher berechneten Umbrüche nicht mehr zum tatsächlich
+    // angezeigten Text - dadurch wirken Zeilen zu kurz/ungleichmäßig
+    // umgebrochen, obwohl noch ein Wort gepasst hätte.
+    await (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve());
+    if (!stillOnThisPanel()) { pagesHolder.remove(); return; }
 
     let pageEls;
     try {

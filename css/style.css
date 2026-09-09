@@ -560,9 +560,12 @@ figure.story-image img { margin: 0; }
 .story-image-size-slider { width: 110px; }
 /* Die Bedienleisten und Lösch-Knöpfe sind reine Editor-Bedienhilfen - sie
    dürfen nie in der Vorschau, der Doppelseiten-Ansicht oder im echten
-   Ausdruck erscheinen. */
+   Ausdruck erscheinen. !important, weil die Icon-spezifische Regel oben
+   (".story-image[data-kind=icon] .story-image-controls") sonst durch ihre
+   höhere Spezifität gewinnt und die Bedienleiste beim Icon fälschlich auch
+   dort sichtbar bleibt. */
 .preview-story-content .story-image-controls,
-.preview-story-content .story-image-row-cell .story-image-remove { display: none; }
+.preview-story-content .story-image-row-cell .story-image-remove { display: none !important; }
 /* .preview-story und .editor-page müssen schwimmende Bilder selbst
    enthalten (flow-root = eigener Block-Formatierungskontext), sonst könnte
    ein Bild ganz am Ende einer Geschichte optisch in die nächste

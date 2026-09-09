@@ -557,7 +557,7 @@
           <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
           <button class="btn btn-outline tool-btn-image" data-cmd="image" title="Bild einfügen">🖼️ Bild</button>
           <input type="file" id="imageInput" accept="image/*" multiple style="display:none;">
-          <button class="btn btn-outline tool-btn-image" id="iconLibraryBtn" title="Gespeichertes Icon wiederverwenden">🔖 Icon</button>
+          <button class="btn btn-outline tool-btn-image" id="iconLibraryBtn" title="Gespeichertes Icon oder Trennlinie wiederverwenden">🔖 Icon</button>
         </div>
         <div class="editor-actions-top">
           <span class="toolbar-divider"></span>
@@ -737,24 +737,27 @@
     // werden) braucht der Browser eine feste Breite auf dem schwimmenden
     // Element selbst, sonst ist die Prozentbreite des Bildes darin nicht
     // eindeutig berechenbar.
-    const IMAGE_KIND_BY_SIZE = { full: "photo", half: "photo", icon: "icon" };
-    const IMAGE_START_WIDTH = { full: 100, half: 50, icon: 64 };
+    const IMAGE_KIND_BY_SIZE = { full: "photo", half: "photo", icon: "icon", divider: "divider" };
+    const IMAGE_START_WIDTH = { full: 100, half: 50, icon: 64, divider: 45 };
 
     function buildImageFigureHtml(src, sizeChoice) {
       const kind = IMAGE_KIND_BY_SIZE[sizeChoice];
       const startWidth = IMAGE_START_WIDTH[sizeChoice];
       const isIcon = kind === "icon";
+      const isPhoto = kind === "photo";
       const widthUnit = isIcon ? "px" : "%";
       const sliderMin = isIcon ? 24 : 15;
       const sliderMax = isIcon ? 160 : 100;
       // Icons laufen inline im Text mit (z. B. direkt vor "Datum: ..." -
       // der Text geht in derselben Zeile weiter) - Ausrichtung links/
-      // mittig/rechts ergibt für ein Wort mitten im Satz keinen Sinn,
-      // deshalb hier weggelassen.
-      const alignButtonsHtml = isIcon ? "" : `
+      // mittig/rechts ergibt für ein Wort mitten im Satz keinen Sinn.
+      // Trennlinien stehen als dekoratives Element immer für sich zentriert,
+      // ein Textumfluss links/rechts daneben würde bei einer schmalen Linie
+      // seltsam aussehen - deshalb bekommen nur Fotos die Ausrichtungswahl.
+      const alignButtonsHtml = isPhoto ? `
             <button type="button" class="story-image-align-btn" data-align="left" title="Links ausrichten - Text läuft rechts daneben weiter" aria-label="Links ausrichten">⬅</button>
             <button type="button" class="story-image-align-btn" data-align="center" title="Mittig ausrichten - eigener Absatz" aria-label="Mittig ausrichten">◼</button>
-            <button type="button" class="story-image-align-btn" data-align="right" title="Rechts ausrichten - Text läuft links daneben weiter" aria-label="Rechts ausrichten">➡</button>`;
+            <button type="button" class="story-image-align-btn" data-align="right" title="Rechts ausrichten - Text läuft links daneben weiter" aria-label="Rechts ausrichten">➡</button>` : "";
       const alignClass = isIcon ? "" : " story-image-align-center";
       return `<figure class="story-image${alignClass}" data-kind="${kind}" contenteditable="false" style="width:${startWidth}${widthUnit};">
           <img src="${src}" alt="">
@@ -824,13 +827,18 @@
           restoreSelection();
           insertHtmlAtSelection(buildImageFigureHtml(dataUrl, size));
           scheduleSave();
-          // Ein neu hochgeladenes Icon merkt sich die App automatisch für
-          // dieses Buch (falls die Geschichte schon einem zugeordnet ist) -
-          // dadurch taucht es beim nächsten Mal in der Wiederverwenden-
-          // Auswahl auf, ohne dass man es erneut hochladen müsste.
-          if (size === "icon" && bookForStory) {
+          // Ein neu hochgeladenes Icon oder eine neue Trennlinie merkt sich
+          // die App automatisch für dieses Buch (falls die Geschichte schon
+          // einem zugeordnet ist) - dadurch taucht es beim nächsten Mal in
+          // der Wiederverwenden-Auswahl auf, ohne erneut hochgeladen werden
+          // zu müssen. "kind" unterscheidet beim Wiederverwenden später
+          // zwischen Icons und Trennlinien; ältere, vor dieser Funktion
+          // gespeicherte Einträge haben noch kein "kind" - werden aber
+          // überall dort, wo gelesen wird, als "icon" behandelt (das waren
+          // sie bisher ausschließlich).
+          if ((size === "icon" || size === "divider") && bookForStory) {
             bookForStory.iconLibrary = bookForStory.iconLibrary || [];
-            bookForStory.iconLibrary.push({ id: uid(), dataUrl });
+            bookForStory.iconLibrary.push({ id: uid(), dataUrl, kind: size });
             await saveBook(bookForStory);
           }
         }
@@ -851,12 +859,12 @@
     // Wiederverwendung da ist, direkt, woran das liegt.
     document.getElementById("iconLibraryBtn")?.addEventListener("click", async () => {
       if (!bookForStory) {
-        showAlert('Diese Geschichte gehört noch keinem Buch. Ordne sie zuerst im Bereich „Bücher" einem Kapitel zu - erst dann kann sich die App Icons für die Wiederverwendung merken. Bis dahin fügst du Icons ganz normal über „🖼️ Bild" ein.');
+        showAlert('Diese Geschichte gehört noch keinem Buch. Ordne sie zuerst im Bereich „Bücher" einem Kapitel zu - erst dann kann sich die App Icons und Trennlinien für die Wiederverwendung merken. Bis dahin fügst du sie ganz normal über „🖼️ Bild" ein.');
         return;
       }
       const library = bookForStory.iconLibrary || [];
       if (library.length === 0) {
-        showAlert('Für „' + (bookForStory.title || "dieses Buch") + '" sind noch keine wiederverwendbaren Icons gespeichert. Lade einmal über „🖼️ Bild" ein Bild hoch und wähle dabei „Icon" - danach steht es hier für die Wiederverwendung bereit.');
+        showAlert('Für „' + (bookForStory.title || "dieses Buch") + '" sind noch keine wiederverwendbaren Icons oder Trennlinien gespeichert. Lade einmal über „🖼️ Bild" ein Icon oder eine Trennlinie hoch - danach steht es hier für die Wiederverwendung bereit.');
         return;
       }
       saveSelection();
@@ -868,7 +876,7 @@
       }
       editorPage.focus();
       restoreSelection();
-      insertHtmlAtSelection(buildImageFigureHtml(result.dataUrl, "icon"));
+      insertHtmlAtSelection(buildImageFigureHtml(result.dataUrl, result.kind));
       scheduleSave();
     });
 
@@ -1879,16 +1887,17 @@
     return ids;
   }
 
-  // Nur Fotos (volle/halbe Breite) sind vom Formatwechsel betroffen - ihre
-  // Breite ist prozentual auf die bisherige Textspalte abgestimmt. Icons
-  // haben eine feste Pixelgröße und bleiben unabhängig vom Buchformat
-  // gleich klein, deshalb zählen sie hier bewusst nicht mit.
-  function bookHasPhotoImages(book) {
+  // Nur Fotos und Trennlinien (volle/halbe Breite bzw. prozentual breite
+  // Deko-Elemente) sind vom Formatwechsel betroffen - ihre Breite ist
+  // prozentual auf die bisherige Textspalte abgestimmt. Icons haben eine
+  // feste Pixelgröße und bleiben unabhängig vom Buchformat gleich klein,
+  // deshalb zählen sie hier bewusst nicht mit.
+  function bookHasFormatSensitiveImages(book) {
     const ids = new Set(allUsedStoryIds(book));
-    return stories.some(s => ids.has(s.id) && /data-kind="photo"/.test(s.content || ""));
+    return stories.some(s => ids.has(s.id) && /data-kind="(photo|divider)"/.test(s.content || ""));
   }
 
-  const FORMAT_CHANGE_WARNING = 'In diesem Buch sind bereits Fotos eingefügt, deren Breite auf das bisherige Format abgestimmt ist. Nach einem Formatwechsel kann die Textspalte schmaler oder breiter werden - schau dir die betroffenen Geschichten danach noch einmal an und passe die Bildgröße bei Bedarf über den Schieberegler an. Trotzdem wechseln?';
+  const FORMAT_CHANGE_WARNING = 'In diesem Buch sind bereits Fotos oder Trennlinien eingefügt, deren Breite auf das bisherige Format abgestimmt ist. Nach einem Formatwechsel kann die Textspalte schmaler oder breiter werden - schau dir die betroffenen Geschichten danach noch einmal an und passe die Bildgröße bei Bedarf über den Schieberegler an. Trotzdem wechseln?';
 
   async function saveBook(book) {
     book.updatedAt = new Date().toISOString();
@@ -2574,15 +2583,15 @@
 
         ${(book.iconLibrary || []).length > 0 ? `
         <div style="margin-top:28px;">
-          <p class="section-label">🔖 Wiederverwendbare Icons dieses Buchs</p>
+          <p class="section-label">🔖 Wiederverwendbare Icons &amp; Trennlinien dieses Buchs</p>
           <div class="icon-library-grid" id="iconLibraryManageGrid">
             ${book.iconLibrary.map((icon) => `
               <div class="icon-library-item" data-id="${escapeAttr(icon.id)}">
                 <img src="${icon.dataUrl}" alt="">
-                <button type="button" class="icon-library-item-remove" title="Icon aus der Bibliothek entfernen" aria-label="Icon aus der Bibliothek entfernen">×</button>
+                <button type="button" class="icon-library-item-remove" title="Element aus der Bibliothek entfernen" aria-label="Element aus der Bibliothek entfernen">×</button>
               </div>`).join("")}
           </div>
-          <p class="ai-suggestion-note">Entfernt nur aus dieser Auswahlliste - bereits in Geschichten eingefügte Icons bleiben dort erhalten.</p>
+          <p class="ai-suggestion-note">Entfernt nur aus dieser Auswahlliste - bereits in Geschichten eingefügte Icons und Trennlinien bleiben dort erhalten.</p>
         </div>` : ""}
 
         <div style="margin-top:28px;">
@@ -2667,7 +2676,7 @@
         scheduleBookSave(book);
         renderCoverWrapPanel(book);
       };
-      if (hadFormat && newProvider !== previousProvider && bookHasPhotoImages(book)) {
+      if (hadFormat && newProvider !== previousProvider && bookHasFormatSensitiveImages(book)) {
         e.target.value = previousProvider;
         showConfirm(FORMAT_CHANGE_WARNING, "Format trotzdem wechseln", applyChange);
       } else {
@@ -2683,7 +2692,7 @@
         scheduleBookSave(book);
         renderCoverWrapPanel(book);
       };
-      if (previousFormat && newFormat !== previousFormat && bookHasPhotoImages(book)) {
+      if (previousFormat && newFormat !== previousFormat && bookHasFormatSensitiveImages(book)) {
         e.target.value = previousFormat;
         showConfirm(FORMAT_CHANGE_WARNING, "Format trotzdem wechseln", applyChange);
       } else {
@@ -3642,6 +3651,7 @@
           <button class="btn btn-outline" data-size="full" style="text-align:left;">🖼️ Volle Breite – für Fotos/Illustrationen</button>
           <button class="btn btn-outline" data-size="half" style="text-align:left;">🖼️ Halbe Breite – kleineres Bild</button>
           <button class="btn btn-outline" data-size="icon" style="text-align:left;">🔖 Icon – kleines, wiederkehrendes Symbol</button>
+          <button class="btn btn-outline" data-size="divider" style="text-align:left;">➖ Trennlinie – dekoratives Element zwischen Abschnitten</button>
         </div>`;
       modalActions.innerHTML = "";
       const cancelBtn = document.createElement("button");
@@ -3656,22 +3666,33 @@
     });
   }
 
-  // Auswahl aus bereits für dieses Buch gespeicherten Icons (z. B. das
-  // wiederkehrende Logbuch-Symbol) - erscheint nur, wenn es welche gibt
+  // Auswahl aus bereits für dieses Buch gespeicherten Icons/Trennlinien
+  // (z. B. das wiederkehrende Logbuch-Symbol oder eine dekorative Linie
+  // zwischen Tagebucheinträgen) - erscheint nur, wenn es welche gibt
   // (siehe "🔖 Icon"-Knopf, nur dann sichtbar). Gibt entweder ein
-  // gewähltes Icon oder den Wunsch nach einem neuen Upload zurück.
-  function pickLibraryIcon(iconLibrary) {
+  // gewähltes Element (mit "kind") oder den Wunsch nach einem neuen
+  // Upload zurück. Ältere Einträge ohne "kind" sind immer Icons (das
+  // war vor der Trennlinien-Funktion die einzige Möglichkeit).
+  function pickLibraryIcon(libraryItems) {
     return new Promise((resolve) => {
-      const thumbsHtml = iconLibrary.map((icon) => `
-          <button type="button" class="icon-library-pick" data-id="${escapeAttr(icon.id)}" title="Dieses Icon einfügen">
-            <img src="${icon.dataUrl}" alt="">
-          </button>`).join("");
+      const icons = libraryItems.filter((i) => (i.kind || "icon") === "icon");
+      const dividers = libraryItems.filter((i) => i.kind === "divider");
+      // Überschriften nur, wenn wirklich beides gemischt vorkommt - hat ein
+      // Buch (der bisherige Normalfall) nur Icons, bleibt die Ansicht genau
+      // wie vorher: ein einfaches Raster ohne zusätzliche Beschriftung.
+      const showLabels = icons.length > 0 && dividers.length > 0;
+      const thumbHtml = (item) => `
+          <button type="button" class="icon-library-pick" data-id="${escapeAttr(item.id)}" title="Dieses Element einfügen">
+            <img src="${item.dataUrl}" alt="">
+          </button>`;
+      const uploadTileHtml = `<button type="button" class="icon-library-pick icon-library-upload" title="Neu hochladen">+</button>`;
+      const sectionHtml = (label, items) => items.length === 0 ? "" : `
+          ${showLabels ? `<p class="section-label" style="margin:14px 0 8px;">${label}</p>` : ""}
+          <div class="icon-library-grid">${items.map(thumbHtml).join("")}${uploadTileHtml}</div>`;
       modalBody.innerHTML = `
-        <p style="font-weight:600;margin:0 0 12px;">Welches Icon einfügen?</p>
-        <div class="icon-library-grid">
-          ${thumbsHtml}
-          <button type="button" class="icon-library-pick icon-library-upload" title="Neues Icon hochladen">+</button>
-        </div>`;
+        <p style="font-weight:600;margin:0 0 12px;">Was möchtest du einfügen?</p>
+        ${sectionHtml("🔖 Icons", icons)}
+        ${sectionHtml("➖ Trennlinien", dividers)}`;
       modalActions.innerHTML = "";
       const cancelBtn = document.createElement("button");
       cancelBtn.className = "btn btn-ghost";
@@ -3684,8 +3705,8 @@
           if (btn.classList.contains("icon-library-upload")) {
             resolve({ upload: true });
           } else {
-            const icon = iconLibrary.find((i) => i.id === btn.dataset.id);
-            resolve(icon ? { dataUrl: icon.dataUrl } : null);
+            const item = libraryItems.find((i) => i.id === btn.dataset.id);
+            resolve(item ? { dataUrl: item.dataUrl, kind: item.kind || "icon" } : null);
           }
         });
       });

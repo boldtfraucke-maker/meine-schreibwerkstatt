@@ -516,6 +516,10 @@ figure.story-image img { margin: 0; }
    der Text geht in derselben Zeile weiter), Ausrichtung ergibt für ein
    Wort mitten im Satz keinen Sinn (siehe fehlende Knöpfe in app.js). */
 .story-image[data-kind="icon"] { display: inline-block; vertical-align: middle; margin: 0 4px; }
+/* Trennlinien markieren einen Abschnittswechsel - etwas mehr Luft darüber/
+   darunter als ein normales Foto lässt sie eher wie eine bewusste Zäsur
+   wirken statt wie ein weiteres Bild im Text. */
+.story-image[data-kind="divider"] { margin-top: 28px; margin-bottom: 28px; }
 /* Bilder-Reihe (mehrere Dateien auf einmal ausgewählt) - alle Zellen
    automatisch gleich breit statt den Schieberegler von Hand treffen zu
    müssen; startet immer unterhalb eines vorherigen schwimmenden Bilds statt

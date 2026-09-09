@@ -400,7 +400,10 @@ mindestens ca. 1800–2000px lange Kante für „Volle Breite", ca. 900–1000px
 für „Halbe Breite". Icons dürfen deutlich kleiner sein (schon 200–300px
 reichen), weil sie unabhängig vom Buchformat immer klein gedruckt werden
 (die Schieberegler-Werte 24–160px entsprechen bei 300dpi echten
-6–42mm Druckgröße).
+6–42mm Druckgröße). Für eine Trennlinie gilt dieselbe Breite wie bei einem
+vollen Bild (ca. 1800–2000px), die Höhe ergibt sich aus dem tatsächlichen
+(breiten, flachen) Seitenverhältnis der Grafik selbst - nicht quadratisch
+zuschneiden, die App skaliert proportional mit, ohne zu verzerren.
 
 „🖼️ Bild" und „🔖 Icon" sind bewusst als richtige, auffällige Knöpfe
 gestaltet (nicht als kleine Werkzeugleisten-Symbole wie Fett/Kursiv/Liste) -
@@ -409,31 +412,44 @@ eigenständige, häufig genutzte Aktion. Die Beschriftung ist bewusst kurz
 gehalten (kein „einfügen"/„wiederverwenden" mehr), damit die Werkzeugleiste
 auch bei mittleren Fensterbreiten in einer Zeile bleibt statt umzubrechen.
 
-**Wiederverwendbare Icons pro Buch:** Lädt man ein Icon hoch, merkt sich die
-App es automatisch für das Buch, dem die aktuelle Geschichte zugeordnet ist
-(über die Kapitel ermittelt - eine Geschichte muss dafür schon in einem Buch
-stecken). Der „🔖 Icon"-Knopf ist immer sichtbar und zeigt
-alle bisher für dieses Buch hochgeladenen Icons als Vorschaubilder zum
-Anklicken (kein erneuter Upload nötig) plus eine „+"-Kachel für ein
-weiteres neues Icon. So bekommt z. B. ein wiederkehrendes Logbuch-Symbol
-in jedem Tagebucheintrag dieselbe Datei, statt bei jedem Einfügen neu
-hochgeladen zu werden. Ist die Geschichte noch keinem Buch zugeordnet oder
-sind für das Buch noch keine Icons gespeichert, erklärt ein Hinweis direkt,
-woran das liegt, statt dass einfach nichts passiert. Eine Übersicht mit
-allen gespeicherten Icons eines Buchs (zum Entfernen nicht mehr
-gebrauchter) steht im „Inhalt"-Reiter des Buchs, unterhalb der Kapitel -
-Entfernen dort betrifft nur die Auswahlliste, bereits in Geschichten
-eingefügte Icons bleiben unangetastet.
+**Trennlinien als Deko-Element:** Neben Fotos und Icons lässt sich beim
+Einfügen über „🖼️ Bild" auch „➖ Trennlinie" wählen - für ein dekoratives,
+grafisches Element, das (anders als ein Foto) immer zentriert für sich
+steht, ohne Ausrichtungswahl und ohne Textumfluss, und (anders als ein
+Icon) prozentual zur Textspalte breit statt in fester Pixelgröße ist -
+passend für eine sichtbare Zäsur zwischen Abschnitten.
+
+**Wiederverwendbare Icons & Trennlinien pro Buch:** Lädt man ein Icon oder
+eine Trennlinie hoch, merkt sich die App es automatisch für das Buch, dem
+die aktuelle Geschichte zugeordnet ist (über die Kapitel ermittelt - eine
+Geschichte muss dafür schon in einem Buch stecken). Der „🔖 Icon"-Knopf ist
+immer sichtbar und zeigt alle bisher für dieses Buch hochgeladenen Icons
+und Trennlinien als Vorschaubilder zum Anklicken (kein erneuter Upload
+nötig) plus eine „+"-Kachel für ein weiteres neues Element - kommen beide
+Arten in einem Buch vor, sind sie im Auswahlfenster unter „🔖 Icons" und
+„➖ Trennlinien" gruppiert, gibt es bisher nur eine Art, bleibt die Ansicht
+schlicht wie zuvor. So bekommt z. B. ein wiederkehrendes Logbuch-Symbol
+oder eine Trennlinie zwischen Tagebucheinträgen in jedem Eintrag dieselbe
+Datei, statt bei jedem Einfügen neu hochgeladen zu werden. Ist die
+Geschichte noch keinem Buch zugeordnet oder sind für das Buch noch keine
+Icons/Trennlinien gespeichert, erklärt ein Hinweis direkt, woran das liegt,
+statt dass einfach nichts passiert. Eine Übersicht mit allen gespeicherten
+Elementen eines Buchs (zum Entfernen nicht mehr gebrauchter) steht im
+„Inhalt"-Reiter des Buchs, unterhalb der Kapitel - Entfernen dort betrifft
+nur die Auswahlliste, bereits in Geschichten eingefügte Icons/Trennlinien
+bleiben unangetastet.
 
 **Formatwechsel-Schutz:** Ändert man nachträglich Anbieter oder Format eines
-Buchs, in dem schon Fotos (volle/halbe Breite) eingefügt sind, erscheint vor
-der Umstellung eine Warnung - die Breite der Fotos ist prozentual auf die
-bisherige Textspalte abgestimmt, bei einem schmaleren/breiteren Format kann
-das ungünstig wirken. Bestätigt man, wird gewechselt und man weiß, dass die
+Buchs, in dem schon Fotos oder Trennlinien (volle/halbe Breite bzw.
+prozentual breite Deko-Elemente) eingefügt sind, erscheint vor der
+Umstellung eine Warnung - ihre Breite ist prozentual auf die bisherige
+Textspalte abgestimmt, bei einem schmaleren/breiteren Format kann das
+ungünstig wirken. Bestätigt man, wird gewechselt und man weiß, dass die
 betroffenen Geschichten noch einmal geprüft werden sollten; bricht man ab,
 bleibt alles unverändert. Bei der allerersten Anbieter-/Formatwahl (noch
-kein vorheriges Format gesetzt) sowie bei Büchern ohne Fotos (nur Icons oder
-noch gar keine Bilder) erscheint keine Warnung, da Icons unabhängig vom
+kein vorheriges Format gesetzt) sowie bei Büchern ohne Fotos/Trennlinien
+(nur Icons oder noch gar keine Bilder) erscheint keine Warnung, da Icons
+unabhängig vom
 Buchformat immer gleich klein bleiben.
 
 ### Kosten im Blick behalten

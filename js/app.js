@@ -554,6 +554,7 @@
           <input type="file" id="imageInput" accept="image/*" multiple style="display:none;">
         </div>
         <div class="editor-actions-top">
+          <span class="toolbar-divider"></span>
           <button class="btn btn-outline" id="copyTextBtnTop" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
           <div class="btn-with-info">
             <button class="btn btn-outline" id="aiCheckBtnTop">✨ KI-Vorschläge</button>

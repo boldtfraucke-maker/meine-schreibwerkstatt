@@ -577,8 +577,12 @@ figure.story-image img { margin: 0; }
 .save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pine); }
 /* Text kopieren/KI-Vorschläge/Löschen stehen auf dem Desktop oben (bessere
    Erreichbarkeit ohne runterzuscrollen); auf dem Handy wandern sie in den
-   Footer (siehe mobile Media Query weiter unten). */
-.editor-actions-top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+   Footer (siehe mobile Media Query weiter unten). Kein margin-left:auto
+   mehr - das drückte die Knöpfe bei breitem Fenster ganz an den rechten
+   Rand und riss dabei eine große, unruhig wirkende Lücke zur Formatierung
+   auf; jetzt schließen sie direkt (mit Trennstrich) an, wie die anderen
+   Werkzeuggruppen davor auch. */
+.editor-actions-top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 
 /* ---------- Ideenparkplatz ---------- */
 .idea-input-row {

@@ -555,9 +555,9 @@
           <button class="tool-btn" data-cmd="bold" title="Fett"><b>F</b></button>
           <button class="tool-btn" data-cmd="italic" title="Kursiv"><i>K</i></button>
           <button class="tool-btn" data-cmd="insertUnorderedList" title="Liste">• Liste</button>
-          <button class="btn btn-outline tool-btn-image" data-cmd="image" title="Bild einfügen">🖼️ Bild einfügen</button>
+          <button class="btn btn-outline tool-btn-image" data-cmd="image" title="Bild einfügen">🖼️ Bild</button>
           <input type="file" id="imageInput" accept="image/*" multiple style="display:none;">
-          <button class="btn btn-outline tool-btn-image" id="iconLibraryBtn" title="Gespeichertes Icon wiederverwenden">🔖 Icon wiederverwenden</button>
+          <button class="btn btn-outline tool-btn-image" id="iconLibraryBtn" title="Gespeichertes Icon wiederverwenden">🔖 Icon</button>
         </div>
         <div class="editor-actions-top">
           <span class="toolbar-divider"></span>
@@ -669,7 +669,13 @@
     editorPage.addEventListener("keyup", saveSelection);
     editorPage.addEventListener("mouseup", saveSelection);
 
-    panel.querySelectorAll(".tool-btn[data-cmd]").forEach(btn => {
+    // [data-cmd] statt .tool-btn[data-cmd]: "Bild einfügen" trägt seit der
+    // auffälligeren Gestaltung nicht mehr die .tool-btn-Klasse (nur noch
+    // .btn/.btn-outline) - der alte, klassengebundene Selektor hätte den
+    // Klick-Handler dadurch nie mehr verkabelt und den Knopf funktionslos
+    // gemacht (genau das ist einmal passiert). data-cmd ist das eigentliche
+    // funktionale Merkmal, nicht die Optik.
+    panel.querySelectorAll("[data-cmd]").forEach(btn => {
       // mousedown statt nur click, mit preventDefault: verhindert, dass der
       // Button dem Editor überhaupt erst den Fokus (und damit die Textmarkierung)
       // wegnimmt. Dadurch ist beim Klick immer noch die richtige Stelle markiert -
@@ -845,12 +851,12 @@
     // Wiederverwendung da ist, direkt, woran das liegt.
     document.getElementById("iconLibraryBtn")?.addEventListener("click", async () => {
       if (!bookForStory) {
-        showAlert('Diese Geschichte gehört noch keinem Buch. Ordne sie zuerst im Bereich „Bücher" einem Kapitel zu - erst dann kann sich die App Icons für die Wiederverwendung merken. Bis dahin fügst du Icons ganz normal über „🖼️ Bild einfügen" ein.');
+        showAlert('Diese Geschichte gehört noch keinem Buch. Ordne sie zuerst im Bereich „Bücher" einem Kapitel zu - erst dann kann sich die App Icons für die Wiederverwendung merken. Bis dahin fügst du Icons ganz normal über „🖼️ Bild" ein.');
         return;
       }
       const library = bookForStory.iconLibrary || [];
       if (library.length === 0) {
-        showAlert('Für „' + (bookForStory.title || "dieses Buch") + '" sind noch keine wiederverwendbaren Icons gespeichert. Lade einmal über „🖼️ Bild einfügen" ein Bild hoch und wähle dabei „Icon" - danach steht es hier für die Wiederverwendung bereit.');
+        showAlert('Für „' + (bookForStory.title || "dieses Buch") + '" sind noch keine wiederverwendbaren Icons gespeichert. Lade einmal über „🖼️ Bild" ein Bild hoch und wähle dabei „Icon" - danach steht es hier für die Wiederverwendung bereit.');
         return;
       }
       saveSelection();

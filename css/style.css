@@ -348,11 +348,12 @@ select.status-select {
   color: var(--ink-soft);
 }
 .tool-btn:hover { background: var(--clay-tint); color: var(--ink); }
-/* "Bild einfügen"/"Icon wiederverwenden" sind bewusst als richtige Knöpfe
-   (nicht als kleine .tool-btn-Icons) gestaltet - anders als Fett/Kursiv/
-   Liste ist das Einfügen eines Bilds keine kurze Textformatierung, sondern
-   eine eigenständige, häufig genutzte Aktion, die entsprechend auffallen
-   darf. */
+/* "🖼️ Bild"/"🔖 Icon" sind bewusst als richtige Knöpfe (nicht als kleine
+   .tool-btn-Icons) gestaltet - anders als Fett/Kursiv/Liste ist das
+   Einfügen eines Bilds keine kurze Textformatierung, sondern eine
+   eigenständige, häufig genutzte Aktion, die entsprechend auffallen darf.
+   Bewusst kurze Beschriftung (kein "einfügen"/"wiederverwenden" mehr),
+   damit die Werkzeugleiste in einer Zeile bleibt statt umzubrechen. */
 .tool-btn-image { padding: 6px 12px; font-size: 0.84rem; }
 .tool-select {
   background: transparent;

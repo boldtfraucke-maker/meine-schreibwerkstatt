@@ -402,15 +402,17 @@ reichen), weil sie unabhängig vom Buchformat immer klein gedruckt werden
 (die Schieberegler-Werte 24–160px entsprechen bei 300dpi echten
 6–42mm Druckgröße).
 
-„🖼️ Bild einfügen" und „🔖 Icon wiederverwenden" sind bewusst als richtige,
-auffällige Knöpfe gestaltet (nicht als kleine Werkzeugleisten-Symbole wie
-Fett/Kursiv/Liste) - anders als eine kurze Textformatierung ist das
-Einfügen eines Bilds eine eigenständige, häufig genutzte Aktion.
+„🖼️ Bild" und „🔖 Icon" sind bewusst als richtige, auffällige Knöpfe
+gestaltet (nicht als kleine Werkzeugleisten-Symbole wie Fett/Kursiv/Liste) -
+anders als eine kurze Textformatierung ist das Einfügen eines Bilds eine
+eigenständige, häufig genutzte Aktion. Die Beschriftung ist bewusst kurz
+gehalten (kein „einfügen"/„wiederverwenden" mehr), damit die Werkzeugleiste
+auch bei mittleren Fensterbreiten in einer Zeile bleibt statt umzubrechen.
 
 **Wiederverwendbare Icons pro Buch:** Lädt man ein Icon hoch, merkt sich die
 App es automatisch für das Buch, dem die aktuelle Geschichte zugeordnet ist
 (über die Kapitel ermittelt - eine Geschichte muss dafür schon in einem Buch
-stecken). Der „🔖 Icon wiederverwenden"-Knopf ist immer sichtbar und zeigt
+stecken). Der „🔖 Icon"-Knopf ist immer sichtbar und zeigt
 alle bisher für dieses Buch hochgeladenen Icons als Vorschaubilder zum
 Anklicken (kein erneuter Upload nötig) plus eine „+"-Kachel für ein
 weiteres neues Icon. So bekommt z. B. ein wiederkehrendes Logbuch-Symbol

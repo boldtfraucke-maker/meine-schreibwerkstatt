@@ -593,6 +593,13 @@
     const editorPage = document.getElementById("editorPage");
     const saveStatusText = document.getElementById("saveStatusText");
     document.execCommand("defaultParagraphSeparator", false, "p");
+    // Ohne das hier zeigen Chrome/Firefox bei einem Klick auf ein Bild
+    // eigene Anfasser zum Ziehen an - versehentliches Ziehen verzerrt dann
+    // das Bild (setzt eine feste px-Breite/-Höhe direkt am <img>, die die
+    // eigene Größen-Regelung übersteuert) und macht es kaum noch löschbar,
+    // weil der Bedienbereich mit dem Bild riesig mitwächst. Größe/Position
+    // laufen jetzt ausschließlich über die eigene Bedienleiste am Bild.
+    document.execCommand("enableObjectResizing", false, false);
 
     function scheduleSave() {
       saveStatusText.textContent = "Ungespeicherte Änderung …";
@@ -705,6 +712,35 @@
       }, 0);
     });
 
+    // Anfangsgröße je gewählter Kategorie beim Einfügen - "photo" (Volle/
+    // Halbe Breite) skaliert relativ zur Textbreite (passt sich jedem
+    // Buchformat automatisch an), "icon" bleibt bewusst eine feste
+    // Pixelgröße (wiederkehrende Symbole sollen überall gleich klein
+    // wirken). Der Schieberegler in der Bild-Bedienleiste erlaubt danach
+    // jederzeit ein Nachjustieren innerhalb sinnvoller Grenzen - Höhe wird
+    // nie separat gesetzt, das Bild bleibt dadurch immer unverzerrt.
+    const IMAGE_KIND_BY_SIZE = { full: "photo", half: "photo", icon: "icon" };
+    const IMAGE_START_WIDTH = { full: 100, half: 50, icon: 64 };
+
+    function buildImageFigureHtml(src, sizeChoice) {
+      const kind = IMAGE_KIND_BY_SIZE[sizeChoice];
+      const startWidth = IMAGE_START_WIDTH[sizeChoice];
+      const isIcon = kind === "icon";
+      const widthStyle = isIcon ? `${startWidth}px` : `${startWidth}%`;
+      const sliderMin = isIcon ? 24 : 15;
+      const sliderMax = isIcon ? 160 : 100;
+      return `<figure class="story-image story-image-align-center" data-kind="${kind}" contenteditable="false">
+          <img src="${src}" alt="" style="width:${widthStyle};">
+          <div class="story-image-controls" contenteditable="false">
+            <button type="button" class="story-image-align-btn" data-align="left" title="Links ausrichten" aria-label="Links ausrichten">⬅</button>
+            <button type="button" class="story-image-align-btn" data-align="center" title="Mittig ausrichten" aria-label="Mittig ausrichten">◼</button>
+            <button type="button" class="story-image-align-btn" data-align="right" title="Rechts ausrichten" aria-label="Rechts ausrichten">➡</button>
+            <input type="range" class="story-image-size-slider" min="${sliderMin}" max="${sliderMax}" value="${startWidth}" title="Größe" aria-label="Bildgröße">
+            <button type="button" class="story-image-remove" title="Bild entfernen" aria-label="Bild entfernen">×</button>
+          </div>
+        </figure>`;
+    }
+
     document.getElementById("imageInput").addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -714,9 +750,7 @@
         if (size) {
           editorPage.focus();
           restoreSelection();
-          const html = `<figure class="story-image story-image-${size}" contenteditable="false"><img src="${reader.result}" alt="">`
-            + `<button type="button" class="story-image-remove" title="Bild entfernen" aria-label="Bild entfernen">×</button></figure>`;
-          document.execCommand("insertHTML", false, html);
+          document.execCommand("insertHTML", false, buildImageFigureHtml(reader.result, size));
           scheduleSave();
         }
       };
@@ -724,16 +758,37 @@
       e.target.value = "";
     });
 
-    // Löschen per Klick auf das ×, das jedes eingefügte Bild trägt - per
+    // Löschen und Ausrichten per Klick, Größe per Schieberegler - beides per
     // Event-Delegation, weil Bilder erst nachträglich (nicht beim Rendern
     // des Editors) eingefügt werden. contenteditable="false" auf <figure>
     // sorgt zusätzlich dafür, dass es sich auch per Markieren+Entf als
     // Ganzes löschen lässt (kein halb-editiertes Bild-Fragment möglich).
     editorPage.addEventListener("click", (e) => {
       const removeBtn = e.target.closest(".story-image-remove");
-      if (!removeBtn) return;
-      e.preventDefault();
-      removeBtn.closest(".story-image")?.remove();
+      if (removeBtn) {
+        e.preventDefault();
+        removeBtn.closest(".story-image")?.remove();
+        scheduleSave();
+        return;
+      }
+      const alignBtn = e.target.closest(".story-image-align-btn");
+      if (alignBtn) {
+        e.preventDefault();
+        const figure = alignBtn.closest(".story-image");
+        if (figure) {
+          figure.classList.remove("story-image-align-left", "story-image-align-center", "story-image-align-right");
+          figure.classList.add("story-image-align-" + alignBtn.dataset.align);
+          scheduleSave();
+        }
+      }
+    });
+    editorPage.addEventListener("input", (e) => {
+      const slider = e.target.closest(".story-image-size-slider");
+      if (!slider) return;
+      const figure = slider.closest(".story-image");
+      const img = figure?.querySelector("img");
+      if (!img) return;
+      img.style.width = (figure.dataset.kind === "icon" ? slider.value + "px" : slider.value + "%");
       scheduleSave();
     });
 

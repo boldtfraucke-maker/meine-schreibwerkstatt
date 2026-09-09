@@ -348,13 +348,33 @@ Illustrationen skalieren relativ zur Seitenbreite, damit dasselbe Bild bei
 jedem Buchformat automatisch passend erscheint - ein Icon bleibt bewusst
 immer gleich klein, unabhängig vom Format, damit wiederkehrende Symbole
 (wie bei einem Logbuch-Icon) überall gleich wirken. Jedes eingefügte Bild
-hat einen eigenen ×-Knopf zum Entfernen (Text fließt danach automatisch
-nach) - der erscheint nur beim Bearbeiten, nie in Vorschau/Doppelseiten-
-Ansicht/Ausdruck. Bilder bleiben bewusst im normalen Textfluss (kein
-Umfließen, kein randabfallendes Bild) - dadurch profitieren sie automatisch
-vom bereits vorhandenen, seitenabhängigen Bundsteg-Rand, ohne dass die App
-gesondert wissen müsste, ob ein Bild auf einer linken oder rechten Seite
-landet.
+hat eine eigene kleine Bedienleiste darunter: links/mittig/rechts
+ausrichten, per Schieberegler nachträglich größer/kleiner ziehen (nur die
+Breite - die Höhe folgt automatisch proportional, keine Verzerrung
+möglich) und ein ×-Knopf zum Entfernen (Text fließt danach automatisch
+nach). Die Bedienleiste erscheint nur beim Bearbeiten, nie in Vorschau/
+Doppelseiten-Ansicht/Ausdruck. Bilder bleiben bewusst im normalen
+Textfluss (kein Umfließen, kein randabfallendes Bild) und die Ausrichtung
+bleibt innerhalb des ohnehin schon randsicheren Satzspiegels - dadurch
+profitieren sie automatisch vom bereits vorhandenen, seitenabhängigen
+Bundsteg-Rand, ohne dass die App gesondert wissen müsste, ob ein Bild auf
+einer linken oder rechten Seite landet. Die Werkzeugleiste über der
+Geschichte bleibt beim Scrollen durch lange Texte oben sichtbar (sticky),
+damit man für „🖼 Bild" nicht immer erst nach oben scrollen muss.
+
+Browser bieten für Bilder in einem Bearbeitungsbereich eigentlich eigene
+Ziehpunkte zum Verzerren/Skalieren an - die sind hier bewusst abgeschaltet
+(`enableObjectResizing`), weil versehentliches Ziehen daran das Bild auf
+eine feste Pixelgröße setzt, die die eigene Größen-Regelung übersteuert und
+das Bild dann kaum noch auffindbar/löschbar macht. Größe und Position
+laufen ausschließlich über die eigene Bedienleiste.
+
+Richtwerte für die Bildauflösung beim Hochladen (bei 300dpi Druckqualität):
+mindestens ca. 1800–2000px lange Kante für „Volle Breite", ca. 900–1000px
+für „Halbe Breite". Icons dürfen deutlich kleiner sein (schon 200–300px
+reichen), weil sie unabhängig vom Buchformat immer klein gedruckt werden
+(die Schieberegler-Werte 24–160px entsprechen bei 300dpi echten
+6–42mm Druckgröße).
 
 Noch offen: wiederverwendbare Icons/Trennlinien pro Buch (einmal hochladen,
 mehrfach einfügen statt jedes Mal neu hochzuladen) sowie eine Warnung beim

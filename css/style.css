@@ -335,7 +335,9 @@ select.status-select {
   padding: 6px 10px;
   font-size: 0.82rem;
 }
-.toolbar { display: flex; gap: 4px; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
+/* Bleibt beim Scrollen durch eine lange Geschichte oben sichtbar, damit man
+   für "🖼 Bild" nicht jedes Mal erst nach oben scrollen muss. */
+.toolbar { display: flex; gap: 4px; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-top: 8px; }
 .toolbar-group { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .tool-btn {
   background: transparent;
@@ -485,37 +487,54 @@ select.status-select {
 .editor-page img { max-width: 100%; border-radius: 8px; margin: 10px 0; }
 .editor-page p { margin: 0 0 0.9em; }
 
-/* Bilder/Icons im Fließtext (Phase 7, Stufe 5) - relative Breiten statt
-   fester Pixelmaße, damit dasselbe Bild bei jedem Buchformat automatisch
-   passend skaliert. Bleibt bewusst im normalen Textfluss (kein Umfließen
-   per float, kein randabfallendes Bild) - das hält es auf allen Formaten
-   sicher innerhalb des ohnehin schon randsicheren Satzspiegels. */
-.story-image { position: relative; display: block; text-align: center; margin: 16px 0; }
-.story-image img { display: block; margin: 0 auto; border-radius: 8px; }
-.story-image-full img { width: 100%; }
-.story-image-half img { width: 50%; min-width: 140px; }
-.story-image-icon img { width: 64px; height: auto; }
-.story-image-remove {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font-size: 14px;
+/* Bilder/Icons im Fließtext (Phase 7, Stufe 5) - relative Breiten (%) bei
+   Fotos/Illustrationen, feste Pixelbreite bei Icons; die Höhe wird nie
+   separat gesetzt, das Bild bleibt dadurch immer unverzerrt. Bleibt bewusst
+   im normalen Textfluss (kein Umfließen per float, kein randabfallendes
+   Bild) - das hält es auf allen Formaten sicher innerhalb des ohnehin
+   schon randsicheren Satzspiegels, auch wenn die Ausrichtung (links/
+   mittig/rechts) wechselt. */
+.story-image { position: relative; display: block; margin: 16px 0; }
+.story-image img { display: block; border-radius: 8px; }
+/* Zwei Klassen im Selektor statt einer - höhere Spezifität als das
+   allgemeine ".preview-story-content img { margin: 10px 0 }" weiter unten,
+   das sonst die Ausrichtung in Vorschau/Doppelseiten-Ansicht überschreibt
+   (beide Regeln träfen sonst mit gleicher Spezifität zu, dann gewinnt nur
+   die spätere Quellreihenfolge). */
+.story-image.story-image-align-center img { margin-left: auto; margin-right: auto; }
+.story-image.story-image-align-left img { margin-left: 0; margin-right: auto; }
+.story-image.story-image-align-right img { margin-left: auto; margin-right: 0; }
+/* Bedienleiste unter jedem Bild (Ausrichtung, Größe, Löschen) - bewusst
+   fest sichtbar statt nur bei Hover, damit man sie beim Bearbeiten immer
+   sofort findet, auch nachdem ein Bild größer gezogen wurde. */
+.story-image-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 6px;
+}
+.story-image-align-btn, .story-image-remove {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--ink-soft);
 }
-.story-image-remove:hover { background: rgba(0, 0, 0, 0.75); }
-/* Der Lösch-Knopf ist nur eine Editor-Bedienhilfe - er darf nie in der
+.story-image-align-btn:hover { border-color: var(--sky); color: var(--sky); }
+.story-image-remove { color: #fff; background: rgba(190, 60, 50, 0.85); border-color: transparent; }
+.story-image-remove:hover { background: rgba(190, 60, 50, 1); }
+.story-image-size-slider { width: 110px; }
+/* Die Bedienleiste ist eine reine Editor-Bedienhilfe - sie darf nie in der
    Vorschau, der Doppelseiten-Ansicht oder im echten Ausdruck erscheinen. */
-.preview-story-content .story-image-remove { display: none; }
+.preview-story-content .story-image-controls { display: none; }
 .editor-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 0.8rem; color: var(--ink-faint); }
 .save-status { display: flex; align-items: center; gap: 6px; }
 .editor-footer-actions { display: none; gap: 14px; align-items: center; flex-wrap: wrap; }

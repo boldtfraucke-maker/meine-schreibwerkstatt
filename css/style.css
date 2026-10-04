@@ -332,6 +332,59 @@ main.content {
   border: 1px solid var(--year-accent, var(--border));
   color: var(--ink-soft);
 }
+/* ---------- Seite "Meine Geschichten" ---------- */
+.story-list-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.story-filter-input { max-width: 320px; flex: 1 1 220px; }
+.story-list-summary { font-size: 0.84rem; color: var(--ink-soft); }
+.story-year {
+  --year-tint: var(--bg-editor);
+  --year-accent: var(--border);
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.story-year.year-c0 { --year-tint: var(--year-tint-0); --year-accent: var(--year-accent-0); }
+.story-year.year-c1 { --year-tint: var(--year-tint-1); --year-accent: var(--year-accent-1); }
+.story-year.year-c2 { --year-tint: var(--year-tint-2); --year-accent: var(--year-accent-2); }
+.story-year.year-c3 { --year-tint: var(--year-tint-3); --year-accent: var(--year-accent-3); }
+.story-year.year-c4 { --year-tint: var(--year-tint-4); --year-accent: var(--year-accent-4); }
+.story-year.year-c5 { --year-tint: var(--year-tint-5); --year-accent: var(--year-accent-5); }
+.story-year > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--year-tint);
+  border-left: 5px solid var(--year-accent);
+}
+.story-year > summary::-webkit-details-marker { display: none; }
+.story-year > summary::before { content: "▸"; color: var(--ink-soft); font-size: 0.9rem; transition: transform 0.15s; }
+.story-year[open] > summary::before { transform: rotate(90deg); }
+.story-year .year-title { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 600; }
+.story-year .year-sum { font-size: 0.82rem; color: var(--ink-soft); margin-left: auto; }
+.story-month { padding-bottom: 6px; }
+.month-title {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px 6px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--ink-soft);
+}
+.month-title .month-sum { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
+.month-title .month-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
+.story-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap;
+  width: 100%; text-align: left; background: transparent; border: 0; border-top: 1px solid var(--border);
+  border-left: 5px solid transparent;
+  padding: 10px 16px; font: inherit; color: var(--ink); cursor: pointer;
+}
+.story-row:hover { background: var(--bg-editor); border-left-color: var(--year-accent); }
+.story-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.story-row-title { font-weight: 500; font-size: 0.92rem; }
+.story-row-meta { font-size: 0.76rem; color: var(--ink-faint); white-space: nowrap; }
 .story-item.year-c0 { background: var(--year-tint-0); --year-accent: var(--year-accent-0); }
 .story-item.year-c1 { background: var(--year-tint-1); --year-accent: var(--year-accent-1); }
 .story-item.year-c2 { background: var(--year-tint-2); --year-accent: var(--year-accent-2); }
@@ -1377,7 +1430,7 @@ figure.story-image img { margin: 0; }
     background: var(--pine);
     border-top: 1px solid var(--pine-dark);
   }
-  .tabbar-mobile .nav-item { flex: 1; flex-direction: column; align-items: center; border-radius: 0; padding: 8px 4px; font-size: 0.68rem; gap: 3px; }
+  .tabbar-mobile .nav-item { flex: 1 1 0; min-width: 0; flex-direction: column; align-items: center; border-radius: 0; padding: 8px 2px; font-size: 0.62rem; gap: 3px; white-space: nowrap; }
   .editor-page { min-height: 220px; }
   .stat-row { gap: 10px; }
   .stat-card { min-width: 100px; padding: 12px 14px; }

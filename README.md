@@ -195,6 +195,21 @@ eine **Jahresmarke** („2026") und einen zarten **Hintergrundton pro Jahr**
 in hellem und dunklem Modus). Die Marke macht die Zuordnung auch ohne Farbe
 lesbar.
 
+### Meine Geschichten (Übersicht nach Jahr und Monat)
+
+Der Menüpunkt **„Geschichten"** (🗂️, auch in der unteren Leiste am Handy) zeigt
+alle Geschichten **automatisch geordnet**: Jahr → Monat → Einträge, jeweils
+neueste zuerst. Es gibt keine Ordner, in die etwas einsortiert werden muss -
+Grundlage ist das Datum im Titel (dieselbe Erkennung wie bei der Suche).
+Jedes Jahr ist eine aufklappbare Gruppe mit der Jahresfarbe; das neueste Jahr
+ist beim Öffnen aufgeklappt. Pro Jahr und Monat steht die Zahl der
+Geschichten und Wörter, pro Eintrag Status und Wortzahl. Ein Klick öffnet die
+Geschichte im Editor. Titel ohne erkennbares Datum stehen am Ende in der
+Gruppe „Ohne Datum im Titel" (mit „zuletzt bearbeitet"). Das Feld
+**„Titel filtern"** (z. B. „Finchen") blendet alle anderen Einträge aus und
+klappt alle Gruppen mit Treffern auf. Die Wortzählung großer Geschichten wird
+je Fassung nur einmal berechnet.
+
 ### Schutz bei Speicherproblemen
 
 Öffnet der Browser den lokalen Speicher beim Start nicht (Chrome meldet das

@@ -473,6 +473,7 @@
     document.getElementById("view-" + view).classList.add("active");
     document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.view === view));
     if (view === "start") renderStart();
+    if (view === "stories") renderStoryList();
     if (view === "ideas") renderIdeas();
     if (view === "books") renderBooks();
     if (view === "settings") { renderDriveSettings(); renderAiSettings(); }
@@ -576,6 +577,124 @@
     switchView("write");
     await createStory();
   });
+
+  // ---------- Meine Geschichten (nach Jahr und Monat) ----------
+  // Ordnet alle Geschichten selbsttätig nach dem Datum im Titel: Jahr ->
+  // Monat -> Einträge, neueste zuerst. Es gibt nichts einzusortieren.
+  // Titel ohne erkennbares Datum landen in einer eigenen Gruppe am Ende.
+  const GERMAN_MONTH_NAMES = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  let storyFilterText = "";
+  // Die Wortzählung großer Geschichten (mit Bildern) ist aufwendig - je
+  // Fassung der Geschichte nur einmal rechnen.
+  const wordCountCache = new Map();
+  function storyWords(s) {
+    const key = s.id + "|" + s.updatedAt;
+    if (!wordCountCache.has(key)) wordCountCache.set(key, wordCount(s.content));
+    return wordCountCache.get(key);
+  }
+  function formatNumber(n) { return n.toLocaleString("de-DE"); }
+  function countLabel(n) { return n === 1 ? "1 Geschichte" : n + " Geschichten"; }
+
+  function renderStoryList() {
+    const panel = document.getElementById("storiesPanel");
+    if (!panel) return;
+    panel.innerHTML = `
+      <h1 style="margin:0 0 4px;">Meine Geschichten</h1>
+      <p class="greeting-sub" style="margin:0 0 16px;">Alle deine Geschichten, nach Jahr und Monat geordnet – das Datum liest die App aus dem Titel.</p>
+      <div class="story-list-tools">
+        <input type="text" class="search-input story-filter-input" id="storyFilterInput" placeholder="Titel filtern, z. B. Finchen" autocomplete="off" value="${escapeAttr(storyFilterText)}">
+        <span class="story-list-summary" id="storyListSummary"></span>
+      </div>
+      <div id="storyGroups"></div>`;
+    document.getElementById("storyFilterInput").addEventListener("input", (e) => {
+      storyFilterText = e.target.value;
+      renderStoryGroups();
+    });
+    document.getElementById("storyGroups").addEventListener("click", (e) => {
+      const row = e.target.closest(".story-row");
+      if (!row) return;
+      switchView("write");
+      openStory(row.dataset.id);
+    });
+    renderStoryGroups();
+  }
+
+  function renderStoryGroups() {
+    const groupsEl = document.getElementById("storyGroups");
+    const summaryEl = document.getElementById("storyListSummary");
+    if (!groupsEl) return;
+    const q = storyFilterText.trim().toLowerCase();
+    const shown = stories
+      .filter(s => !q || (s.title || "").toLowerCase().includes(q))
+      .map(s => ({ story: s, dateTs: parseTitleDate(s.title) }));
+
+    const totalWords = shown.reduce((sum, e) => sum + storyWords(e.story), 0);
+    summaryEl.textContent = q
+      ? `${shown.length} von ${stories.length} · ${formatNumber(totalWords)} Wörter`
+      : `${countLabel(shown.length)} · ${formatNumber(totalWords)} Wörter`;
+
+    if (stories.length === 0) {
+      groupsEl.innerHTML = '<div class="empty-hint">Noch keine Geschichte. Starte auf der Startseite mit „Neue Geschichte beginnen“.</div>';
+      return;
+    }
+    if (shown.length === 0) {
+      groupsEl.innerHTML = '<div class="empty-hint">Keine Geschichte gefunden.</div>';
+      return;
+    }
+
+    const newestFirst = (a, b) => (b.dateTs - a.dateTs) || (new Date(b.story.updatedAt) - new Date(a.story.updatedAt));
+    const byYear = new Map();
+    const undated = [];
+    shown.forEach(e => {
+      if (e.dateTs === null) { undated.push(e); return; }
+      const d = new Date(e.dateTs);
+      const year = d.getUTCFullYear();
+      const month = d.getUTCMonth();
+      if (!byYear.has(year)) byYear.set(year, new Map());
+      const months = byYear.get(year);
+      if (!months.has(month)) months.set(month, []);
+      months.get(month).push(e);
+    });
+
+    const rowHtml = (e, showAge) => {
+      const s = e.story;
+      return `<button type="button" class="story-row" data-id="${escapeAttr(s.id)}">
+        <span class="story-row-title">${escapeHtml(s.title || "Ohne Titel")}</span>
+        <span class="story-row-meta"><span class="status-dot" style="background:${statusColor(s.status)}"></span>${statusLabel(s.status)} · ${formatNumber(storyWords(s))} Wörter${showAge ? " · " + relativeTime(s.updatedAt) : ""}</span>
+      </button>`;
+    };
+    const sumOf = (entries) => `${countLabel(entries.length)} · ${formatNumber(entries.reduce((n, e) => n + storyWords(e.story), 0))} Wörter`;
+
+    const years = [...byYear.keys()].sort((a, b) => b - a);
+    let html = "";
+    years.forEach((year, i) => {
+      const months = byYear.get(year);
+      const monthKeys = [...months.keys()].sort((a, b) => b - a);
+      const allEntries = monthKeys.flatMap(m => months.get(m));
+      const open = q || i === 0 ? " open" : "";
+      html += `<details class="story-year year-c${yearColorIndex(year)}"${open}>
+        <summary><span class="year-title">${year}</span><span class="year-sum">${sumOf(allEntries)}</span></summary>
+        ${monthKeys.map(m => {
+          const entries = months.get(m).sort(newestFirst);
+          return `<div class="story-month">
+            <div class="month-title"><span>${GERMAN_MONTH_NAMES[m]}</span><span class="month-sum">${sumOf(entries)}</span></div>
+            ${entries.map(e => rowHtml(e, false)).join("")}
+          </div>`;
+        }).join("")}
+      </details>`;
+    });
+    if (undated.length) {
+      undated.sort((a, b) => new Date(b.story.updatedAt) - new Date(a.story.updatedAt));
+      html += `<details class="story-year story-year-undated"${q || years.length === 0 ? " open" : ""}>
+        <summary><span class="year-title">Ohne Datum im Titel</span><span class="year-sum">${sumOf(undated)}</span></summary>
+        <div class="story-month">
+          <div class="month-title"><span class="month-hint">Mit einem Datum im Titel (z. B. „17. September 2026“) ordnet die App sie ein.</span></div>
+          ${undated.map(e => rowHtml(e, true)).join("")}
+        </div>
+      </details>`;
+    }
+    groupsEl.innerHTML = html;
+  }
 
   // ---------- Schreiben view ----------
   async function createStory() {
@@ -3748,6 +3867,7 @@
 
       renderStart();
       if (activeStoryId) renderEditor();
+      if (document.getElementById("view-stories").classList.contains("active")) renderStoryList();
       if (document.getElementById("view-ideas").classList.contains("active")) renderIdeas();
       if (document.getElementById("view-books").classList.contains("active")) renderBooks();
       renderDriveSettings();

@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=87">
+<link rel="stylesheet" href="css/style.css?v=88">
 </head>
 <body>
 <div id="app">
@@ -113,6 +113,7 @@
           <label for="clientIdInput">Google Client-ID (einmalig einrichten)</label>
           <input type="text" id="clientIdInput" placeholder="z. B. 1234567890-abc…apps.googleusercontent.com" autocomplete="off">
         </div>
+        <p class="settings-hint" style="font-size:0.82rem;color:var(--ink-soft);margin:6px 0 12px;">Bei der Anmeldung wechselt die App kurz zu Google und kommt danach von selbst zurück. Dafür muss diese Adresse in der Google Cloud Console unter „Autorisierte Weiterleitungs-URIs“ eingetragen sein: <code id="redirectUriValue" style="user-select:all;word-break:break-all;"></code></p>
         <div class="settings-actions" id="driveActions"></div>
         <div class="settings-status-line" id="driveStatusLine"></div>
       </div>
@@ -167,9 +168,9 @@
   </div>
 </div>
 
-<script src="js/storage.js?v=87"></script>
-<script src="js/drive-sync.js?v=87"></script>
-<script src="js/ai-provider.js?v=87"></script>
-<script src="js/app.js?v=87"></script>
+<script src="js/storage.js?v=88"></script>
+<script src="js/drive-sync.js?v=88"></script>
+<script src="js/ai-provider.js?v=88"></script>
+<script src="js/app.js?v=88"></script>
 </body>
 </html>

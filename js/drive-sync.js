@@ -15,45 +15,132 @@ const DriveSync = (function () {
 
   const SYNC_FILE_NAME = "schreibwerkstatt-sync.json";
   const SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+  const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+  const REVOKE_ENDPOINT = "https://oauth2.googleapis.com/revoke";
   const LS_CLIENT_ID = "sw_google_client_id";
   const LS_CONNECTED = "sw_drive_connected";
   const LS_FILE_ID = "sw_drive_file_id";
   const LS_LAST_SYNC = "sw_drive_last_sync";
+  const LS_TOKEN = "sw_drive_token";           // { token, expiresAt }
+  const LS_OAUTH_PENDING = "sw_oauth_pending"; // { state, action, startedAt }
   const LS_META = "sw_drive_sync_meta";       // { stories: { id: lastSyncedTimestamp }, ideas: {...}, books: {...} }
   const LS_TOMBSTONES = "sw_drive_tombstones"; // { stories: { id: deletedAtISO }, ideas: {...}, books: {...} }
   const KINDS = ["stories", "ideas", "books"];
+  const PENDING_MAX_AGE_MS = 15 * 60 * 1000;
 
-  let tokenClient = null;
-  let accessToken = null;
-  let tokenExpiresAt = 0;
-  let gisReady = false;
-  let gisLoadPromise = null;
-
-  function loadGisScript() {
-    if (gisLoadPromise) return gisLoadPromise;
-    gisLoadPromise = new Promise((resolve, reject) => {
-      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
-        gisReady = true;
-        resolve();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = () => { gisReady = true; resolve(); };
-      script.onerror = () => reject(new Error("Google-Anmeldedienst konnte nicht geladen werden."));
-      document.head.appendChild(script);
-    });
-    return gisLoadPromise;
-  }
+  // Der Google-Login läuft als volle Weiterleitung (kein Popup): Die Seite
+  // wechselt zu Google, Google leitet nach dem "Zulassen" zurück zur App und
+  // hängt das Zugriffs-Token an die Adresse an (#access_token=…). Ein
+  // Popup bricht im installierten Icon-Modus (Standalone/PWA) ab, weil dort
+  // die Verbindung zwischen Popup und App-Fenster verloren geht - eine
+  // Weiterleitung im selben Fenster funktioniert dagegen überall.
+  //
+  // Bewusst das implizite Token-Verfahren statt Autorisierungs-Code: Google
+  // verlangt beim Eintauschen eines Codes für "Webanwendung"-Clients das
+  // Client-Secret, das in einer reinen Browser-App ohne eigenen Server nicht
+  // geheim bleiben könnte.
+  let beforeRedirectHook = null;
+  let redirectResult = null;
 
   function getClientId() { return localStorage.getItem(LS_CLIENT_ID) || ""; }
   function setClientId(id) {
-    localStorage.setItem(LS_CLIENT_ID, (id || "").trim());
-    tokenClient = null; // bei geänderter Client-ID neu initialisieren
+    const clean = (id || "").trim();
+    if (clean !== getClientId()) clearStoredToken(); // Token gehört zur alten Client-ID
+    localStorage.setItem(LS_CLIENT_ID, clean);
   }
   function hasClientId() { return !!getClientId(); }
+
+  // Genau diese Adresse muss in der Google Cloud Console unter "Autorisierte
+  // Weiterleitungs-URIs" eingetragen sein. "index.html" wird weggelassen, weil
+  // die App meist über die Ordner-Adresse (auch per Icon-Start) geöffnet wird.
+  function getRedirectUri() {
+    const path = location.pathname.replace(/index\.html$/, "");
+    return location.origin + path;
+  }
+
+  function readStoredToken() {
+    const t = readJson(LS_TOKEN, null);
+    if (t && t.token && Date.now() < t.expiresAt) return t.token;
+    return null;
+  }
+  function clearStoredToken() { localStorage.removeItem(LS_TOKEN); }
+
+  // Läuft einmalig beim Laden dieser Datei, noch bevor die App etwas anderes
+  // tut: wertet die Rückkehr von Google aus und entfernt Token/Fehler sofort
+  // wieder aus der Adresszeile.
+  function parseRedirectReturn() {
+    const fromHash = new URLSearchParams(location.hash.replace(/^#/, ""));
+    const fromQuery = new URLSearchParams(location.search);
+    const get = (k) => fromHash.get(k) || fromQuery.get(k);
+    const hasToken = fromHash.has("access_token");
+    const error = get("error");
+    if (!hasToken && !error) return null;
+
+    const pending = readJson(LS_OAUTH_PENDING, null);
+    localStorage.removeItem(LS_OAUTH_PENDING);
+    history.replaceState(null, "", location.pathname);
+
+    if (!pending || !get("state") || get("state") !== pending.state
+        || Date.now() - pending.startedAt > PENDING_MAX_AGE_MS) {
+      return { ok: false, error: "STATE_MISMATCH", action: pending ? pending.action : null };
+    }
+    if (error || !hasToken) {
+      return { ok: false, error: error || "NO_TOKEN", action: pending.action };
+    }
+    const expiresIn = Number(fromHash.get("expires_in")) || 3600;
+    writeJson(LS_TOKEN, {
+      token: fromHash.get("access_token"),
+      expiresAt: Date.now() + (expiresIn - 60) * 1000
+    });
+    localStorage.setItem(LS_CONNECTED, "1");
+    // Ließe der Browser das Speichern nicht zu, würde jeder Sync erneut zu
+    // Google weiterleiten - dann lieber ehrlich abbrechen statt endlos zu kreisen.
+    if (!readStoredToken()) return { ok: false, error: "NO_STORAGE", action: pending.action };
+    return { ok: true, action: pending.action };
+  }
+
+  // Wird von app.js genau einmal beim Start abgeholt.
+  function takeRedirectResult() {
+    const r = redirectResult;
+    redirectResult = null;
+    return r;
+  }
+
+  // app.js trägt hier eine Funktion ein, die noch ungespeicherte Eingaben
+  // sichert - die Seite wird gleich verlassen.
+  function setBeforeRedirectHook(fn) { beforeRedirectHook = fn; }
+
+  function randomState() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  function buildAuthUrl(state, interactive) {
+    const params = new URLSearchParams({
+      client_id: getClientId(),
+      redirect_uri: getRedirectUri(),
+      response_type: "token",
+      scope: SCOPE,
+      state
+    });
+    // Erste Verbindung: Zustimmung ausdrücklich zeigen. Danach (Token abgelaufen)
+    // ohne Zusatz - Google fragt dann nur, wenn wirklich nötig, und leitet
+    // sonst sofort zurück.
+    if (interactive) params.set("prompt", "consent");
+    return AUTH_ENDPOINT + "?" + params.toString();
+  }
+
+  // action: was nach der Rückkehr passieren soll ("connect" | "sync").
+  async function startLogin(action, interactive) {
+    if (!hasClientId()) throw new Error("NO_CLIENT_ID");
+    const state = randomState();
+    writeJson(LS_OAUTH_PENDING, { state, action, startedAt: Date.now() });
+    if (beforeRedirectHook) {
+      try { await beforeRedirectHook(); } catch (e) { console.error("Vor-Weiterleitung-Sicherung fehlgeschlagen", e); }
+    }
+    location.assign(buildAuthUrl(state, interactive));
+  }
 
   function isConnected() { return localStorage.getItem(LS_CONNECTED) === "1"; }
   function getLastSync() { return localStorage.getItem(LS_LAST_SYNC) || null; }
@@ -98,64 +185,38 @@ const DriveSync = (function () {
     setMetaAll(metaAll);
   }
 
-  async function ensureTokenClient() {
-    if (!gisReady) await loadGisScript();
-    if (!hasClientId()) throw new Error("NO_CLIENT_ID");
-    if (!tokenClient) {
-      tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: getClientId(),
-        scope: SCOPE,
-        callback: () => {} // wird pro Aufruf überschrieben
-      });
-    }
-    return tokenClient;
-  }
-
-  function requestToken(interactive) {
-    return new Promise(async (resolve, reject) => {
-      let client;
-      try { client = await ensureTokenClient(); }
-      catch (e) { reject(e); return; }
-
-      client.callback = (resp) => {
-        if (resp && resp.access_token) {
-          accessToken = resp.access_token;
-          tokenExpiresAt = Date.now() + ((resp.expires_in || 3600) - 60) * 1000;
-          resolve(accessToken);
-        } else {
-          reject(new Error(resp && resp.error ? resp.error : "Keine Berechtigung erhalten."));
-        }
-      };
-      client.error_callback = (err) => {
-        reject(new Error((err && err.type) || "Anmeldung abgebrochen."));
-      };
-      client.requestAccessToken({ prompt: interactive ? "consent" : "" });
-    });
-  }
-
-  // Muss aus einem direkten Klick-Handler aufgerufen werden (Popup-Blocker).
-  async function connect() {
-    await requestToken(true);
-    localStorage.setItem(LS_CONNECTED, "1");
-    return true;
+  // Verlässt die Seite Richtung Google und kehrt nie normal zurück - wirft
+  // deshalb immer "REDIRECTING", damit der Aufrufer nichts mehr weitermacht und
+  // keinen Fehler anzeigt. Nach der Rückkehr greift takeRedirectResult().
+  // resumeAction: "connect" (nur verbinden) | "sync" (danach gleich synchronisieren).
+  async function connect(resumeAction) {
+    await startLogin(resumeAction || "connect", true);
+    throw new Error("REDIRECTING");
   }
 
   function disconnect() {
-    if (accessToken && window.google && window.google.accounts && window.google.accounts.oauth2) {
-      window.google.accounts.oauth2.revoke(accessToken, () => {});
+    const stored = readJson(LS_TOKEN, null);
+    if (stored && stored.token) {
+      fetch(REVOKE_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "token=" + encodeURIComponent(stored.token)
+      }).catch(() => {});
     }
-    accessToken = null;
-    tokenExpiresAt = 0;
+    clearStoredToken();
     localStorage.removeItem(LS_CONNECTED);
     localStorage.removeItem(LS_FILE_ID);
   }
 
   async function ensureToken() {
-    if (accessToken && Date.now() < tokenExpiresAt) return accessToken;
+    const token = readStoredToken();
+    if (token) return token;
     if (!isConnected()) throw new Error("NOT_CONNECTED");
-    // Versuch, ohne erneuten Klick eine Berechtigung zu bekommen (funktioniert,
-    // solange die Nutzerin noch bei Google angemeldet ist und schon zugestimmt hat).
-    return requestToken(false);
+    // Token abgelaufen (hält ca. eine Stunde): einmal kurz über Google
+    // zurückleiten lassen. Ist die Nutzerin dort noch angemeldet und hat schon
+    // zugestimmt, geht es ohne weitere Eingabe sofort zurück zur App.
+    await startLogin("sync", false);
+    throw new Error("REDIRECTING");
   }
 
   async function driveFetch(url, options) {
@@ -164,6 +225,10 @@ const DriveSync = (function () {
       ...options,
       headers: { ...(options && options.headers), Authorization: "Bearer " + token }
     });
+    if (res.status === 401) {
+      clearStoredToken();
+      throw new Error("Die Google-Anmeldung ist abgelaufen. Bitte noch einmal auf „Synchronisieren“ tippen.");
+    }
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new Error("Google Drive Fehler (" + res.status + "): " + body.slice(0, 200));
@@ -351,9 +416,12 @@ const DriveSync = (function () {
     setTombstonesAll(tombstonesAll);
   }
 
+  redirectResult = parseRedirectReturn();
+
   return {
-    hasClientId, getClientId, setClientId,
+    hasClientId, getClientId, setClientId, getRedirectUri,
     isConnected, connect, disconnect, getLastSync,
+    takeRedirectResult, setBeforeRedirectHook, buildAuthUrl,
     markDeleted,
     downloadRemote, buildSyncPlan, finishSync
   };

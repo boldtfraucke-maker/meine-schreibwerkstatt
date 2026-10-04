@@ -9,6 +9,10 @@
   let activeBookId = null;
   let autosaveTimer = null;
   let bookSaveTimer = null;
+  // Noch nicht ausgeführte Autosaves - werden vor der Weiterleitung zu Google
+  // sofort erledigt, damit beim Verlassen der Seite nichts verloren geht.
+  let pendingEditorSave = null;
+  let pendingBookSave = null;
   let suggestionResizeHandler = null;
 
   const STATUS_OPTIONS = [
@@ -611,7 +615,7 @@
     function scheduleSave() {
       saveStatusText.textContent = "Ungespeicherte Änderung …";
       clearTimeout(autosaveTimer);
-      autosaveTimer = setTimeout(async () => {
+      const doSave = async () => {
         story.title = titleInput.value;
         story.content = editorPage.innerHTML;
         story.status = statusSelect.value;
@@ -620,7 +624,9 @@
         const t = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         saveStatusText.textContent = "Automatisch gespeichert · " + t + " Uhr";
         if (DriveSync.isConnected()) updateSyncChip("pending", "Änderungen vorhanden");
-      }, 700);
+      };
+      pendingEditorSave = doSave;
+      autosaveTimer = setTimeout(() => { pendingEditorSave = null; doSave(); }, 700);
     }
 
     titleInput.addEventListener("input", scheduleSave);
@@ -1907,7 +1913,23 @@
 
   function scheduleBookSave(book) {
     clearTimeout(bookSaveTimer);
-    bookSaveTimer = setTimeout(() => { saveBook(book); }, 500);
+    pendingBookSave = book;
+    bookSaveTimer = setTimeout(() => { pendingBookSave = null; saveBook(book); }, 500);
+  }
+
+  async function flushPendingSaves() {
+    if (pendingEditorSave) {
+      clearTimeout(autosaveTimer);
+      const save = pendingEditorSave;
+      pendingEditorSave = null;
+      await save();
+    }
+    if (pendingBookSave) {
+      clearTimeout(bookSaveTimer);
+      const book = pendingBookSave;
+      pendingBookSave = null;
+      await saveBook(book);
+    }
   }
 
   function renderBooks() {
@@ -3398,6 +3420,9 @@
     clientIdInput.value = DriveSync.getClientId();
     driveActions.innerHTML = "";
 
+    const redirectUriEl = document.getElementById("redirectUriValue");
+    if (redirectUriEl) redirectUriEl.textContent = DriveSync.getRedirectUri();
+
     const saveBtn = document.createElement("button");
     saveBtn.className = "btn btn-ghost";
     saveBtn.textContent = "Client-ID speichern";
@@ -3415,10 +3440,12 @@
         connectBtn.textContent = "☁️ Mit Google Drive verbinden";
         connectBtn.addEventListener("click", async () => {
           try {
-            await DriveSync.connect();
-            updateSyncChip("pending", "Verbunden · noch nicht synchronisiert");
-            renderDriveSettings();
+            await DriveSync.connect("connect");
           } catch (err) {
+            if (err && err.message === "REDIRECTING") {
+              updateSyncChip("busy", "Weiterleitung zu Google …");
+              return;
+            }
             showAlert("Verbindung fehlgeschlagen: " + (err && err.message ? err.message : err));
           }
         });
@@ -3510,7 +3537,7 @@
     updateSyncChip("busy", "Synchronisiere …");
     try {
       if (!DriveSync.isConnected()) {
-        await DriveSync.connect();
+        await DriveSync.connect("sync");
       }
       const remoteData = await DriveSync.downloadRemote();
 
@@ -3598,6 +3625,10 @@
       renderDriveSettings();
       updateSyncChip("ok", "Alles aktuell · " + relativeTime(new Date().toISOString()));
     } catch (err) {
+      if (err && err.message === "REDIRECTING") {
+        updateSyncChip("busy", "Weiterleitung zu Google …");
+        return;
+      }
       console.error("Sync-Fehler", err);
       if (err && err.message === "NO_CLIENT_ID") {
         updateSyncChip("warn", "Keine Client-ID hinterlegt");
@@ -3840,6 +3871,39 @@
     renderDriveSettings();
     renderAiSettings();
     initSyncChip();
+    handleGoogleReturn();
   }
+
+  // Der Google-Login leitet die ganze Seite weg und danach wieder hierher
+  // zurück - hier wird abgeholt, wie es ausgegangen ist, und dort
+  // weitergemacht, wo die Nutzerin war.
+  function handleGoogleReturn() {
+    const result = DriveSync.takeRedirectResult();
+    if (!result) return;
+
+    if (!result.ok) {
+      switchView("settings");
+      initSyncChip();
+      const reason = result.error === "access_denied"
+        ? "Der Zugriff auf Google Drive wurde nicht erlaubt."
+        : result.error === "STATE_MISMATCH"
+          ? "Die Anmeldung konnte aus Sicherheitsgründen nicht abgeschlossen werden (die Rückkehr von Google gehörte nicht zu diesem Anmeldeversuch)."
+          : result.error === "NO_STORAGE"
+            ? "Der Browser erlaubt dieser App nicht, die Anmeldung zu speichern (evtl. privater Modus oder gesperrte Website-Daten)."
+            : "Google meldet: " + result.error;
+      showAlert(reason + " Bitte versuche es noch einmal.");
+      return;
+    }
+
+    if (result.action === "sync") {
+      performSync();
+    } else {
+      switchView("settings");
+      renderDriveSettings();
+      updateSyncChip("pending", "Verbunden · noch nicht synchronisiert");
+    }
+  }
+
+  DriveSync.setBeforeRedirectHook(flushPendingSaves);
   init();
 })();

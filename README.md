@@ -45,13 +45,25 @@ passiert einmalig in der Google Cloud Console:
 5. Zu **APIs & Dienste → Zugangsdaten** wechseln, **Zugangsdaten erstellen → OAuth-Client-ID**:
    - Anwendungstyp: „Webanwendung".
    - Unter „Autorisierte JavaScript-Quellen" **genau** die spätere GitHub-Pages-Adresse eintragen, z. B. `https://<benutzername>.github.io` (ohne Pfad am Ende).
-   - Für lokale Tests zusätzlich `http://localhost:8934` eintragen.
+   - Unter „Autorisierte Weiterleitungs-URIs" die vollständige App-Adresse **mit** Pfad und abschließendem Schrägstrich eintragen, z. B. `https://<benutzername>.github.io/meine-schreibwerkstatt/`. Die App zeigt sie unter Einstellungen → Google Drive-Synchronisation selbst an (zum Kopieren). Ohne diesen Eintrag zeigt Google nach dem Antippen von „Mit Google Drive verbinden" „Fehler 400: redirect_uri_mismatch".
+   - Für lokale Tests zusätzlich `http://localhost:8934` (Quelle) bzw. `http://localhost:8934/` (Weiterleitungs-URI) eintragen.
 6. Die entstandene Client-ID (endet auf `.apps.googleusercontent.com`) kopieren.
 7. In der App unter **Einstellungen → Google Drive-Synchronisation** einfügen und auf „Client-ID speichern" tippen, danach „Mit Google Drive verbinden".
 
 Die Geschichten werden dabei in einem privaten App-Ordner im eigenen Google
 Drive abgelegt (Scope `drive.appdata`) – dieser taucht nicht im normalen
 Drive-Ordner auf und muss nie manuell verwaltet werden.
+
+**Wie der Login abläuft:** Beim Verbinden (und später, wenn das Zugriffs-Token
+nach ca. einer Stunde abgelaufen ist) wechselt die ganze Seite kurz zu Google
+und kommt nach dem „Zulassen" von selbst zurück – es gibt bewusst **kein
+Popup-Fenster**, denn ein Popup bricht im installierten Icon-Modus
+(Standalone/PWA) ab. Noch nicht gespeicherte Eingaben werden vor dem
+Wechsel automatisch gesichert; nach der Rückkehr läuft eine angestoßene
+Synchronisierung von selbst weiter. Technisch ist es das implizite
+Token-Verfahren (`response_type=token`): Der Autorisierungs-Code-Weg würde
+für „Webanwendung"-Clients das Client-Secret verlangen, das in einer reinen
+Browser-App nicht geheim bliebe.
 
 ## KI-Vorschläge einrichten (Cloudflare Worker)
 

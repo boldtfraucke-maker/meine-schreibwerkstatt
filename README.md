@@ -171,6 +171,30 @@ geöffneten Geschichte**, die beim Tippen mitzählt. Die Bedienknöpfe an
 eingefügten Bildern zählen dabei (wie auch bei den Zahlen auf der
 Startseite) nicht als Wörter.
 
+### Tagebuch-Titel, Datumssortierung und Jahresfarben
+
+Eine neue Geschichte bekommt einen vorbelegten Titel mit dem heutigen Datum
+(„ Tagebuch – Sonntag, 4. Oktober 2026"). Die Schreibmarke steht ganz vorn im
+Titelfeld, man tippt nur noch den Namen davor („Finchen" → „Finchen Tagebuch –
+…"). Das führende Leerzeichen sorgt für den Abstand, beim Speichern werden
+Leerzeichen am Rand des Titels entfernt.
+
+Das Datum im Titel lässt sich jederzeit von Hand ändern (z. B. wenn der
+Eintrag einen Tag später geschrieben wird). Bequemer geht es mit **„📅 Datum
+ändern"** neben der Status-Auswahl: Der Knopf öffnet einen Kalender, und das
+gewählte Datum ersetzt das Datum im Titel samt davorstehendem Wochentag, sodass
+der Wochentag immer stimmt. Steht noch kein Datum im Titel, wird es angehängt.
+
+Die Suche auf der Startseite liest das Datum aus dem Titel (Schreibweisen wie
+„17. September 2026", „5. Okt. 2026", „03.01.2027", „9.3.26"; ungültige
+Daten wie „31. Februar" zählen nicht) und zeigt die Treffer **neueste zuerst**.
+Titel ohne erkennbares Datum folgen danach, nach zuletzt bearbeitet. Es werden
+bis zu 40 Treffer angezeigt (die Liste scrollt). Jeder Treffer mit Datum trägt
+eine **Jahresmarke** („2026") und einen zarten **Hintergrundton pro Jahr**
+(2026, 2027 … der Reihe nach, nach sechs Jahren wiederholt sich die Reihe;
+in hellem und dunklem Modus). Die Marke macht die Zuordnung auch ohne Farbe
+lesbar.
+
 ### Schutz bei Speicherproblemen
 
 Öffnet der Browser den lokalen Speicher beim Start nicht (Chrome meldet das

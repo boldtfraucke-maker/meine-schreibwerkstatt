@@ -56,6 +56,60 @@
     return text.split(/\s+/).filter(Boolean).length;
   }
 
+  // Liest ein Datum aus dem Titel, z. B. "Finchen Tagebuch – Donnerstag,
+  // 17. September 2026" oder "... 17.09.2026". Gibt einen Zeitstempel (UTC,
+  // Mitternacht) zurück oder null, wenn kein gültiges Datum im Titel steht.
+  const GERMAN_MONTHS = {
+    januar: 0, jan: 0, februar: 1, feb: 1, märz: 2, maerz: 2, mär: 2, mrz: 2,
+    april: 3, apr: 3, mai: 4, juni: 5, jun: 5, juli: 6, jul: 6, august: 7, aug: 7,
+    september: 8, sept: 8, sep: 8, oktober: 9, okt: 9, november: 10, nov: 10, dezember: 11, dez: 11
+  };
+  function validDateTs(y, monthIndex, d) {
+    const dt = new Date(Date.UTC(y, monthIndex, d));
+    return (dt.getUTCFullYear() === y && dt.getUTCMonth() === monthIndex && dt.getUTCDate() === d) ? dt.getTime() : null;
+  }
+  // Gibt Zeitstempel sowie Anfang/Ende der Datumsstelle im Titel zurück
+  // (damit das Datum später gezielt ersetzt werden kann) oder null.
+  function findTitleDate(title) {
+    const t = title || "";
+    for (const m of t.matchAll(/(\d{1,2})\.\s*([A-Za-zÄÖÜäöü]{3,9})\.?\s+(\d{4})/g)) {
+      const monthIndex = GERMAN_MONTHS[m[2].toLowerCase()];
+      if (monthIndex === undefined) continue;
+      const ts = validDateTs(Number(m[3]), monthIndex, Number(m[1]));
+      if (ts !== null) return { ts, start: m.index, end: m.index + m[0].length };
+    }
+    for (const m of t.matchAll(/(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})(?!\d)/g)) {
+      let y = Number(m[3]);
+      if (y < 100) y += 2000;
+      const ts = validDateTs(y, Number(m[2]) - 1, Number(m[1]));
+      if (ts !== null) return { ts, start: m.index, end: m.index + m[0].length };
+    }
+    return null;
+  }
+  function parseTitleDate(title) {
+    const found = findTitleDate(title);
+    return found ? found.ts : null;
+  }
+  function formatLongDate(date) {
+    return date.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  }
+  // Setzt ein neues Datum in den Titel: ein vorhandenes Datum samt davor
+  // stehendem Wochentag wird ersetzt, damit der Wochentag zum Datum passt.
+  // Steht noch kein Datum im Titel, wird es angehängt.
+  function setTitleDate(title, date) {
+    const longDate = formatLongDate(date);
+    const found = findTitleDate(title);
+    if (!found) {
+      const t = (title || "").trim();
+      return t ? t + " – " + longDate : longDate;
+    }
+    const weekdayAtEnd = /(^|[\s–—-])(?:montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonnabend|sonntag|mo|di|mi|do|fr|sa|so)\.?,?\s*$/i;
+    const before = title.slice(0, found.start).replace(weekdayAtEnd, "$1");
+    return before + longDate + title.slice(found.end);
+  }
+  // 2026 = Farbe 0, 2027 = Farbe 1 ... nach sechs Jahren wiederholt sich die Reihe.
+  function yearColorIndex(year) { return ((year - 2026) % 6 + 6) % 6; }
+
   function plainSnippet(html, len) {
     const text = (html || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
     return text.length > len ? text.slice(0, len) + "…" : text;
@@ -432,19 +486,31 @@
     function renderSuggestions(query) {
       const q = query.trim().toLowerCase();
       if (!q) { suggestionsEl.hidden = true; suggestionsEl.innerHTML = ""; return; }
+      // Mit erkennbarem Datum im Titel: nach diesem Datum, neueste zuerst.
+      // Ohne Datum: danach, nach zuletzt bearbeitet.
       const matches = stories
         .filter(s => (s.title || "").toLowerCase().includes(q))
-        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-        .slice(0, 8);
+        .map(s => ({ story: s, dateTs: parseTitleDate(s.title) }))
+        .sort((a, b) => {
+          if (a.dateTs !== null && b.dateTs !== null && a.dateTs !== b.dateTs) return b.dateTs - a.dateTs;
+          if (a.dateTs !== null && b.dateTs === null) return -1;
+          if (a.dateTs === null && b.dateTs !== null) return 1;
+          return new Date(b.story.updatedAt) - new Date(a.story.updatedAt);
+        })
+        .slice(0, 40);
       suggestionsEl.innerHTML = "";
       if (matches.length === 0) {
         suggestionsEl.innerHTML = '<div class="empty-hint">Keine Geschichte gefunden.</div>';
       } else {
-        matches.forEach(s => {
+        matches.forEach(({ story: s, dateTs }) => {
           const item = document.createElement("div");
-          item.className = "story-item";
+          const year = dateTs !== null ? new Date(dateTs).getUTCFullYear() : null;
+          item.className = "story-item" + (year !== null ? " year-c" + yearColorIndex(year) : "");
           item.innerHTML = `
-            <div class="title">${escapeHtml(s.title || "Ohne Titel")}</div>
+            <div class="item-head">
+              <div class="title">${escapeHtml(s.title || "Ohne Titel")}</div>
+              ${year !== null ? `<span class="year-badge">${year}</span>` : ""}
+            </div>
             <div class="meta"><span class="status-dot" style="background:${statusColor(s.status)}"></span>${statusLabel(s.status)} · ${relativeTime(s.updatedAt)}</div>`;
           item.addEventListener("click", () => {
             inputEl.value = "";
@@ -513,9 +579,15 @@
 
   // ---------- Schreiben view ----------
   async function createStory() {
+    // Titel mit heutigem Datum vorbelegt (" Tagebuch – Montag, 5. Oktober
+    // 2026"): Die Schreibmarke steht ganz vorn, sie tippt nur noch den Namen
+    // davor. Das führende Leerzeichen sorgt dafür, dass zwischen Name und
+    // "Tagebuch" von selbst ein Abstand ist. Ein einheitliches Datumsformat
+    // macht außerdem die Sortierung in der Suche verlässlich.
+    const today = formatLongDate(new Date());
     const story = {
       id: uid(),
-      title: "",
+      title: " Tagebuch – " + today,
       content: "",
       status: "entwurf",
       createdAt: new Date().toISOString(),
@@ -524,6 +596,8 @@
     stories.push(story);
     await Storage.save(story);
     openStory(story.id);
+    const newTitleInput = document.getElementById("titleInput");
+    if (newTitleInput) { newTitleInput.focus(); newTitleInput.setSelectionRange(0, 0); }
   }
 
   function openStory(id) {
@@ -551,9 +625,15 @@
     panel.innerHTML = `
       <div class="editor-top">
         <input type="text" class="title-input" id="titleInput" placeholder="Titel der Geschichte" autocomplete="off" autocapitalize="sentences" value="${escapeAttr(story.title)}">
-        <select class="status-select" id="statusSelect">
-          ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === normalizeStatus(story.status) ? "selected" : ""}>${o.label}</option>`).join("")}
-        </select>
+        <div class="editor-meta-row">
+          <select class="status-select" id="statusSelect">
+            ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === normalizeStatus(story.status) ? "selected" : ""}>${o.label}</option>`).join("")}
+          </select>
+          <span class="date-picker-wrap">
+            <button type="button" class="btn btn-outline change-date-btn" id="changeDateBtn" title="Das Datum im Titel über einen Kalender ändern (Wochentag wird automatisch passend gesetzt)">📅 Datum ändern</button>
+            <input type="date" class="date-picker-input" id="titleDateInput" tabindex="-1" aria-hidden="true">
+          </span>
+        </div>
       </div>
       <div class="toolbar">
         <div class="toolbar-group toolbar-group-font">
@@ -639,7 +719,7 @@
       wordCountTimer = setTimeout(updateWordCount, 400);
       clearTimeout(autosaveTimer);
       const doSave = async () => {
-        story.title = titleInput.value;
+        story.title = titleInput.value.trim();
         story.content = editorPage.innerHTML;
         story.status = statusSelect.value;
         story.updatedAt = new Date().toISOString();
@@ -653,6 +733,27 @@
     }
 
     titleInput.addEventListener("input", scheduleSave);
+
+    // "📅 Datum ändern": Kalender öffnen; das gewählte Datum landet mit
+    // passendem Wochentag im Titel.
+    const changeDateBtn = document.getElementById("changeDateBtn");
+    const titleDateInput = document.getElementById("titleDateInput");
+    changeDateBtn.addEventListener("click", () => {
+      const found = findTitleDate(titleInput.value);
+      if (found) {
+        titleDateInput.value = new Date(found.ts).toISOString().slice(0, 10);
+      } else {
+        const n = new Date();
+        titleDateInput.value = [n.getFullYear(), String(n.getMonth() + 1).padStart(2, "0"), String(n.getDate()).padStart(2, "0")].join("-");
+      }
+      try { titleDateInput.showPicker(); } catch (e) { titleDateInput.click(); }
+    });
+    titleDateInput.addEventListener("change", () => {
+      if (!titleDateInput.value) return;
+      const [y, mo, d] = titleDateInput.value.split("-").map(Number);
+      titleInput.value = setTitleDate(titleInput.value, new Date(y, mo - 1, d, 12));
+      scheduleSave();
+    });
     statusSelect.addEventListener("change", scheduleSave);
     editorPage.addEventListener("input", scheduleSave);
 

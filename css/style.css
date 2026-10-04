@@ -22,6 +22,14 @@
   --idea-green: #7CC08A;
   --shadow: rgba(43, 38, 32, 0.08);
   --focus: #5D7E8F;
+  /* Jahresfarben der Suchtreffer (2026 = erste Farbe, danach der Reihe nach,
+     nach sechs Jahren wiederholt es sich). */
+  --year-tint-0: #E4EBE5; --year-accent-0: #2F4B3C;
+  --year-tint-1: #F1E6DA; --year-accent-1: #8B5E3C;
+  --year-tint-2: #E1ECF2; --year-accent-2: #5D7E8F;
+  --year-tint-3: #ECE5F3; --year-accent-3: #8B67AE;
+  --year-tint-4: #F4EBC9; --year-accent-4: #B58A1F;
+  --year-tint-5: #F3E1DF; --year-accent-5: #B0584E;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -48,6 +56,12 @@
     --idea-green: #8ACC97;
     --shadow: rgba(0, 0, 0, 0.35);
     --focus: #8FB2C2;
+    --year-tint-0: #26332B; --year-accent-0: #7FA98E;
+    --year-tint-1: #322A20; --year-accent-1: #D3A57C;
+    --year-tint-2: #1F2D35; --year-accent-2: #8FB2C2;
+    --year-tint-3: #2B2336; --year-accent-3: #B79AD6;
+    --year-tint-4: #35301A; --year-accent-4: #DDB24A;
+    --year-tint-5: #38241F; --year-accent-5: #E09A90;
   }
 }
 :root[data-theme="dark"] {
@@ -74,6 +88,12 @@
   --idea-green: #8ACC97;
   --shadow: rgba(0, 0, 0, 0.35);
   --focus: #8FB2C2;
+  --year-tint-0: #26332B; --year-accent-0: #7FA98E;
+  --year-tint-1: #322A20; --year-accent-1: #D3A57C;
+  --year-tint-2: #1F2D35; --year-accent-2: #8FB2C2;
+  --year-tint-3: #2B2336; --year-accent-3: #B79AD6;
+  --year-tint-4: #35301A; --year-accent-4: #DDB24A;
+  --year-tint-5: #38241F; --year-accent-5: #E09A90;
 }
 
 * { box-sizing: border-box; }
@@ -302,6 +322,22 @@ main.content {
 }
 .story-item:hover { border-color: var(--clay); cursor: pointer; }
 .story-item .title { font-weight: 500; margin-bottom: 3px; }
+.story-item .item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.year-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--year-accent, var(--border));
+  color: var(--ink-soft);
+}
+.story-item.year-c0 { background: var(--year-tint-0); --year-accent: var(--year-accent-0); }
+.story-item.year-c1 { background: var(--year-tint-1); --year-accent: var(--year-accent-1); }
+.story-item.year-c2 { background: var(--year-tint-2); --year-accent: var(--year-accent-2); }
+.story-item.year-c3 { background: var(--year-tint-3); --year-accent: var(--year-accent-3); }
+.story-item.year-c4 { background: var(--year-tint-4); --year-accent: var(--year-accent-4); }
+.story-item.year-c5 { background: var(--year-tint-5); --year-accent: var(--year-accent-5); }
 .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
 .story-item .meta { color: var(--ink-faint); font-size: 0.76rem; }
 
@@ -327,6 +363,12 @@ main.content {
 }
 .title-input:focus { border-bottom-color: var(--focus); }
 .title-input::placeholder { color: var(--ink-faint); }
+.editor-meta-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.date-picker-wrap { position: relative; display: inline-block; }
+.change-date-btn { font-size: 0.82rem; padding: 6px 12px; }
+/* Das echte Kalenderfeld bleibt unsichtbar direkt unter dem Knopf - der Knopf
+   öffnet es, damit die Beschriftung zu den anderen Knöpfen passt. */
+.date-picker-input { position: absolute; left: 0; top: 100%; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; pointer-events: none; }
 select.status-select {
   border: 1px solid var(--border);
   background: var(--bg-card);

@@ -155,6 +155,32 @@ markiert, erscheint automatisch der nächste offene Punkt. Allgemeine
 Anmerkungen ohne konkrete Textstelle (z. B. übergreifendes Tempo-Feedback)
 bleiben immer in der Liste, auch am PC.
 
+### Status und Wortzähler einer Geschichte
+
+Der Status oben im Editor kennt vier Stufen: **Entwurf → Überarbeitung KI →
+Fertig → Veröffentlicht**. „Idee" und „In Arbeit" gibt es nicht mehr;
+Geschichten, die noch einen dieser alten Werte tragen (auch auf Geräten mit
+älterer Version), werden unverändert gespeichert und nur als „Entwurf"
+angezeigt. Neue Geschichten - auch solche, die aus dem Ideenparkplatz
+entstehen - starten als „Entwurf". „Überarbeitung KI" ist die Phase, in der
+die Marker von KI-Vorschlägen und Aufbau-Prüfung abgearbeitet werden; erst
+danach kommt „Fertig".
+
+Unten im Editor steht neben „Automatisch gespeichert" die **Wortzahl der
+geöffneten Geschichte**, die beim Tippen mitzählt. Die Bedienknöpfe an
+eingefügten Bildern zählen dabei (wie auch bei den Zahlen auf der
+Startseite) nicht als Wörter.
+
+### Schutz bei Speicherproblemen
+
+Öffnet der Browser den lokalen Speicher beim Start nicht (Chrome meldet das
+manchmal kurz, z. B. mit „Encountered full disk", obwohl Platz da ist), probiert
+die App es mehrmals mit kurzer Pause. Klappt es danach immer noch nicht, zeigt
+sie oben eine deutliche Warnung („Deine Geschichten sind gerade nicht lesbar –
+sie sind aber nicht gelöscht") mit „Seite neu laden" und gleicht **nicht**
+mit Google Drive ab, statt still eine leere Liste zu zeigen. Ein einmal
+gescheiterter Öffnungsversuch wird nicht mehr bis zum Neustart gemerkt.
+
 ### Ideenparkplatz
 
 Jede Idee kann optional einen Titel und eine Farbe bekommen (als farbiger

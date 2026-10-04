@@ -633,6 +633,14 @@ figure.story-image img { margin: 0; }
 .save-status { display: flex; align-items: center; gap: 6px; }
 .editor-footer-actions { display: none; gap: 14px; align-items: center; flex-wrap: wrap; }
 .save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pine); }
+.storage-warning {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: var(--clay-tint, #F1E6DA); border: 1px solid var(--danger, #A8442F);
+  border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 0.92rem;
+}
+.storage-warning[hidden] { display: none; }
+.save-words { color: var(--ink-soft); }
+.save-words::before { content: "·"; margin-right: 6px; }
 /* Text kopieren/KI-Vorschläge/Löschen stehen auf dem Desktop oben (bessere
    Erreichbarkeit ohne runterzuscrollen); auf dem Handy wandern sie in den
    Footer (siehe mobile Media Query weiter unten). Kein margin-left:auto

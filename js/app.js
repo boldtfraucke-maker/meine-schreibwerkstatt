@@ -13,16 +13,24 @@
   // sofort erledigt, damit beim Verlassen der Seite nichts verloren geht.
   let pendingEditorSave = null;
   let pendingBookSave = null;
+  // true, wenn der lokale Speicher beim Start nicht gelesen werden konnte -
+  // dann zeigt die App eine leere Liste, die nicht der Wahrheit entspricht,
+  // und ein Abgleich dürfte darauf nichts aufbauen.
+  let storageLoadFailed = false;
   let suggestionResizeHandler = null;
 
   const STATUS_OPTIONS = [
-    { value: "idee", label: "Idee", color: "#A79E8C" },
     { value: "entwurf", label: "Entwurf", color: "#5D7E8F" },
-    { value: "in_arbeit", label: "In Arbeit", color: "#8B5E3C" },
-    { value: "ueberarbeitung", label: "Überarbeitung", color: "#C08A2E" },
+    { value: "ueberarbeitung", label: "Überarbeitung KI", color: "#C08A2E" },
     { value: "fertig", label: "Fertig", color: "#2F4B3C" },
     { value: "veroeffentlicht", label: "Veröffentlicht", color: "#5C4A9C" }
   ];
+  // "Idee" und "In Arbeit" gibt es nicht mehr. Bereits gespeicherte Geschichten
+  // (auch auf anderen Geräten mit älterer Version) behalten ihren alten Wert
+  // unverändert und werden nur als "Entwurf" angezeigt - so geht nichts
+  // verloren und der Abgleich bleibt kompatibel.
+  const LEGACY_STATUS = { idee: "entwurf", in_arbeit: "entwurf" };
+  function normalizeStatus(v) { return LEGACY_STATUS[v] || v; }
 
   const FONT_OPTIONS = [
     { label: "Georgia", stack: "Georgia, 'Times New Roman', serif" },
@@ -33,15 +41,17 @@
   ];
   const FONT_SIZE_OPTIONS = [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32];
 
-  function statusLabel(v) { return (STATUS_OPTIONS.find(s => s.value === v) || STATUS_OPTIONS[0]).label; }
-  function statusColor(v) { return (STATUS_OPTIONS.find(s => s.value === v) || STATUS_OPTIONS[0]).color; }
+  function statusLabel(v) { return (STATUS_OPTIONS.find(s => s.value === normalizeStatus(v)) || STATUS_OPTIONS[0]).label; }
+  function statusColor(v) { return (STATUS_OPTIONS.find(s => s.value === normalizeStatus(v)) || STATUS_OPTIONS[0]).color; }
 
   function uid() {
     return (crypto.randomUUID ? crypto.randomUUID() : "s-" + Date.now() + "-" + Math.random().toString(16).slice(2));
   }
 
   function wordCount(html) {
-    const text = (html || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
+    // Die Bedienknöpfe an eingefügten Bildern (⬅ ◼ ➡ ×) stehen im
+    // gespeicherten Text und dürfen nicht als Wörter zählen.
+    const text = (html || "").replace(/<button[^>]*>[\s\S]*?<\/button>/g, " ").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
     if (!text) return 0;
     return text.split(/\s+/).filter(Boolean).length;
   }
@@ -472,7 +482,7 @@
     document.getElementById("statCount").textContent = stories.length;
     const totalWords = stories.reduce((sum, s) => sum + wordCount(s.content), 0);
     document.getElementById("statWords").textContent = totalWords.toLocaleString('de-DE');
-    document.getElementById("statDrafts").textContent = stories.filter(s => s.status === "entwurf" || s.status === "idee").length;
+    document.getElementById("statDrafts").textContent = stories.filter(s => normalizeStatus(s.status) === "entwurf").length;
 
     const sorted = [...stories].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     const continueCard = document.getElementById("continueCard");
@@ -507,7 +517,7 @@
       id: uid(),
       title: "",
       content: "",
-      status: "idee",
+      status: "entwurf",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -542,7 +552,7 @@
       <div class="editor-top">
         <input type="text" class="title-input" id="titleInput" placeholder="Titel der Geschichte" autocomplete="off" autocapitalize="sentences" value="${escapeAttr(story.title)}">
         <select class="status-select" id="statusSelect">
-          ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === story.status ? "selected" : ""}>${o.label}</option>`).join("")}
+          ${STATUS_OPTIONS.map(o => `<option value="${o.value}" ${o.value === normalizeStatus(story.status) ? "selected" : ""}>${o.label}</option>`).join("")}
         </select>
       </div>
       <div class="toolbar">
@@ -582,7 +592,7 @@
         <div class="margin-gutter" id="marginGutter"></div>
       </div>
       <div class="editor-footer">
-        <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span></div>
+        <div class="save-status"><span class="save-dot"></span><span id="saveStatusText">Automatisch gespeichert</span><span class="save-words" id="wordCountText"></span></div>
         <div class="editor-footer-actions">
           <button class="btn btn-outline" id="copyTextBtn" title="Text kopieren, um ihn z. B. in einem anderen KI-Chat einzufügen">📋 Text kopieren</button>
           <div class="btn-with-info">
@@ -612,8 +622,21 @@
     // laufen jetzt ausschließlich über die eigene Bedienleiste am Bild.
     document.execCommand("enableObjectResizing", false, false);
 
+    // Wörter der geöffneten Geschichte (nicht aller). Verzögert, weil eine
+    // Geschichte mit eingebetteten Bildern groß sein kann und nicht bei jedem
+    // Tastenanschlag neu durchgezählt werden soll.
+    const wordCountText = document.getElementById("wordCountText");
+    let wordCountTimer = null;
+    function updateWordCount() {
+      const n = wordCount(editorPage.innerHTML);
+      wordCountText.textContent = n === 1 ? "1 Wort" : n.toLocaleString("de-DE") + " Wörter";
+    }
+    updateWordCount();
+
     function scheduleSave() {
       saveStatusText.textContent = "Ungespeicherte Änderung …";
+      clearTimeout(wordCountTimer);
+      wordCountTimer = setTimeout(updateWordCount, 400);
       clearTimeout(autosaveTimer);
       const doSave = async () => {
         story.title = titleInput.value;
@@ -1829,7 +1852,7 @@
               id: uid(),
               title: "",
               content: textToHtml(idea.text),
-              status: "idee",
+              status: "entwurf",
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
             };
@@ -3530,6 +3553,10 @@
   }
 
   async function performSync() {
+    if (storageLoadFailed) {
+      showAlert("Deine Geschichten konnten gerade nicht aus dem Speicher des Geräts gelesen werden – sie sind nicht gelöscht. Bitte die App ganz schließen und neu öffnen, dann klappt auch das Synchronisieren wieder.");
+      return;
+    }
     if (!navigator.onLine) {
       showAlert("Du bist gerade offline. Sobald wieder Internet da ist, kannst du synchronisieren.");
       return;
@@ -3865,7 +3892,10 @@
       books = await BookStorage.getAll();
     } catch (err) {
       stories = []; ideas = []; books = [];
+      storageLoadFailed = true;
       console.error("Speicher konnte nicht geladen werden", err);
+      document.getElementById("storageWarning").hidden = false;
+      document.getElementById("storageReloadBtn").addEventListener("click", () => location.reload());
     }
     renderStart();
     renderDriveSettings();

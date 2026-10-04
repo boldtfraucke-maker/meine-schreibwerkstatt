@@ -5,9 +5,8 @@ const DB_VERSION = 2;
 const STORE_NAMES = ["stories", "ideas", "books"];
 let dbPromise = null;
 
-function openDB() {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
+function openDBOnce() {
+  return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
       const db = e.target.result;
@@ -20,6 +19,27 @@ function openDB() {
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
   });
+}
+
+// Chrome meldet beim Öffnen manchmal kurz einen Fehler (z. B. "full disk"),
+// obwohl der Speicher in Ordnung ist - meist direkt nach einem Seitenwechsel.
+// Deshalb ein paar Versuche mit kurzer Pause. Ein endgültiges Scheitern wird
+// NICHT gemerkt, sonst bliebe die App bis zum Neustart blockiert.
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = (async () => {
+    let lastError;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        return await openDBOnce();
+      } catch (err) {
+        lastError = err;
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      }
+    }
+    throw lastError;
+  })();
+  dbPromise.catch(() => { dbPromise = null; });
   return dbPromise;
 }
 

@@ -367,14 +367,32 @@ main.content {
 .story-year[open] > summary::before { transform: rotate(90deg); }
 .story-year .year-title { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 600; }
 .story-year .year-sum { font-size: 0.82rem; color: var(--ink-soft); margin-left: auto; }
-.story-month { padding-bottom: 6px; }
-.month-title {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  padding: 12px 16px 6px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em;
-  text-transform: uppercase; color: var(--ink-soft);
+/* Jeder Monat ist ein eigener Block (Karte) mit farbigem Kopf in der
+   Jahresfarbe und Abstand zum nächsten Monat - so erkennt man beim
+   Durchscrollen sofort, wo ein neuer Monat beginnt. */
+.story-month {
+  margin: 12px 12px 0;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--year-accent);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-card);
 }
-.month-title .month-sum { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
-.month-title .month-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
+.story-year > .story-month:last-child { margin-bottom: 12px; }
+.month-title {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap;
+  padding: 9px 14px;
+  background: var(--year-tint);
+  border-bottom: 1px solid var(--border);
+  font-family: 'Fraunces', serif; font-size: 1.08rem; font-weight: 600; color: var(--ink);
+}
+.month-title .month-sum { font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 400; color: var(--ink-soft); }
+.month-title .month-hint { font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 400; color: var(--ink-soft); }
+.month-title + .story-row { border-top: 0; }
+/* Jeder zweite Monat bekommt einen kräftigeren Kopf (Mischung aus Jahresfarbe
+   und Kartenfarbe) - dadurch wechselt beim Scrollen der Farbton von Monat zu
+   Monat. Browser ohne color-mix zeigen weiter den helleren Kopf. */
+.story-month.month-alt .month-title { background: color-mix(in srgb, var(--year-accent) 26%, var(--bg-card)); }
 .story-row {
   display: flex; align-items: baseline; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap;
   width: 100%; text-align: left; background: transparent; border: 0; border-top: 1px solid var(--border);

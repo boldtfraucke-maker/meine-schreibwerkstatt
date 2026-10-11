@@ -674,9 +674,9 @@
       const open = q || i === 0 ? " open" : "";
       html += `<details class="story-year year-c${yearColorIndex(year)}"${open}>
         <summary><span class="year-title">${year}</span><span class="year-sum">${sumOf(allEntries)}</span></summary>
-        ${monthKeys.map(m => {
+        ${monthKeys.map((m, monthIdx) => {
           const entries = months.get(m).sort(newestFirst);
-          return `<div class="story-month">
+          return `<div class="story-month${monthIdx % 2 ? " month-alt" : ""}">
             <div class="month-title"><span>${GERMAN_MONTH_NAMES[m]}</span><span class="month-sum">${sumOf(entries)}</span></div>
             ${entries.map(e => rowHtml(e, false)).join("")}
           </div>`;

@@ -202,7 +202,10 @@ alle Geschichten **automatisch geordnet**: Jahr → Monat → Einträge, jeweils
 neueste zuerst. Es gibt keine Ordner, in die etwas einsortiert werden muss -
 Grundlage ist das Datum im Titel (dieselbe Erkennung wie bei der Suche).
 Jedes Jahr ist eine aufklappbare Gruppe mit der Jahresfarbe; das neueste Jahr
-ist beim Öffnen aufgeklappt. Pro Jahr und Monat steht die Zahl der
+ist beim Öffnen aufgeklappt. Innerhalb eines Jahres ist **jeder Monat ein
+eigener Block** (Karte mit Abstand, farbiger Linie oben und Monatsname im
+farbigen Kopf, jeder zweite Monat mit kräftigerem Kopf), damit beim Scrollen
+sofort auffällt, wo ein neuer Monat beginnt. Pro Jahr und Monat steht die Zahl der
 Geschichten und Wörter, pro Eintrag Status und Wortzahl. Ein Klick öffnet die
 Geschichte im Editor. Titel ohne erkennbares Datum stehen am Ende in der
 Gruppe „Ohne Datum im Titel" (mit „zuletzt bearbeitet"). Das Feld

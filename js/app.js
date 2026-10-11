@@ -72,13 +72,15 @@
   // (damit das Datum später gezielt ersetzt werden kann) oder null.
   function findTitleDate(title) {
     const t = title || "";
-    for (const m of t.matchAll(/(\d{1,2})\.\s*([A-Za-zÄÖÜäöü]{3,9})\.?\s+(\d{4})/g)) {
+    // Leerzeichen um die Punkte sind erlaubt ("23. 09.2026", "17. 09. 2026"),
+    // beim Datum mit Monatsnamen darf der Punkt hinter dem Tag fehlen.
+    for (const m of t.matchAll(/(\d{1,2})\.?\s*([A-Za-zÄÖÜäöü]{3,9})\.?\s+(\d{4})/g)) {
       const monthIndex = GERMAN_MONTHS[m[2].toLowerCase()];
       if (monthIndex === undefined) continue;
       const ts = validDateTs(Number(m[3]), monthIndex, Number(m[1]));
       if (ts !== null) return { ts, start: m.index, end: m.index + m[0].length };
     }
-    for (const m of t.matchAll(/(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})(?!\d)/g)) {
+    for (const m of t.matchAll(/(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4}|\d{2})(?!\d)/g)) {
       let y = Number(m[3]);
       if (y < 100) y += 2000;
       const ts = validDateTs(y, Number(m[2]) - 1, Number(m[1]));

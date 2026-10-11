@@ -186,8 +186,9 @@ gewählte Datum ersetzt das Datum im Titel samt davorstehendem Wochentag, sodass
 der Wochentag immer stimmt. Steht noch kein Datum im Titel, wird es angehängt.
 
 Die Suche auf der Startseite liest das Datum aus dem Titel (Schreibweisen wie
-„17. September 2026", „5. Okt. 2026", „03.01.2027", „9.3.26"; ungültige
-Daten wie „31. Februar" zählen nicht) und zeigt die Treffer **neueste zuerst**.
+„17. September 2026", „5. Okt. 2026", „5 Oktober 2026", „03.01.2027", „9.3.26"
+sowie mit Leerzeichen nach den Punkten wie „23. 09.2026" oder „17. 09. 2026";
+ungültige Daten wie „31. Februar" zählen nicht) und zeigt die Treffer **neueste zuerst**.
 Titel ohne erkennbares Datum folgen danach, nach zuletzt bearbeitet. Es werden
 bis zu 40 Treffer angezeigt (die Liste scrollt). Jeder Treffer mit Datum trägt
 eine **Jahresmarke** („2026") und einen zarten **Hintergrundton pro Jahr**
